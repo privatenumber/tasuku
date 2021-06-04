@@ -2,7 +2,7 @@
 <p align="center">
     <img src=".github/tasuku.svg">
     <br>
-    <i>The minimal task runner</i>
+    <i>The minimal task runner for Node.js</i>
 </p>
 
 ### Features
