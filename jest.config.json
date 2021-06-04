@@ -1,0 +1,6 @@
+{
+	"preset": "es-jest",
+	"transformIgnorePatterns": [
+		"node_modules/.pnpm(?!/(p-map|aggregate-error|indent-string|clean-stack|escape-string-regexp))"
+	]
+}
