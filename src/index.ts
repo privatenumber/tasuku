@@ -36,14 +36,16 @@ const createTaskInnerApi = (taskState: TaskObject) => {
 	return api;
 };
 
-type TaskFunction = (taskHelpers: ReturnType<typeof createTaskInnerApi>) => Promise<unknown>;
+namespace task {
+	export type TaskFunction = (taskHelpers: ReturnType<typeof createTaskInnerApi>) => Promise<unknown>;
+}
 
-type TaskAPI<T extends TaskFunction> = {
+type TaskAPI<T extends task.TaskFunction> = {
 	run: () => Promise<Awaited<ReturnType<T>>>;
 	clear: () => void;
 };
 type TaskResults<
-	T extends TaskFunction,
+	T extends task.TaskFunction,
 	Tasks extends TaskAPI<T>[]
 > = {
 	[key in keyof Tasks]: (
@@ -55,7 +57,7 @@ type TaskResults<
 
 let app: ReturnType<typeof createApp>;
 
-function registerTask<T extends TaskFunction>(
+function registerTask<T extends task.TaskFunction>(
 	taskList: TaskList,
 	taskTitle: string,
 	taskFunction: T,
@@ -105,7 +107,7 @@ function registerTask<T extends TaskFunction>(
 function createTaskFunction(
 	taskList: TaskList,
 ) {
-	async function task<T extends TaskFunction>(
+	async function task<T extends task.TaskFunction>(
 		title: string,
 		taskFunction: T,
 	) {
@@ -118,7 +120,7 @@ function createTaskFunction(
 		);
 	}
 
-	const createTask = <T extends TaskFunction>(
+	const createTask = <T extends task.TaskFunction>(
 		title: string,
 		taskFunction: T,
 	) => registerTask(
@@ -128,7 +130,7 @@ function createTaskFunction(
 		);
 
 	task.group = async <
-		T extends TaskFunction,
+		T extends task.TaskFunction,
 		Tasks extends TaskAPI<T>[]
 	>(
 		createTasks: (taskCreator: typeof createTask) => readonly [...Tasks],
