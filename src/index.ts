@@ -36,6 +36,8 @@ const createTaskInnerApi = (taskState: TaskObject) => {
 	return api;
 };
 
+// Until full ESM
+// eslint-disable-next-line @typescript-eslint/no-namespace
 namespace task {
 	export type TaskInnerApi = ReturnType<typeof createTaskInnerApi>;
 	export type TaskFunction = (taskHelpers: TaskInnerApi) => Promise<unknown>;
