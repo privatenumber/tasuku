@@ -2,7 +2,7 @@
 <p align="center">
     <img src=".github/tasuku.svg">
     <br>
-    <i>The minimal task runner</i>
+    <i>The minimal task runner for Node.js</i>
 </p>
 
 ### Features
@@ -10,6 +10,8 @@
 - Parallel & nestable tasks
 - Unopinionated
 - Type-safe
+
+→ [Try it out online](https://stackblitz.com/edit/tasuku-demo?file=index.js)
 
 <sub>Support this project by starring and sharing it. [Follow me](https://github.com/privatenumber) to see what other cool projects I'm working on.</sub>
 
