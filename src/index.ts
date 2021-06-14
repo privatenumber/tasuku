@@ -37,19 +37,20 @@ const createTaskInnerApi = (taskState: TaskObject) => {
 };
 
 namespace task {
-	export type TaskFunction = (taskHelpers: ReturnType<typeof createTaskInnerApi>) => Promise<unknown>;
+	export type TaskInnerApi = ReturnType<typeof createTaskInnerApi>;
+	export type TaskFunction = (taskHelpers: TaskInnerApi) => Promise<unknown>;
 }
 
-type TaskAPI<T extends task.TaskFunction> = {
+type TaskApi<T extends task.TaskFunction> = {
 	run: () => Promise<Awaited<ReturnType<T>>>;
 	clear: () => void;
 };
 type TaskResults<
 	T extends task.TaskFunction,
-	Tasks extends TaskAPI<T>[]
+	Tasks extends TaskApi<T>[]
 > = {
 	[key in keyof Tasks]: (
-		Tasks[key] extends TaskAPI<T>
+		Tasks[key] extends TaskApi<T>
 			? Awaited<ReturnType<Tasks[key]['run']>>
 			: Tasks[key]
 	);
@@ -61,7 +62,7 @@ function registerTask<T extends task.TaskFunction>(
 	taskList: TaskList,
 	taskTitle: string,
 	taskFunction: T,
-): TaskAPI<T> {
+): TaskApi<T> {
 	if (!app) {
 		app = createApp(taskList);
 		taskList.isRoot = true;
@@ -131,7 +132,7 @@ function createTaskFunction(
 
 	task.group = async <
 		T extends task.TaskFunction,
-		Tasks extends TaskAPI<T>[]
+		Tasks extends TaskApi<T>[]
 	>(
 		createTasks: (taskCreator: typeof createTask) => readonly [...Tasks],
 		options?: Options,
