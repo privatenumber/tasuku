@@ -1,20 +1,17 @@
 import task from '../src/index';
 
-const expectType = <T>(value: T) => {}; // eslint-disable-line @typescript-eslint/no-empty-function
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => {
 	setTimeout(resolve, ms);
 });
 
 test('task - return number', async () => {
 	const { result } = await task('Some task', async () => 1 + 1);
-	expectType<number>(result);
-	expect(result).toBe(2);
+	expect<number>(result).toBe(2);
 });
 
 test('task - return string', async () => {
 	const { result } = await task('Some task', async () => 'some string');
-	expectType<string>(result);
-	expect(result).toBe('some string');
+	expect<string>(result).toBe('some string');
 });
 
 test('task return Promise<number>', async () => {
@@ -24,21 +21,18 @@ test('task return Promise<number>', async () => {
 			resolve(123);
 		}),
 	);
-	expectType<number>(result);
-	expect(result).toBe(123);
+	expect<number>(result).toBe(123);
 });
 
 test('nested tasks', async () => {
 	const someTask = await task('Some task', async ({ task }) => {
 		const nestedTask = await task('nested task', async () => 'nested works');
-		expectType<string>(nestedTask.result);
-		expect(nestedTask.result).toBe('nested works');
+		expect<string>(nestedTask.result).toBe('nested works');
 
 		return 1;
 	});
 
-	expectType<number>(someTask.result);
-	expect(someTask.result).toBe(1);
+	expect<number>(someTask.result).toBe(1);
 });
 
 test('group tasks', async () => {
@@ -48,12 +42,11 @@ test('group tasks', async () => {
 		task('boolean', async () => false),
 	]);
 
-	expectType<[
+	expect<[
 		number,
 		string,
 		boolean,
-	]>(groupTasks.results);
-	expect(groupTasks.results).toEqual([
+	]>(groupTasks.results).toEqual([
 		123,
 		'hello',
 		false,
