@@ -20,6 +20,25 @@
 npm i tasuku
 ```
 
+## About
+タスク (Tasuku) is a minimal task runner for Node.js. You can use it to label any task/function so that its loading, success, and error states are rendered in the terminal.
+
+For example, here's a simple script that copies a file from path A to B.
+
+```ts
+import task from 'tasuku'
+import { copyFile } from 'fs/promises'
+
+task('Copying file from path A to B', async ({ setTitle }) => {
+	await copyFile('/path/A', '/path/B');
+
+	setTitle('Successfully copied file from path A to B!')
+})
+```
+
+Running the script will look like this in the terminal:
+<img src=".github/example-0.gif">
+
 ## Usage
 ### Task list
 Call `task(taskTitle, taskFunction)` to start a task and display it in a task list in the terminal.
