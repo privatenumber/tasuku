@@ -37,6 +37,7 @@ task('Copying file from path A to B', async ({ setTitle }) => {
 ```
 
 Running the script will look like this in the terminal:
+
 <img src=".github/example-0.gif">
 
 ## Usage
