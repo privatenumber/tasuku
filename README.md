@@ -30,9 +30,9 @@ import task from 'tasuku'
 import { copyFile } from 'fs/promises'
 
 task('Copying file from path A to B', async ({ setTitle }) => {
-	await copyFile('/path/A', '/path/B');
+    await copyFile('/path/A', '/path/B');
 
-	setTitle('Successfully copied file from path A to B!')
+    setTitle('Successfully copied file from path A to B!')
 })
 ```
 
