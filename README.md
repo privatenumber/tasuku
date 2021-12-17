@@ -11,7 +11,7 @@
 - Unopinionated
 - Type-safe
 
-→ [Try it out online](https://stackblitz.com/edit/tasuku-demo?file=index.js)
+→ [Try it out online](https://stackblitz.com/edit/tasuku-demo?file=index.js&devtoolsheight=50&view=editor)
 
 <sub>Support this project by starring and sharing it. [Follow me](https://github.com/privatenumber) to see what other cool projects I'm working on.</sub>
 
