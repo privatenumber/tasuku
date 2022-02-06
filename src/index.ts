@@ -36,19 +36,15 @@ const createTaskInnerApi = (taskState: TaskObject) => {
 	return api;
 };
 
-// Until full ESM
-// eslint-disable-next-line @typescript-eslint/no-namespace
-namespace task {
-	export type TaskInnerApi = ReturnType<typeof createTaskInnerApi>;
-	export type TaskFunction = (taskHelpers: TaskInnerApi) => Promise<unknown>;
-}
+export type TaskInnerApi = ReturnType<typeof createTaskInnerApi>;
+export type TaskFunction = (taskHelpers: TaskInnerApi) => Promise<unknown>;
 
-type TaskApi<T extends task.TaskFunction> = {
+type TaskApi<T extends TaskFunction> = {
 	run: () => Promise<Awaited<ReturnType<T>>>;
 	clear: () => void;
 };
 type TaskResults<
-	T extends task.TaskFunction,
+	T extends TaskFunction,
 	Tasks extends TaskApi<T>[]
 > = {
 	[key in keyof Tasks]: (
@@ -60,7 +56,7 @@ type TaskResults<
 
 let app: ReturnType<typeof createApp>;
 
-function registerTask<T extends task.TaskFunction>(
+function registerTask<T extends TaskFunction>(
 	taskList: TaskList,
 	taskTitle: string,
 	taskFunction: T,
@@ -110,7 +106,7 @@ function registerTask<T extends task.TaskFunction>(
 function createTaskFunction(
 	taskList: TaskList,
 ) {
-	async function task<T extends task.TaskFunction>(
+	async function task<T extends TaskFunction>(
 		title: string,
 		taskFunction: T,
 	) {
@@ -123,7 +119,7 @@ function createTaskFunction(
 		);
 	}
 
-	const createTask = <T extends task.TaskFunction>(
+	const createTask = <T extends TaskFunction>(
 		title: string,
 		taskFunction: T,
 	) => registerTask(
@@ -133,7 +129,7 @@ function createTaskFunction(
 		);
 
 	task.group = async <
-		T extends task.TaskFunction,
+		T extends TaskFunction,
 		Tasks extends TaskApi<T>[]
 	>(
 		createTasks: (taskCreator: typeof createTask) => readonly [...Tasks],
@@ -163,6 +159,5 @@ function createTaskFunction(
 }
 
 const rootTaskList = proxy<TaskList>([]);
-const task = createTaskFunction(rootTaskList);
 
-export = task;
+export default createTaskFunction(rootTaskList);
