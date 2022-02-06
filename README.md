@@ -26,11 +26,11 @@ npm i tasuku
 For example, here's a simple script that copies a file from path A to B.
 
 ```ts
-import task from 'tasuku'
 import { copyFile } from 'fs/promises'
+import task from 'tasuku'
 
 task('Copying file from path A to B', async ({ setTitle }) => {
-    await copyFile('/path/A', '/path/B');
+    await copyFile('/path/A', '/path/B')
 
     setTitle('Successfully copied file from path A to B!')
 })
@@ -84,11 +84,11 @@ task('Task 1', async () => {
     await someAsyncTask()
 })
 
-...
+// ...
 
 someOtherCode()
 
-...
+// ...
 
 task('Task 2', async ({ setTitle }) => {
     await someAsyncTask()
@@ -169,9 +169,9 @@ const groupedTasks = await task.group(task => [
         setTitle('Task 2 complete')
 
         return 'two'
-    }),
+    })
 
-    ...
+    // ...
 ])
 
 console.log(groupedTasks.results) // ['one', 'two']
@@ -186,14 +186,15 @@ You can run tasks in parallel by passing in `{ concurrency: n }` as the second a
 const api = await task.group(task => [
     task(
         'Task 1',
-        async () => await someAsyncTask(),
+        async () => await someAsyncTask()
     ),
-    
+
     task(
         'Task 2',
-        async () => await someAsyncTask(),
-    ),
-    ...
+        async () => await someAsyncTask()
+    )
+
+    // ...
 ], {
     concurrency: 2 // Number of tasks to run at a time
 })
@@ -210,14 +211,15 @@ Alternatively, you can also use the native `Promise.all()` if you prefer. The ad
 await Promise.all([
     task(
         'Task 1',
-        async () => await someAsyncTask(),
+        async () => await someAsyncTask()
     ),
 
     task(
         'Task 2',
-        async () => await someAsyncTask(),
-    ),
-    ...
+        async () => await someAsyncTask()
+    )
+
+    // ...
 ])
 ```
 
@@ -227,12 +229,12 @@ await Promise.all([
 
 Returns a Promise that resolves with object:
 ```ts
-{
+type Task = {
     // The result from taskFunction
-    result: any,
+    result: any
 
     // Invoke to clear the results from the terminal
-    clear: () => void,
+    clear: () => void
 }
 ```
 
@@ -246,13 +248,13 @@ The name of the task displayed.
 #### taskFunction
 Type:
 ```ts
-({
-    task: taskFunction,
-    setTitle: (title: string) => void,
-    setStatus: (status: string) => void,
-    setOutput: (error: string | { message: string }) => void,
-    setWarning: (warning: Error | string) => void,
-    setError: (error: Error | string) => void,
+type TaskFunction = (taskApi: {
+    task: createTask
+    setTitle: (title: string) => void
+    setStatus: (status: string) => void
+    setOutput: (error: string | { message: string }) => void
+    setWarning: (warning: Error | string) => void
+    setError: (error: Error | string) => void
 }) => Promise<any>
 ```
 
@@ -285,12 +287,12 @@ Call with a string or Error instance to put the task in an error state. Tasks au
 ### task.group(createTaskFunctions, options)
 Returns a Promise that resolves with object:
 ```ts
-{
+type TaskGroup = {
     // The results from the taskFunctions
-    results: any[],
+    results: any[]
 
     // Invoke to clear the results from the terminal
-    clear: () => void,
+    clear: () => void
 }
 ```
 
