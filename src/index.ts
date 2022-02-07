@@ -11,8 +11,8 @@ import type {
 	TaskGroupAPI,
 	TaskFunction,
 	RegisteredTask,
-	CreateTask,
 } from './types';
+import { runSymbol } from './types';
 
 const createTaskInnerApi = (taskState: TaskObject) => {
 	const api: TaskInnerAPI = {
@@ -65,7 +65,7 @@ function registerTask<T extends TaskFunction>(
 	});
 
 	return {
-		async run() {
+		async [runSymbol]() {
 			const api = createTaskInnerApi(taskState);
 
 			taskState.state = 'loading';
@@ -98,21 +98,12 @@ function registerTask<T extends TaskFunction>(
 function createTaskFunction(
 	taskList: TaskList,
 ): Task {
-	const createTask: CreateTask = (
-		title,
-		taskFunction,
-	) => registerTask(
-		taskList,
-		title,
-		taskFunction,
-	);
-
 	const task: Task = async (
 		title,
 		taskFunction,
 	) => {
 		const taskState = registerTask(taskList, title, taskFunction);
-		const result = await taskState.run();
+		const result = await taskState[runSymbol]();
 
 		return {
 			result,
@@ -124,10 +115,18 @@ function createTaskFunction(
 		createTasks,
 		options,
 	) => {
-		const tasksQueue = createTasks(createTask);
+		const tasksQueue = createTasks((
+			title,
+			taskFunction,
+		) => registerTask(
+			taskList,
+			title,
+			taskFunction,
+		));
+
 		const results = (await pMap(
 			tasksQueue,
-			async taskApi => await taskApi.run(),
+			async taskApi => await taskApi[runSymbol](),
 			{
 				concurrency: 1,
 				...options,

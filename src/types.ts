@@ -23,8 +23,10 @@ export type TaskInnerAPI = {
 
 export type TaskFunction = (innerApi: TaskInnerAPI) => Promise<any>;
 
+export const runSymbol: unique symbol = Symbol('run');
+
 export type RegisteredTask<T extends TaskFunction> = {
-	run: () => Promise<Awaited<ReturnType<T>>>;
+	[runSymbol]: () => Promise<Awaited<ReturnType<T>>>;
 	clear: () => void;
 };
 
@@ -51,7 +53,7 @@ type TaskGroupResults<
 > = {
 	[key in keyof Tasks]: (
 		Tasks[key] extends RegisteredTask<T>
-			? Awaited<ReturnType<Tasks[key]['run']>>
+			? Awaited<ReturnType<Tasks[key][typeof runSymbol]>>
 			: Tasks[key]
 	);
 };
