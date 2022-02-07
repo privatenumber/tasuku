@@ -32,6 +32,7 @@
 	"scripts": {
 		"lint": "eslint .",
 		"test": "jest",
+		"test:tsd": "tsd",
 		"typecheck": "tsc --noEmit && :",
 		"build": "tsup src/index.ts --clean --format esm,cjs --dts-resolve --minify --no-splitting --external 'yoga-layout-prebuilt'"
 	},
@@ -62,6 +63,7 @@
 		"lint-staged": "^11.1.2",
 		"p-map": "^5.1.0",
 		"react": "^17.0.2",
+		"tsd": "^0.19.1",
 		"tsup": "^5.11.13",
 		"typescript": "^4.4.2",
 		"valtio": "^1.2.2"
@@ -79,5 +81,8 @@
 				}
 			]
 		}
+	},
+	"tsd": {
+		"directory": "tests"
 	}
 }
