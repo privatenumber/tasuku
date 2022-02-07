@@ -30,11 +30,6 @@ export type RegisteredTask<T = any> = {
 	clear: () => void;
 };
 
-export type CreateTask = <ReturnType>(
-	title: string,
-	taskFunction: TaskFunction<ReturnType>,
-) => RegisteredTask<ReturnType>;
-
 export type TaskAPI<Result = any> = {
 	result: Result;
 	clear: () => void;
@@ -68,6 +63,18 @@ export type TaskGroupAPI<Results = any> = {
 	results: Results;
 	clear(): void;
 };
+
+export type CreateTask = <ReturnType>(
+	/**
+	 * The task title
+	 */
+	title: string,
+
+	/**
+	 * The task function
+	 */
+	taskFunction: TaskFunction<ReturnType>,
+) => RegisteredTask<ReturnType>;
 
 type TaskGroup = <
 	RegisteredTasks extends RegisteredTask[]
