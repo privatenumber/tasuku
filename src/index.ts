@@ -48,10 +48,10 @@ const createTaskInnerApi = (taskState: TaskObject) => {
 
 let app: ReturnType<typeof createApp> | undefined;
 
-function registerTask<T extends TaskFunction>(
+function registerTask<T>(
 	taskList: TaskList,
 	taskTitle: string,
-	taskFunction: T,
+	taskFunction: TaskFunction<T>,
 ): RegisteredTask<T> {
 	if (!app) {
 		app = createApp(taskList);

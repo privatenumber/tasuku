@@ -21,52 +21,57 @@ export type TaskInnerAPI = {
 	setError(error: Error| string): void;
 };
 
-export type TaskFunction = (innerApi: TaskInnerAPI) => Promise<any>;
+export type TaskFunction<T> = (innerApi: TaskInnerAPI) => Promise<T>;
 
 export const runSymbol: unique symbol = Symbol('run');
 
-export type RegisteredTask<T extends TaskFunction> = {
-	[runSymbol]: () => Promise<Awaited<ReturnType<T>>>;
+export type RegisteredTask<T = any> = {
+	[runSymbol]: () => Promise<T>; // ReturnType<TaskFunction<T>>;
 	clear: () => void;
 };
 
-export type CreateTask = <T extends TaskFunction>(
+export type CreateTask = <ReturnType>(
 	title: string,
-	taskFunction: T,
-) => RegisteredTask<T>
+	taskFunction: TaskFunction<ReturnType>,
+) => RegisteredTask<ReturnType>;
 
 export type TaskAPI<Result = any> = {
 	result: Result;
 	clear: () => void;
-}
+};
 
 export type Task = (
-	<T extends TaskFunction>(
+	<TaskReturnType>(
+		/**
+		 * The task title
+		 */
 		title: string,
-		taskFunction: T
-	) => Promise<TaskAPI<Awaited<ReturnType<T>>>>
+
+		/**
+		 * The task function
+		 */
+		taskFunction: TaskFunction<TaskReturnType>
+	) => Promise<TaskAPI<TaskReturnType>>
 ) & { group: TaskGroup }
 
 type TaskGroupResults<
-	T extends TaskFunction,
-	Tasks extends RegisteredTask<T>[]
+	RegisteredTasks extends RegisteredTask[]
 > = {
-	[key in keyof Tasks]: (
-		Tasks[key] extends RegisteredTask<T>
-			? Awaited<ReturnType<Tasks[key][typeof runSymbol]>>
-			: Tasks[key]
+	[Key in keyof RegisteredTasks]: (
+		RegisteredTasks[Key] extends RegisteredTask<infer ReturnType>
+			? ReturnType
+			: unknown
 	);
 };
 
 export type TaskGroupAPI<Results = any> = {
 	results: Results;
 	clear(): void;
-}
+};
 
 type TaskGroup = <
-	T extends TaskFunction,
-	Tasks extends RegisteredTask<T>[]
+	RegisteredTasks extends RegisteredTask[]
 >(
-	createTasks: (taskCreator: CreateTask) => readonly [...Tasks],
+	createTasks: (taskCreator: CreateTask) => readonly [...RegisteredTasks],
 	options?: Options
-) => Promise<TaskGroupAPI<TaskGroupResults<T, Tasks>>>;
+) => Promise<TaskGroupAPI<TaskGroupResults<RegisteredTasks>>>;
