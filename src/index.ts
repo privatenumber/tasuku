@@ -2,18 +2,20 @@ import { proxy } from 'valtio';
 import pMap from 'p-map';
 import { arrayAdd, arrayRemove } from './utils';
 import { createApp } from './components/CreateApp';
-import {
+import type {
 	TaskList,
 	TaskObject,
-	TaskInnerApi,
+	Task,
+	TaskAPI,
+	TaskInnerAPI,
+	TaskGroupAPI,
 	TaskFunction,
 	RegisteredTask,
-	Task,
 	CreateTask,
 } from './types';
 
 const createTaskInnerApi = (taskState: TaskObject) => {
-	const api: TaskInnerApi = {
+	const api: TaskInnerAPI = {
 		task: createTaskFunction(taskState.children),
 		setTitle(title) {
 			taskState.title = title;
@@ -150,6 +152,8 @@ const rootTaskList = proxy<TaskList>([]);
 export default createTaskFunction(rootTaskList);
 export type {
 	Task,
-	TaskInnerApi,
+	TaskAPI,
+	TaskInnerAPI,
 	TaskFunction,
+	TaskGroupAPI,
 };

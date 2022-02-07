@@ -23,7 +23,7 @@ export type TaskList = TaskObject[] & {
 	isRoot?: boolean;
 }
 
-export type TaskInnerApi = {
+export type TaskInnerAPI = {
 	task: Task;
 	setTitle(title: string): void;
 	setStatus(status: string): void;
@@ -32,7 +32,7 @@ export type TaskInnerApi = {
 	setError(error: Error| string): void;
 };
 
-export type TaskFunction = (innerApi: TaskInnerApi) => Promise<any>;
+export type TaskFunction = (innerApi: TaskInnerAPI) => Promise<any>;
 
 export type RegisteredTask<T extends TaskFunction> = {
 	run: () => Promise<Awaited<ReturnType<T>>>;
