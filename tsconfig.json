@@ -10,7 +10,7 @@
 
 		// Node 12
 		"module": "commonjs",
-		"target": "ES2019"
+		"target": "ES2019",
 	},
 	"include": [
 		"src"
