@@ -28,4 +28,6 @@ jobs:
       if: ${{ matrix.node-version == '14.x' }}
       run: npm run lint
     - name: Test
-      run: npm run test --if-present
+      run: npm run test
+    - name: DTS test
+      run: npm run test:dts
