@@ -1,9 +1,11 @@
-import React, { FC } from 'react';
+import React, { type FC } from 'react';
 import { Task } from 'ink-task-list';
 import type { TaskObject } from '../types';
 
+type DeepReadonly<T> = { readonly [K in keyof T]: DeepReadonly<T[K]> };
+
 const TaskListItem: FC<{
-	task: TaskObject;
+	task: DeepReadonly<TaskObject>;
 }> = ({
 	task,
 }) => {
