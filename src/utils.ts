@@ -1,3 +1,9 @@
+/**
+ * These utilities are useful because Valtio
+ * makes the elements reactive after adding to
+ * the array.
+ */
+
 export function arrayAdd<T>(
 	array: T[],
 	element: T,
