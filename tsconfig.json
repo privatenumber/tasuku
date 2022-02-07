@@ -6,6 +6,7 @@
 		"jsx": "react",
 		"declaration": true,
 		"outDir": "dist",
+		"strict": true,
 
 		// Node 12
 		"module": "commonjs",

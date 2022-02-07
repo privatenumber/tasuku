@@ -32,9 +32,9 @@ export type TaskInnerApi = {
 	setError(error: Error| string): void;
 };
 
-export type TaskFunction = (innerApi: TaskInnerApi) => Promise<unknown>;
+export type TaskFunction = (innerApi: TaskInnerApi) => Promise<any>;
 
-export type TaskApi<T extends TaskFunction> = {
+export type RegisteredTask<T extends TaskFunction> = {
 	run: () => Promise<Awaited<ReturnType<T>>>;
 	clear: () => void;
 };
@@ -42,37 +42,40 @@ export type TaskApi<T extends TaskFunction> = {
 export type CreateTask = <T extends TaskFunction>(
 	title: string,
 	taskFunction: T,
-) => TaskApi<T>
+) => RegisteredTask<T>
+
+export type TaskAPI<Result = any> = {
+	result: Result;
+	clear: () => void;
+}
 
 export type Task = (
 	<T extends TaskFunction>(
 		title: string,
 		taskFunction: T
-	) => Promise<
-		TaskApi<T> & {
-			result: Awaited<ReturnType<T>>;
-		}
-	>
+	) => Promise<TaskAPI<Awaited<ReturnType<T>>>>
 ) & { group: TaskGroup }
 
 type TaskGroupResults<
 	T extends TaskFunction,
-	Tasks extends TaskApi<T>[]
+	Tasks extends RegisteredTask<T>[]
 > = {
 	[key in keyof Tasks]: (
-		Tasks[key] extends TaskApi<T>
+		Tasks[key] extends RegisteredTask<T>
 			? Awaited<ReturnType<Tasks[key]['run']>>
 			: Tasks[key]
 	);
 };
 
+export type TaskGroupAPI<Results = any> = {
+	results: Results;
+	clear(): void;
+}
+
 type TaskGroup = <
 	T extends TaskFunction,
-	Tasks extends TaskApi<T>[]
+	Tasks extends RegisteredTask<T>[]
 >(
 	createTasks: (taskCreator: CreateTask) => readonly [...Tasks],
 	options?: Options
-) => Promise<{
-	results: TaskGroupResults<T, Tasks>;
-	clear(): void;
-}>;
+) => Promise<TaskGroupAPI<TaskGroupResults<T, Tasks>>>;

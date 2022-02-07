@@ -15,7 +15,7 @@ const TaskListItem: FC<{
 					task={childTask}
 				/>
 			))
-			: undefined
+			: []
 	);
 
 	return (
@@ -24,7 +24,7 @@ const TaskListItem: FC<{
 			label={task.title}
 			status={task.status}
 			output={task.output}
-			isExpanded={childTasks?.length > 0}
+			isExpanded={childTasks.length > 0}
 		>
 			{childTasks}
 		</Task>

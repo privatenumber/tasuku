@@ -7,7 +7,7 @@ import {
 	TaskObject,
 	TaskInnerApi,
 	TaskFunction,
-	TaskApi,
+	RegisteredTask,
 	Task,
 	CreateTask,
 } from './types';
@@ -44,13 +44,13 @@ const createTaskInnerApi = (taskState: TaskObject) => {
 	return api;
 };
 
-let app: ReturnType<typeof createApp>;
+let app: ReturnType<typeof createApp> | undefined;
 
 function registerTask<T extends TaskFunction>(
 	taskList: TaskList,
 	taskTitle: string,
 	taskFunction: T,
-): TaskApi<T> {
+): RegisteredTask<T> {
 	if (!app) {
 		app = createApp(taskList);
 		taskList.isRoot = true;
@@ -72,7 +72,7 @@ function registerTask<T extends TaskFunction>(
 			try {
 				taskResult = await taskFunction(api);
 			} catch (error) {
-				api.setError(error);
+				api.setError(error as any);
 				throw error;
 			}
 
@@ -86,8 +86,8 @@ function registerTask<T extends TaskFunction>(
 			arrayRemove(taskList, taskState);
 
 			if (taskList.isRoot && taskList.length === 0) {
-				app.remove();
-				app = null;
+				app!.remove();
+				app = undefined;
 			}
 		},
 	};
@@ -112,10 +112,10 @@ function createTaskFunction(
 		const taskState = registerTask(taskList, title, taskFunction);
 		const result = await taskState.run();
 
-		return Object.assign(
-			taskState,
-			{ result },
-		);
+		return {
+			result,
+			clear: taskState.clear,
+		};
 	};
 
 	task.group = async (
