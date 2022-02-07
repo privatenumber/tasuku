@@ -30,4 +30,4 @@ jobs:
     - name: Test
       run: npm run test
     - name: DTS test
-      run: npm run test:dts
+      run: npm run test:tsd
