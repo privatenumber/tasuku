@@ -17,15 +17,23 @@
 		"email": "hiroki.osame@gmail.com"
 	},
 	"files": [
-		"bin",
 		"dist"
 	],
 	"main": "./dist/index.js",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"require": "./dist/index.js",
+			"import": "./dist/index.mjs",
+			"types": "./dist/index.d.ts"
+		}
+	},
 	"scripts": {
 		"lint": "eslint .",
 		"test": "jest",
 		"typecheck": "tsc --noEmit && :",
-		"build": "rm -rf dist && tsup src/index.ts --dts-resolve --minify --no-splitting --external 'yoga-layout-prebuilt'"
+		"build": "tsup src/index.ts --clean --format esm,cjs --dts-resolve --minify --no-splitting --external 'yoga-layout-prebuilt'"
 	},
 	"husky": {
 		"hooks": {
@@ -54,7 +62,7 @@
 		"lint-staged": "^11.1.2",
 		"p-map": "^5.1.0",
 		"react": "^17.0.2",
-		"tsup": "^4.14.0",
+		"tsup": "^5.11.13",
 		"typescript": "^4.4.2",
 		"valtio": "^1.2.2"
 	},
