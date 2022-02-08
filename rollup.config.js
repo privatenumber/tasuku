@@ -41,7 +41,6 @@ export default [
 			}),
 		],
 		output: {
-			format: 'esm',
 			file: './dist/index.d.ts',
 		},
 	}),
