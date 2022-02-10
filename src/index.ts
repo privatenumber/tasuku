@@ -58,17 +58,18 @@ function registerTask<T>(
 		taskList.isRoot = true;
 	}
 
-	const taskState = arrayAdd(taskList, {
+	const task = arrayAdd(taskList, {
 		title: taskTitle,
 		state: 'pending',
 		children: [],
 	});
 
 	return {
+		task,
 		async [runSymbol]() {
-			const api = createTaskInnerApi(taskState);
+			const api = createTaskInnerApi(task);
 
-			taskState.state = 'loading';
+			task.state = 'loading';
 
 			let taskResult;
 			try {
@@ -78,14 +79,14 @@ function registerTask<T>(
 				throw error;
 			}
 
-			if (taskState.state === 'loading') {
-				taskState.state = 'success';
+			if (task.state === 'loading') {
+				task.state = 'success';
 			}
 
 			return taskResult;
 		},
 		clear() {
-			arrayRemove(taskList, taskState);
+			arrayRemove(taskList, task);
 
 			if (taskList.isRoot && taskList.length === 0) {
 				app!.remove();
@@ -102,12 +103,15 @@ function createTaskFunction(
 		title,
 		taskFunction,
 	) => {
-		const taskState = registerTask(taskList, title, taskFunction);
-		const result = await taskState[runSymbol]();
+		const registeredTask = registerTask(taskList, title, taskFunction);
+		const result = await registeredTask[runSymbol]();
 
 		return {
 			result,
-			clear: taskState.clear,
+			get state() {
+				return registeredTask.task.state;
+			},
+			clear: registeredTask.clear,
 		};
 	};
 
