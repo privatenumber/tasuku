@@ -252,11 +252,11 @@ Type:
 ```ts
 type TaskFunction = (taskInnerApi: {
     task: createTask
-    setTitle: (title: string) => void
-    setStatus: (status: string) => void
-    setOutput: (error: string | { message: string }) => void
-    setWarning: (warning: Error | string) => void
-    setError: (error: Error | string) => void
+    setTitle(title: string): void
+    setStatus(status?: string): void
+    setOutput(output: string | { message: string }): void
+    setWarning(warning: Error | string): void
+    setError(error: Error | string): void
 }) => Promise<any>
 ```
 

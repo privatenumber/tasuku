@@ -17,7 +17,7 @@ export type TaskList = TaskObject[] & {
 export type TaskInnerAPI = {
 	task: Task;
 	setTitle(title: string): void;
-	setStatus(status: string): void;
+	setStatus(status?: string): void;
 	setOutput(output: string | { message: string }): void;
 	setWarning(warning: Error | string): void;
 	setError(error: Error| string): void;
