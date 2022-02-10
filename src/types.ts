@@ -58,13 +58,12 @@ type TaskGroupResults<
 > = {
 	[Key in keyof RegisteredTasks]: (
 		RegisteredTasks[Key] extends RegisteredTask<infer ReturnType>
-			? ReturnType
+			? TaskAPI<ReturnType>
 			: unknown
 	);
 };
 
-export type TaskGroupAPI<Results = any> = {
-	results: Results;
+export type TaskGroupAPI<Results = any[]> = Results & {
 	clear(): void;
 };
 

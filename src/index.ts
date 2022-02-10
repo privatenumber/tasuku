@@ -130,21 +130,26 @@ function createTaskFunction(
 
 		const results = (await pMap(
 			tasksQueue,
-			async taskApi => await taskApi[runSymbol](),
+			async taskApi => ({
+				result: await taskApi[runSymbol](),
+				get state() {
+					return taskApi.task.state;
+				},
+				clear: taskApi.clear,
+			}),
 			{
 				concurrency: 1,
 				...options,
 			},
 		)) as any;
 
-		return {
-			results,
+		return Object.assign(results, {
 			clear() {
 				for (const taskApi of tasksQueue) {
 					taskApi.clear();
 				}
 			},
-		};
+		});
 	};
 
 	return task;
