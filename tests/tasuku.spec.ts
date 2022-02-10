@@ -42,15 +42,18 @@ test('group tasks', async () => {
 		task('boolean', async () => false),
 	]);
 
-	expect<[
-		number,
-		string,
-		boolean,
-	]>(groupTasks.results).toEqual([
-		123,
-		'hello',
-		false,
-	]);
+	expect<{ result: number }>(groupTasks[0]).toMatchObject({
+		state: 'success',
+		result: 123,
+	});
+	expect<{ result: string }>(groupTasks[1]).toMatchObject({
+		state: 'success',
+		result: 'hello',
+	});
+	expect<{ result: boolean }>(groupTasks[2]).toMatchObject({
+		state: 'success',
+		result: false,
+	});
 });
 
 test('group tasks - concurrency - series', async () => {
@@ -73,7 +76,19 @@ test('group tasks - concurrency - series', async () => {
 	const elapsed = Date.now() - startTime;
 
 	expect(elapsed > 300 && elapsed < 400).toBe(true);
-	expect(groupTasks.results).toEqual([1, 2, 3]);
+
+	expect<{ result: number }>(groupTasks[0]).toMatchObject({
+		state: 'success',
+		result: 1,
+	});
+	expect<{ result: number }>(groupTasks[1]).toMatchObject({
+		state: 'success',
+		result: 2,
+	});
+	expect<{ result: number }>(groupTasks[2]).toMatchObject({
+		state: 'success',
+		result: 3,
+	});
 });
 
 test('group tasks - concurrency - parallel', async () => {
@@ -96,5 +111,17 @@ test('group tasks - concurrency - parallel', async () => {
 	const elapsed = Date.now() - startTime;
 
 	expect(elapsed > 100 && elapsed < 200).toBe(true);
-	expect(groupTasks.results).toEqual([1, 2, 3]);
+
+	expect<{ result: number }>(groupTasks[0]).toMatchObject({
+		state: 'success',
+		result: 1,
+	});
+	expect<{ result: number }>(groupTasks[1]).toMatchObject({
+		state: 'success',
+		result: 2,
+	});
+	expect<{ result: number }>(groupTasks[2]).toMatchObject({
+		state: 'success',
+		result: 3,
+	});
 });

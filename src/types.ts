@@ -1,8 +1,10 @@
 import type { Options } from 'p-map';
 
+type State = 'pending' | 'loading' | 'error' | 'warning' | 'success';
+
 export type TaskObject = {
 	title: string;
-	state: 'pending' | 'loading' | 'error' | 'warning' | 'success';
+	state: State;
 	children: TaskObject[];
 	status?: string;
 	output?: string;
@@ -27,11 +29,13 @@ export const runSymbol: unique symbol = Symbol('run');
 
 export type RegisteredTask<T = any> = {
 	[runSymbol]: () => Promise<T>; // ReturnType<TaskFunction<T>>;
+	task: TaskObject;
 	clear: () => void;
 };
 
 export type TaskAPI<Result = any> = {
 	result: Result;
+	state: State;
 	clear: () => void;
 };
 
@@ -54,13 +58,12 @@ type TaskGroupResults<
 > = {
 	[Key in keyof RegisteredTasks]: (
 		RegisteredTasks[Key] extends RegisteredTask<infer ReturnType>
-			? ReturnType
+			? TaskAPI<ReturnType>
 			: unknown
 	);
 };
 
-export type TaskGroupAPI<Results = any> = {
-	results: Results;
+export type TaskGroupAPI<Results = any[]> = Results & {
 	clear(): void;
 };
 

@@ -1,4 +1,3 @@
-
 <p align="center">
     <img src=".github/tasuku.svg">
     <br>
@@ -174,7 +173,7 @@ const groupedTasks = await task.group(task => [
     // ...
 ])
 
-console.log(groupedTasks.results) // ['one', 'two']
+console.log(groupedTasks) // [{ result: 'one' }, { result: 'two' }]
 ```
 
 <img src=".github/example-5.gif">
@@ -229,9 +228,12 @@ await Promise.all([
 
 Returns a Promise that resolves with object:
 ```ts
-type Task = {
-    // The result from taskFunction
+type TaskAPI = {
+    // Result from taskFunction
     result: any
+
+    // State of the task
+    state: 'error' | 'warning' | 'success'
 
     // Invoke to clear the results from the terminal
     clear: () => void
@@ -248,7 +250,7 @@ The name of the task displayed.
 #### taskFunction
 Type:
 ```ts
-type TaskFunction = (taskApi: {
+type TaskFunction = (taskInnerApi: {
     task: createTask
     setTitle: (title: string) => void
     setStatus: (status: string) => void
@@ -287,11 +289,19 @@ Call with a string or Error instance to put the task in an error state. Tasks au
 ### task.group(createTaskFunctions, options)
 Returns a Promise that resolves with object:
 ```ts
-type TaskGroup = {
-    // The results from the taskFunctions
-    results: any[]
+// The results from the taskFunctions
+type TaskGroupAPI = {
+    // Result from taskFunction
+    result: any
 
-    // Invoke to clear the results from the terminal
+    // State of the task
+    state: 'error' | 'warning' | 'success'
+
+    // Invoke to clear the task result
+    clear: () => void
+}[] & {
+
+    // Invoke to clear ALL results
     clear: () => void
 }
 ```

@@ -16,4 +16,6 @@ const groupApi = await task.group(task => [
 	task('title', async () => 'string'),
 ]);
 
-expectType<[boolean, number, string]>(groupApi.results);
+expectType<boolean>(groupApi[0].result);
+expectType<number>(groupApi[1].result);
+expectType<string>(groupApi[2].result);
