@@ -18,9 +18,9 @@ export type TaskInnerAPI = {
 	task: Task;
 	setTitle(title: string): void;
 	setStatus(status?: string): void;
+	setWarning(warning?: Error | string): void;
+	setError(error?: Error | string): void;
 	setOutput(output: string | { message: string }): void;
-	setWarning(warning: Error | string): void;
-	setError(error: Error| string): void;
 };
 
 export type TaskFunction<T> = (innerApi: TaskInnerAPI) => Promise<T>;

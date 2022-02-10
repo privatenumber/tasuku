@@ -36,11 +36,17 @@ const createTaskInnerApi = (taskState: TaskObject) => {
 		},
 		setWarning(warning) {
 			taskState.state = 'warning';
-			api.setOutput(warning);
+
+			if (warning !== undefined) {
+				api.setOutput(warning);
+			}
 		},
 		setError(error) {
 			taskState.state = 'error';
-			api.setOutput(error);
+
+			if (error !== undefined) {
+				api.setOutput(error);
+			}
 		},
 	};
 	return api;
