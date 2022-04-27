@@ -25,7 +25,7 @@
 		"lint": "eslint .",
 		"test": "jest",
 		"typecheck": "tsc --noEmit && :",
-		"build": "rm -rf dist && tsup src/index.ts --dts-resolve --minify --no-splitting --external 'yoga-layout-prebuilt'"
+		"build": "rm -rf dist && tsup src/index.ts --dts-resolve --no-splitting --external 'yoga-layout-prebuilt'"
 	},
 	"husky": {
 		"hooks": {
