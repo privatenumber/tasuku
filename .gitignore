@@ -22,5 +22,8 @@ node_modules/
 # VSCode
 .vscode
 
+# Cache
+.eslintcache
+
 # Distribution
 dist
