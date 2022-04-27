@@ -1,0 +1,75 @@
+{
+	"name": "tasuku",
+	"version": "0.0.0-semantic-release",
+	"description": "タスク — The minimal task runner",
+	"keywords": [
+		"simple",
+		"minimal",
+		"task",
+		"runner",
+		"cli"
+	],
+	"license": "MIT",
+	"repository": "privatenumber/tasuku",
+	"funding": "https://github.com/privatenumber/tasuku?sponsor=1",
+	"author": {
+		"name": "Hiroki Osame",
+		"email": "hiroki.osame@gmail.com"
+	},
+	"files": [
+		"bin",
+		"dist"
+	],
+	"main": "./dist/index.js",
+	"scripts": {
+		"lint": "eslint .",
+		"test": "jest",
+		"typecheck": "tsc --noEmit && :",
+		"build": "rm -rf dist && tsup src/index.ts --dts-resolve --no-splitting --external 'yoga-layout-prebuilt'"
+	},
+	"husky": {
+		"hooks": {
+			"pre-commit": "lint-staged"
+		}
+	},
+	"lint-staged": {
+		"*.{js,ts,tsx}": "eslint",
+		"*.{ts,tsx}": "npm run typecheck"
+	},
+	"dependencies": {
+		"yoga-layout-prebuilt": "1.10.0"
+	},
+	"devDependencies": {
+		"@pvtnbr/eslint-config-react": "^0.1.15",
+		"@types/jest": "^27.0.1",
+		"@types/node": "^16.7.10",
+		"@types/react": "^17.0.19",
+		"es-jest": "^1.3.0",
+		"eslint": "^7.32.0",
+		"esno": "^0.9.1",
+		"husky": "^4.3.8",
+		"ink": "^3.0.9",
+		"ink-task-list": "^1.1.0",
+		"jest": "^27.1.0",
+		"lint-staged": "^11.1.2",
+		"p-map": "^5.1.0",
+		"react": "^17.0.2",
+		"tsup": "^4.14.0",
+		"typescript": "^4.4.2",
+		"valtio": "^1.2.2"
+	},
+	"eslintConfig": {
+		"extends": "@pvtnbr/eslint-config-react",
+		"rules": {
+			"react/prop-types": "off",
+			"@typescript-eslint/no-shadow": [
+				"error",
+				{
+					"allow": [
+						"task"
+					]
+				}
+			]
+		}
+	}
+}
