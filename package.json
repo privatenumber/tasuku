@@ -21,11 +21,18 @@
 		"dist"
 	],
 	"main": "./dist/index.js",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		"require": "./dist/index.js",
+		"import": "./dist/index.mjs",
+		"types": "./dist/index.d.ts"
+	},
 	"scripts": {
 		"lint": "eslint .",
 		"test": "jest",
 		"typecheck": "tsc --noEmit && :",
-		"build": "rm -rf dist && tsup src/index.ts --dts-resolve --no-splitting --external 'yoga-layout-prebuilt'"
+		"build": "pkgroll"
 	},
 	"husky": {
 		"hooks": {
@@ -53,6 +60,7 @@
 		"jest": "^27.1.0",
 		"lint-staged": "^11.1.2",
 		"p-map": "^5.1.0",
+		"pkgroll": "^1.0.5",
 		"react": "^17.0.2",
 		"tsup": "^4.14.0",
 		"typescript": "^4.4.2",
