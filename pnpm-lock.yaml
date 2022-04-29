@@ -16,7 +16,7 @@ specifiers:
   p-map: ^5.3.0
   pkgroll: ^1.1.1
   react: ^17.0.2
-  tsd: ^0.19.1
+  tsd: ^0.20.0
   typescript: ^4.6.4
   valtio: ^1.2.11
   yoga-layout-prebuilt: 1.10.0
@@ -40,7 +40,7 @@ devDependencies:
   p-map: 5.3.0
   pkgroll: 1.1.1_typescript@4.6.4
   react: 17.0.2
-  tsd: 0.19.1
+  tsd: 0.20.0
   typescript: 4.6.4
   valtio: 1.2.11_react@17.0.2
 
@@ -787,8 +787,8 @@ packages:
     engines: {node: '>= 6'}
     dev: true
 
-  /@tsd/typescript/4.5.5:
-    resolution: {integrity: sha512-TxQ9QiUT94ZjKu++ta/iwTMVHsix4ApohnaHPTSd58WQuTjPIELP0tUYcW7lT6psz7yZiU4eRw+X4v/XV830Sw==}
+  /@tsd/typescript/4.6.4:
+    resolution: {integrity: sha512-+9o716aWbcjKLbV4bCrGlJKJbS0UZNogfVk9U7ffooYSf/9GOJ6wwahTSrRjW7mWQdywQ/sIg9xxbuPLnkmhwg==}
     hasBin: true
     dev: true
 
@@ -2752,7 +2752,7 @@ packages:
       '@nodelib/fs.walk': 1.2.8
       glob-parent: 5.1.2
       merge2: 1.4.1
-      micromatch: 4.0.4
+      micromatch: 4.0.5
     dev: true
 
   /fast-json-stable-stringify/2.1.0:
@@ -4292,6 +4292,14 @@ packages:
       picomatch: 2.3.1
     dev: true
 
+  /micromatch/4.0.5:
+    resolution: {integrity: sha512-DMy+ERcEW2q8Z2Po+WNXuw3c5YaUSFjAO5GsJqfEl7UjvtIuFKO6ZrKvcItdy98dwFI2N1tg3zNIdKaQT+aNdA==}
+    engines: {node: '>=8.6'}
+    dependencies:
+      braces: 3.0.2
+      picomatch: 2.3.1
+    dev: true
+
   /mime-db/1.51.0:
     resolution: {integrity: sha512-5y8A56jg7XVQx2mbv1lu49NR4dokRnhZYTtL+KGfaa27uq4pSTXkwQkFJl4pkRMyNFz/EtYDSkiiEHx3F7UN6g==}
     engines: {node: '>= 0.6'}
@@ -5366,12 +5374,12 @@ packages:
       strip-bom: 3.0.0
     dev: true
 
-  /tsd/0.19.1:
-    resolution: {integrity: sha512-pSwchclr+ADdxlahRUQXUrdAIOjXx1T1PQV+fLfVLuo/S4z+T00YU84fH8iPlZxyA2pWgJjo42BG1p9SDb4NOw==}
+  /tsd/0.20.0:
+    resolution: {integrity: sha512-iba/JlyT3qtnA9t8VrX2Fipu3L31U48oRIf1PNs+lIwQ7n63GTkt9eQlB5bLtfb7nYfy9t8oZzs+K4QEoEIS8Q==}
     engines: {node: '>=12'}
     hasBin: true
     dependencies:
-      '@tsd/typescript': 4.5.5
+      '@tsd/typescript': 4.6.4
       eslint-formatter-pretty: 4.1.0
       globby: 11.1.0
       meow: 9.0.0
