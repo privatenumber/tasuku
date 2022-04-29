@@ -4,6 +4,23 @@ import type { TaskObject } from '../types';
 
 type DeepReadonly<T> = { readonly [K in keyof T]: DeepReadonly<T[K]> };
 
+// From: https://github.com/sindresorhus/cli-spinners/blob/00de8fbeee16fa49502fa4f687449f70f2c8ca2c/spinners.json#L2
+const spinner = {
+	interval: 100,
+	frames: [
+		'⠋',
+		'⠙',
+		'⠹',
+		'⠸',
+		'⠼',
+		'⠴',
+		'⠦',
+		'⠧',
+		'⠇',
+		'⠏',
+	],
+};
+
 const TaskListItem: FC<{
 	task: DeepReadonly<TaskObject>;
 }> = ({
@@ -25,6 +42,7 @@ const TaskListItem: FC<{
 			state={task.state}
 			label={task.title}
 			status={task.status}
+			spinner={spinner}
 			output={task.output}
 			isExpanded={childTasks.length > 0}
 		>

@@ -10,7 +10,7 @@ specifiers:
   esno: ^0.14.1
   husky: ^4.3.8
   ink: ^3.2.0
-  ink-task-list: github:privatenumber/ink-task-list#built/pkgroll
+  ink-task-list: github:privatenumber/ink-task-list#built/externalize-spinners
   jest: ^27.5.0
   lint-staged: ^12.4.1
   p-map: ^5.3.0
@@ -34,7 +34,7 @@ devDependencies:
   esno: 0.14.1
   husky: 4.3.8
   ink: 3.2.0_@types+react@18.0.8+react@17.0.2
-  ink-task-list: github.com/privatenumber/ink-task-list/8dac6f9f5c12f363f637581b9d9269bb84563ca6_ink@3.2.0+react@17.0.2
+  ink-task-list: github.com/privatenumber/ink-task-list/62d7f1245a1a2e3e48593af07324a2a9b866ea3c_ink@3.2.0+react@17.0.2
   jest: 27.5.0
   lint-staged: 12.4.1
   p-map: 5.3.0
@@ -1504,11 +1504,6 @@ packages:
       restore-cursor: 3.1.0
     dev: true
 
-  /cli-spinners/2.6.1:
-    resolution: {integrity: sha512-x/5fWmGMnbKQAaNwN+UZlV79qBLM9JFnJuJ03gIi5whrob0xV0ofNVHy9DhwGdsMJQc2OKv0oGmLzvaqvAVv+g==}
-    engines: {node: '>=6'}
-    dev: true
-
   /cli-truncate/2.1.0:
     resolution: {integrity: sha512-n8fOixwDD6b/ObinzTrp1ZKFzbgvKZvuz/TvejnLn1aQfC6r52XEx85FmuC+3HI+JM7coBRXUvNqEU2PHVrHpg==}
     engines: {node: '>=8'}
@@ -2775,13 +2770,6 @@ packages:
       bser: 2.1.1
     dev: true
 
-  /figures/3.2.0:
-    resolution: {integrity: sha512-yaduQFRKLXYOGgEn6AZau90j3ggSOyiqXU0F9JZfeXYhNa+Jk4X+s45A2zg5jns87GAFa34BBm2kXw4XpNcbdg==}
-    engines: {node: '>=8'}
-    dependencies:
-      escape-string-regexp: 1.0.5
-    dev: true
-
   /file-entry-cache/6.0.1:
     resolution: {integrity: sha512-7Gps/XWymbLk2QLYK4NzpMOrYjMhdIxXuIvy2QBsLE6ljuodKvdkWs/cpyJJ3CVIVpH0Oi1Hvg1ovbMzLdFBBg==}
     engines: {node: ^10.12.0 || >=12.0.0}
@@ -3138,18 +3126,6 @@ packages:
 
   /inherits/2.0.4:
     resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
-    dev: true
-
-  /ink-spinner/4.0.3_ink@3.2.0+react@17.0.2:
-    resolution: {integrity: sha512-uJ4nbH00MM9fjTJ5xdw0zzvtXMkeGb0WV6dzSWvFv2/+ks6FIhpkt+Ge/eLdh0Ah6Vjw5pLMyNfoHQpRDRVFbQ==}
-    engines: {node: '>=10'}
-    peerDependencies:
-      ink: '>=3.0.5'
-      react: '>=16.8.2'
-    dependencies:
-      cli-spinners: 2.6.1
-      ink: 3.2.0_@types+react@18.0.8+react@17.0.2
-      react: 17.0.2
     dev: true
 
   /ink/3.2.0_@types+react@18.0.8+react@17.0.2:
@@ -5740,19 +5716,15 @@ packages:
     dependencies:
       '@types/yoga-layout': 1.9.2
 
-  github.com/privatenumber/ink-task-list/8dac6f9f5c12f363f637581b9d9269bb84563ca6_ink@3.2.0+react@17.0.2:
-    resolution: {tarball: https://codeload.github.com/privatenumber/ink-task-list/tar.gz/8dac6f9f5c12f363f637581b9d9269bb84563ca6}
-    id: github.com/privatenumber/ink-task-list/8dac6f9f5c12f363f637581b9d9269bb84563ca6
+  github.com/privatenumber/ink-task-list/62d7f1245a1a2e3e48593af07324a2a9b866ea3c_ink@3.2.0+react@17.0.2:
+    resolution: {tarball: https://codeload.github.com/privatenumber/ink-task-list/tar.gz/62d7f1245a1a2e3e48593af07324a2a9b866ea3c}
+    id: github.com/privatenumber/ink-task-list/62d7f1245a1a2e3e48593af07324a2a9b866ea3c
     name: ink-task-list
     version: 0.0.0-semantic-release
     peerDependencies:
       ink: '>=3.0.0'
       react: '>=16.8.0'
     dependencies:
-      cli-spinners: 2.6.1
-      figures: 3.2.0
       ink: 3.2.0_@types+react@18.0.8+react@17.0.2
-      ink-spinner: 4.0.3_ink@3.2.0+react@17.0.2
-      prop-types: 15.8.1
       react: 17.0.2
     dev: true
