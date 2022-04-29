@@ -47,7 +47,7 @@
 		"yoga-layout-prebuilt": "1.10.0"
 	},
 	"devDependencies": {
-		"@pvtnbr/eslint-config": "^0.19.1",
+		"@pvtnbr/eslint-config": "^0.20.0",
 		"@types/jest": "^27.4.1",
 		"@types/node": "^17.0.30",
 		"@types/react": "^18.0.8",
