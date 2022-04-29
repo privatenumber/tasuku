@@ -14,7 +14,7 @@ specifiers:
   jest: ^27.5.0
   lint-staged: ^12.3.3
   p-map: ^5.3.0
-  pkgroll: github:privatenumber/pkgroll#built/conditional-require-sideeffects
+  pkgroll: ^1.1.1
   react: ^17.0.2
   tsd: ^0.19.1
   typescript: ^4.6.3
@@ -38,7 +38,7 @@ devDependencies:
   jest: 27.5.0
   lint-staged: 12.3.3
   p-map: 5.3.0
-  pkgroll: github.com/privatenumber/pkgroll/efbc4485087554083a878e6fa5fe8fd97b10818a_typescript@4.6.3
+  pkgroll: 1.1.1_typescript@4.6.3
   react: 17.0.2
   tsd: 0.19.1
   typescript: 4.6.3
@@ -4663,6 +4663,28 @@ packages:
       find-up: 5.0.0
     dev: true
 
+  /pkgroll/1.1.1_typescript@4.6.3:
+    resolution: {integrity: sha512-AbQa3qND8GXmAavGCNkqBCMp40GfLHAKi6EbC193xb6rjDpys4LzQxOh4Jg7IPYZ5S8wDw4/uPc+h4E/1f0Gmw==}
+    hasBin: true
+    peerDependencies:
+      typescript: ^4.1
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+    dependencies:
+      '@rollup/plugin-alias': 3.1.9_rollup@2.70.2
+      '@rollup/plugin-commonjs': 22.0.0_rollup@2.70.2
+      '@rollup/plugin-inject': 4.0.4_rollup@2.70.2
+      '@rollup/plugin-json': 4.1.0_rollup@2.70.2
+      '@rollup/plugin-node-resolve': 13.2.1_rollup@2.70.2
+      '@rollup/plugin-replace': 4.0.0_rollup@2.70.2
+      '@rollup/pluginutils': 4.2.1
+      esbuild: 0.14.38
+      magic-string: 0.26.1
+      rollup: 2.70.2
+      typescript: 4.6.3
+    dev: true
+
   /please-upgrade-node/3.2.0:
     resolution: {integrity: sha512-gQR3WpIgNIKwBMVLkpMUeR3e1/E1y42bqDQZfql+kDeXd8COYfM8PQA4X6y7a8u9Ua9FHmsrrmirW2vHs45hWg==}
     dependencies:
@@ -5718,29 +5740,4 @@ packages:
       ink-spinner: 4.0.3_ink@3.2.0+react@17.0.2
       prop-types: 15.8.1
       react: 17.0.2
-    dev: true
-
-  github.com/privatenumber/pkgroll/efbc4485087554083a878e6fa5fe8fd97b10818a_typescript@4.6.3:
-    resolution: {tarball: https://codeload.github.com/privatenumber/pkgroll/tar.gz/efbc4485087554083a878e6fa5fe8fd97b10818a}
-    id: github.com/privatenumber/pkgroll/efbc4485087554083a878e6fa5fe8fd97b10818a
-    name: pkgroll
-    version: 0.0.0-semantic-release
-    hasBin: true
-    peerDependencies:
-      typescript: ^4.1
-    peerDependenciesMeta:
-      typescript:
-        optional: true
-    dependencies:
-      '@rollup/plugin-alias': 3.1.9_rollup@2.70.2
-      '@rollup/plugin-commonjs': 22.0.0_rollup@2.70.2
-      '@rollup/plugin-inject': 4.0.4_rollup@2.70.2
-      '@rollup/plugin-json': 4.1.0_rollup@2.70.2
-      '@rollup/plugin-node-resolve': 13.2.1_rollup@2.70.2
-      '@rollup/plugin-replace': 4.0.0_rollup@2.70.2
-      '@rollup/pluginutils': 4.2.1
-      esbuild: 0.14.38
-      magic-string: 0.26.1
-      rollup: 2.70.2
-      typescript: 4.6.3
     dev: true
