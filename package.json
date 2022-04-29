@@ -58,7 +58,7 @@
 		"ink": "^3.2.0",
 		"ink-task-list": "github:privatenumber/ink-task-list#built/pkgroll",
 		"jest": "^27.5.0",
-		"lint-staged": "^12.3.3",
+		"lint-staged": "^12.4.1",
 		"p-map": "^5.3.0",
 		"pkgroll": "^1.1.1",
 		"react": "^17.0.2",
