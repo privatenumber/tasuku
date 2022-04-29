@@ -110,7 +110,7 @@ test('group tasks - concurrency - parallel', async () => {
 
 	const elapsed = Date.now() - startTime;
 
-	expect(elapsed > 100 && elapsed < 200).toBe(true);
+	expect(elapsed > 100 && elapsed < 300).toBe(true);
 
 	expect<{ result: number }>(groupTasks[0]).toMatchObject({
 		state: 'success',
