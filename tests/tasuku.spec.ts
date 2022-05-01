@@ -1,3 +1,4 @@
+import { test, describe, expect } from 'manten';
 import task from '../src/index';
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => {
@@ -35,93 +36,95 @@ test('nested tasks', async () => {
 	expect<number>(someTask.result).toBe(1);
 });
 
-test('group tasks', async () => {
-	const groupTasks = await task.group(task => [
-		task('number', async () => 123),
-		task('string', async () => 'hello'),
-		task('boolean', async () => false),
-	]);
+describe('group tasks', ({ test }) => {
+	test('task results', async () => {
+		const groupTasks = await task.group(task => [
+			task('number', async () => 123),
+			task('string', async () => 'hello'),
+			task('boolean', async () => false),
+		]);
 
-	expect<{ result: number }>(groupTasks[0]).toMatchObject({
-		state: 'success',
-		result: 123,
+		expect<{ result: number }>(groupTasks[0]).toMatchObject({
+			state: 'success',
+			result: 123,
+		});
+		expect<{ result: string }>(groupTasks[1]).toMatchObject({
+			state: 'success',
+			result: 'hello',
+		});
+		expect<{ result: boolean }>(groupTasks[2]).toMatchObject({
+			state: 'success',
+			result: false,
+		});
 	});
-	expect<{ result: string }>(groupTasks[1]).toMatchObject({
-		state: 'success',
-		result: 'hello',
+
+	test('concurrency - series', async () => {
+		const startTime = Date.now();
+		const groupTasks = await task.group(task => [
+			task('one', async () => {
+				await sleep(100);
+				return 1;
+			}),
+			task('two', async () => {
+				await sleep(100);
+				return 2;
+			}),
+			task('three', async () => {
+				await sleep(100);
+				return 3;
+			}),
+		]);
+
+		const elapsed = Date.now() - startTime;
+
+		expect(elapsed > 300 && elapsed < 400).toBe(true);
+
+		expect<{ result: number }>(groupTasks[0]).toMatchObject({
+			state: 'success',
+			result: 1,
+		});
+		expect<{ result: number }>(groupTasks[1]).toMatchObject({
+			state: 'success',
+			result: 2,
+		});
+		expect<{ result: number }>(groupTasks[2]).toMatchObject({
+			state: 'success',
+			result: 3,
+		});
 	});
-	expect<{ result: boolean }>(groupTasks[2]).toMatchObject({
-		state: 'success',
-		result: false,
-	});
-});
 
-test('group tasks - concurrency - series', async () => {
-	const startTime = Date.now();
-	const groupTasks = await task.group(task => [
-		task('one', async () => {
-			await sleep(100);
-			return 1;
-		}),
-		task('two', async () => {
-			await sleep(100);
-			return 2;
-		}),
-		task('three', async () => {
-			await sleep(100);
-			return 3;
-		}),
-	]);
+	test('concurrency - parallel', async () => {
+		const startTime = Date.now();
+		const groupTasks = await task.group(task => [
+			task('one', async () => {
+				await sleep(100);
+				return 1;
+			}),
+			task('two', async () => {
+				await sleep(100);
+				return 2;
+			}),
+			task('three', async () => {
+				await sleep(100);
+				return 3;
+			}),
+		], { concurrency: Number.POSITIVE_INFINITY });
 
-	const elapsed = Date.now() - startTime;
+		const elapsed = Date.now() - startTime;
 
-	expect(elapsed > 300 && elapsed < 400).toBe(true);
+		expect(elapsed > 100 && elapsed < 300).toBe(true);
 
-	expect<{ result: number }>(groupTasks[0]).toMatchObject({
-		state: 'success',
-		result: 1,
-	});
-	expect<{ result: number }>(groupTasks[1]).toMatchObject({
-		state: 'success',
-		result: 2,
-	});
-	expect<{ result: number }>(groupTasks[2]).toMatchObject({
-		state: 'success',
-		result: 3,
-	});
-});
-
-test('group tasks - concurrency - parallel', async () => {
-	const startTime = Date.now();
-	const groupTasks = await task.group(task => [
-		task('one', async () => {
-			await sleep(100);
-			return 1;
-		}),
-		task('two', async () => {
-			await sleep(100);
-			return 2;
-		}),
-		task('three', async () => {
-			await sleep(100);
-			return 3;
-		}),
-	], { concurrency: Number.POSITIVE_INFINITY });
-
-	const elapsed = Date.now() - startTime;
-
-	expect(elapsed > 100 && elapsed < 300).toBe(true);
-
-	expect<{ result: number }>(groupTasks[0]).toMatchObject({
-		state: 'success',
-		result: 1,
-	});
-	expect<{ result: number }>(groupTasks[1]).toMatchObject({
-		state: 'success',
-		result: 2,
-	});
-	expect<{ result: number }>(groupTasks[2]).toMatchObject({
-		state: 'success',
-		result: 3,
+		expect<{ result: number }>(groupTasks[0]).toMatchObject({
+			state: 'success',
+			result: 1,
+		});
+		expect<{ result: number }>(groupTasks[1]).toMatchObject({
+			state: 'success',
+			result: 2,
+		});
+		expect<{ result: number }>(groupTasks[2]).toMatchObject({
+			state: 'success',
+			result: 3,
+		});
 	});
 });
