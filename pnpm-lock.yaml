@@ -10,11 +10,11 @@ specifiers:
   esno: ^0.14.1
   husky: ^4.3.8
   ink: ^3.2.0
-  ink-task-list: github:privatenumber/ink-task-list#built/pkgroll
+  ink-task-list: ^2.0.0
   jest: ^27.5.0
   lint-staged: ^12.4.1
   p-map: ^5.3.0
-  pkgroll: ^1.1.1
+  pkgroll: ^1.1.3
   react: ^17.0.2
   tsd: ^0.20.0
   typescript: ^4.6.4
@@ -34,11 +34,11 @@ devDependencies:
   esno: 0.14.1
   husky: 4.3.8
   ink: 3.2.0_@types+react@18.0.8+react@17.0.2
-  ink-task-list: github.com/privatenumber/ink-task-list/8dac6f9f5c12f363f637581b9d9269bb84563ca6_ink@3.2.0+react@17.0.2
+  ink-task-list: 2.0.0_ink@3.2.0+react@17.0.2
   jest: 27.5.0
   lint-staged: 12.4.1
   p-map: 5.3.0
-  pkgroll: 1.1.1_typescript@4.6.4
+  pkgroll: 1.1.3_typescript@4.6.4
   react: 17.0.2
   tsd: 0.20.0
   typescript: 4.6.4
@@ -700,7 +700,7 @@ packages:
       estree-walker: 2.0.2
       glob: 7.2.0
       is-reference: 1.2.1
-      magic-string: 0.25.7
+      magic-string: 0.25.9
       resolve: 1.22.0
       rollup: 2.70.2
     dev: true
@@ -712,7 +712,7 @@ packages:
     dependencies:
       '@rollup/pluginutils': 3.1.0_rollup@2.70.2
       estree-walker: 2.0.2
-      magic-string: 0.25.7
+      magic-string: 0.25.9
       rollup: 2.70.2
     dev: true
 
@@ -746,7 +746,7 @@ packages:
       rollup: ^1.20.0 || ^2.0.0
     dependencies:
       '@rollup/pluginutils': 3.1.0_rollup@2.70.2
-      magic-string: 0.25.7
+      magic-string: 0.25.9
       rollup: 2.70.2
     dev: true
 
@@ -1502,11 +1502,6 @@ packages:
     engines: {node: '>=8'}
     dependencies:
       restore-cursor: 3.1.0
-    dev: true
-
-  /cli-spinners/2.6.1:
-    resolution: {integrity: sha512-x/5fWmGMnbKQAaNwN+UZlV79qBLM9JFnJuJ03gIi5whrob0xV0ofNVHy9DhwGdsMJQc2OKv0oGmLzvaqvAVv+g==}
-    engines: {node: '>=6'}
     dev: true
 
   /cli-truncate/2.1.0:
@@ -2775,13 +2770,6 @@ packages:
       bser: 2.1.1
     dev: true
 
-  /figures/3.2.0:
-    resolution: {integrity: sha512-yaduQFRKLXYOGgEn6AZau90j3ggSOyiqXU0F9JZfeXYhNa+Jk4X+s45A2zg5jns87GAFa34BBm2kXw4XpNcbdg==}
-    engines: {node: '>=8'}
-    dependencies:
-      escape-string-regexp: 1.0.5
-    dev: true
-
   /file-entry-cache/6.0.1:
     resolution: {integrity: sha512-7Gps/XWymbLk2QLYK4NzpMOrYjMhdIxXuIvy2QBsLE6ljuodKvdkWs/cpyJJ3CVIVpH0Oi1Hvg1ovbMzLdFBBg==}
     engines: {node: ^10.12.0 || >=12.0.0}
@@ -3140,14 +3128,12 @@ packages:
     resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
     dev: true
 
-  /ink-spinner/4.0.3_ink@3.2.0+react@17.0.2:
-    resolution: {integrity: sha512-uJ4nbH00MM9fjTJ5xdw0zzvtXMkeGb0WV6dzSWvFv2/+ks6FIhpkt+Ge/eLdh0Ah6Vjw5pLMyNfoHQpRDRVFbQ==}
-    engines: {node: '>=10'}
+  /ink-task-list/2.0.0_ink@3.2.0+react@17.0.2:
+    resolution: {integrity: sha512-+WadfalLGUrYT/5D4cHeShN73t5urEsI5VOwFYw3qNWdOL+GQVTLbTS0tCZkzIcBcL+dfZcQAtuoW56ZBZV+Bg==}
     peerDependencies:
-      ink: '>=3.0.5'
-      react: '>=16.8.2'
+      ink: '>=3.0.0'
+      react: '>=16.8.0'
     dependencies:
-      cli-spinners: 2.6.1
       ink: 3.2.0_@types+react@18.0.8+react@17.0.2
       react: 17.0.2
     dev: true
@@ -4197,8 +4183,8 @@ packages:
       yallist: 4.0.0
     dev: true
 
-  /magic-string/0.25.7:
-    resolution: {integrity: sha512-4CrMT5DOHTDk4HYDlzmwu4FVCcIYI8gauveasrdCu2IKIFOJ3f0v/8MDGJCDL9oD2ppz/Av1b0Nj345H9M+XIA==}
+  /magic-string/0.25.9:
+    resolution: {integrity: sha512-RmF0AsMzgt25qzqqLc1+MbHmhdx0ojF2Fvs4XnOqz2ZOBXzzkEwc/dJQZCYHAn7v1jbVOjAZfK8msRn4BxO4VQ==}
     dependencies:
       sourcemap-codec: 1.4.8
     dev: true
@@ -4678,8 +4664,8 @@ packages:
       find-up: 5.0.0
     dev: true
 
-  /pkgroll/1.1.1_typescript@4.6.4:
-    resolution: {integrity: sha512-AbQa3qND8GXmAavGCNkqBCMp40GfLHAKi6EbC193xb6rjDpys4LzQxOh4Jg7IPYZ5S8wDw4/uPc+h4E/1f0Gmw==}
+  /pkgroll/1.1.3_typescript@4.6.4:
+    resolution: {integrity: sha512-WBeaxyT1o1sWBJvsMLVde645uuk0/GdJJJX+7MwfH8E2lpVPZx4UUmTDspX5I0G4UvaH67jBzhYkW2UT1+gYTQ==}
     hasBin: true
     peerDependencies:
       typescript: ^4.1
@@ -5739,20 +5725,3 @@ packages:
     engines: {node: '>=8'}
     dependencies:
       '@types/yoga-layout': 1.9.2
-
-  github.com/privatenumber/ink-task-list/8dac6f9f5c12f363f637581b9d9269bb84563ca6_ink@3.2.0+react@17.0.2:
-    resolution: {tarball: https://codeload.github.com/privatenumber/ink-task-list/tar.gz/8dac6f9f5c12f363f637581b9d9269bb84563ca6}
-    id: github.com/privatenumber/ink-task-list/8dac6f9f5c12f363f637581b9d9269bb84563ca6
-    name: ink-task-list
-    version: 0.0.0-semantic-release
-    peerDependencies:
-      ink: '>=3.0.0'
-      react: '>=16.8.0'
-    dependencies:
-      cli-spinners: 2.6.1
-      figures: 3.2.0
-      ink: 3.2.0_@types+react@18.0.8+react@17.0.2
-      ink-spinner: 4.0.3_ink@3.2.0+react@17.0.2
-      prop-types: 15.8.1
-      react: 17.0.2
-    dev: true
