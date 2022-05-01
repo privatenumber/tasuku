@@ -29,7 +29,7 @@ devDependencies:
   eslint: 8.14.0
   esno: 0.14.1
   husky: 4.3.8
-  ink: github.com/privatenumber/ink/25b6fb728b80954e7eacc7abe9771656f515ade4_@types+react@18.0.8+react@17.0.2
+  ink: github.com/privatenumber/ink/a981c11463934f89cfbfd7061df24dda97882ca9_@types+react@18.0.8+react@17.0.2
   ink-task-list: 2.0.0_ink@3.2.0+react@17.0.2
   lint-staged: 12.4.1
   manten: 0.0.3
@@ -2173,7 +2173,7 @@ packages:
       ink: '>=3.0.0'
       react: '>=16.8.0'
     dependencies:
-      ink: github.com/privatenumber/ink/25b6fb728b80954e7eacc7abe9771656f515ade4_@types+react@18.0.8+react@17.0.2
+      ink: github.com/privatenumber/ink/a981c11463934f89cfbfd7061df24dda97882ca9_@types+react@18.0.8+react@17.0.2
       react: 17.0.2
     dev: true
 
@@ -2576,6 +2576,10 @@ packages:
 
   /lodash.merge/4.6.2:
     resolution: {integrity: sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==}
+    dev: true
+
+  /lodash.throttle/4.1.1:
+    resolution: {integrity: sha1-wj6RtxAkKscMN/HhzaknTMOb8vQ=}
     dev: true
 
   /lodash/4.17.21:
@@ -3808,9 +3812,9 @@ packages:
     dependencies:
       '@types/yoga-layout': 1.9.2
 
-  github.com/privatenumber/ink/25b6fb728b80954e7eacc7abe9771656f515ade4_@types+react@18.0.8+react@17.0.2:
-    resolution: {tarball: https://codeload.github.com/privatenumber/ink/tar.gz/25b6fb728b80954e7eacc7abe9771656f515ade4}
-    id: github.com/privatenumber/ink/25b6fb728b80954e7eacc7abe9771656f515ade4
+  github.com/privatenumber/ink/a981c11463934f89cfbfd7061df24dda97882ca9_@types+react@18.0.8+react@17.0.2:
+    resolution: {tarball: https://codeload.github.com/privatenumber/ink/tar.gz/a981c11463934f89cfbfd7061df24dda97882ca9}
+    id: github.com/privatenumber/ink/a981c11463934f89cfbfd7061df24dda97882ca9
     name: ink
     version: 3.2.0
     engines: {node: '>=10'}
@@ -3834,6 +3838,7 @@ packages:
       code-excerpt: 3.0.0
       indent-string: 4.0.0
       is-ci: 2.0.0
+      lodash.throttle: 4.1.1
       patch-console: 1.0.0
       react: 17.0.2
       react-reconciler: 0.26.2_react@17.0.2
