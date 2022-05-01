@@ -32,7 +32,7 @@
 		"test": "jest",
 		"test:tsd": "tsd",
 		"typecheck": "tsc --noEmit && :",
-		"build": "pkgroll --env.NODE_ENV=production --env.DEV=false"
+		"build": "pkgroll --env.NODE_ENV=production --env.DEV=false --minify"
 	},
 	"husky": {
 		"hooks": {
