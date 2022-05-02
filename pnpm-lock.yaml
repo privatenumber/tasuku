@@ -16,7 +16,7 @@ specifiers:
   react: ^17.0.2
   tsd: ^0.20.0
   typescript: ^4.6.4
-  valtio: ^1.2.11
+  valtio: ^1.6.0
   yoga-layout-prebuilt: 1.10.0
 
 dependencies:
@@ -38,7 +38,7 @@ devDependencies:
   react: 17.0.2
   tsd: 0.20.0
   typescript: 4.6.4
-  valtio: 1.2.11_react@17.0.2
+  valtio: 1.6.0_react@17.0.2
 
 packages:
 
@@ -3108,8 +3108,8 @@ packages:
     engines: {node: '>=4'}
     dev: true
 
-  /proxy-compare/2.0.2:
-    resolution: {integrity: sha512-3qUXJBariEj3eO90M3Rgqq3+/P5Efl0t/dl9g/1uVzIQmO3M+ql4hvNH3mYdu8H+1zcKv07YvL55tsY74jmH1A==}
+  /proxy-compare/2.1.0:
+    resolution: {integrity: sha512-wapJ3h/w8fRSyPEG0y2WMV+tf9xwvj3nxM6aHVuPEOwKs/t5xLSKZb44ubNTiqq2T6lmEMHEWGMTaU2L6ddaFA==}
     dev: true
 
   /punycode/2.1.1:
@@ -3663,6 +3663,14 @@ packages:
       punycode: 2.1.1
     dev: true
 
+  /use-sync-external-store/1.0.0_react@17.0.2:
+    resolution: {integrity: sha512-AFVsxg5GkFg8GDcxnl+Z0lMAz9rE8DGJCc28qnBuQF7lac57B5smLcT37aXpXIIPz75rW4g3eXHPjhHwdGskOw==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0-rc
+    dependencies:
+      react: 17.0.2
+    dev: true
+
   /util-deprecate/1.0.2:
     resolution: {integrity: sha1-RQ1Nyfpw3nMnYvvS1KKJgUGaDM8=}
     dev: true
@@ -3678,26 +3686,33 @@ packages:
       spdx-expression-parse: 3.0.1
     dev: true
 
-  /valtio/1.2.11_react@17.0.2:
-    resolution: {integrity: sha512-zNbJsBNQ0EpzZnOUpuy6lUlpGSvkZu+/hZ9g7ifY3AQxo1RkqL7Ld6fVxRNLE04tVwOMNiDOgYihpEd6apLrog==}
+  /valtio/1.6.0_react@17.0.2:
+    resolution: {integrity: sha512-I/AUMRGlGpskbTdwYbiJutMKq4AHPgV8GWMwvPPQ6jdAhlWO4gheK4bTKZ22Ff5ONXjjZE8mQ0vL5l0em4wJGg==}
     engines: {node: '>=12.7.0'}
     peerDependencies:
       '@babel/helper-module-imports': '>=7.12'
       '@babel/types': '>=7.13'
+      aslemammad-vite-plugin-macro: '>=1.0.0-alpha.1'
       babel-plugin-macros: '>=3.0'
       react: '>=16.8'
+      vite: '>=2.8.6'
     peerDependenciesMeta:
       '@babel/helper-module-imports':
         optional: true
       '@babel/types':
         optional: true
+      aslemammad-vite-plugin-macro:
+        optional: true
       babel-plugin-macros:
         optional: true
       react:
         optional: true
+      vite:
+        optional: true
     dependencies:
-      proxy-compare: 2.0.2
+      proxy-compare: 2.1.0
       react: 17.0.2
+      use-sync-external-store: 1.0.0_react@17.0.2
     dev: true
 
   /vue-eslint-parser/8.3.0_eslint@8.14.0:
