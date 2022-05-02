@@ -63,7 +63,7 @@
 		"react": "^17.0.2",
 		"tsd": "^0.20.0",
 		"typescript": "^4.6.4",
-		"valtio": "^1.6.0"
+		"valtio": "^1.2.11"
 	},
 	"eslintConfig": {
 		"extends": "@pvtnbr",
