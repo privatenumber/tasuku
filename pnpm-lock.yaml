@@ -12,7 +12,7 @@ specifiers:
   lint-staged: ^12.4.1
   manten: ^0.0.3
   p-map: ^5.3.0
-  pkgroll: ^1.1.3
+  pkgroll: ^1.2.1
   react: ^17.0.2
   tsd: ^0.20.0
   typescript: ^4.6.4
@@ -29,12 +29,12 @@ devDependencies:
   eslint: 8.14.0
   esno: 0.14.1
   husky: 4.3.8
-  ink: github.com/privatenumber/ink/d5bc8850c57b1fe0a34fbfe5a0769afaffbba67a_@types+react@18.0.8+react@17.0.2
+  ink: github.com/privatenumber/ink/596c5f5af2a41d8036ee7bfc89aa7c8fc8cd53c2_@types+react@18.0.8+react@17.0.2
   ink-task-list: 2.0.0_ink@3.2.0+react@17.0.2
   lint-staged: 12.4.1
   manten: 0.0.3
   p-map: 5.3.0
-  pkgroll: 1.1.3_typescript@4.6.4
+  pkgroll: 1.2.1_typescript@4.6.4
   react: 17.0.2
   tsd: 0.20.0
   typescript: 4.6.4
@@ -154,78 +154,78 @@ packages:
       - typescript
     dev: true
 
-  /@rollup/plugin-alias/3.1.9_rollup@2.70.2:
+  /@rollup/plugin-alias/3.1.9_rollup@2.71.1:
     resolution: {integrity: sha512-QI5fsEvm9bDzt32k39wpOwZhVzRcL5ydcffUHMyLVaVaLeC70I8TJZ17F1z1eMoLu4E/UOcH9BWVkKpIKdrfiw==}
     engines: {node: '>=8.0.0'}
     peerDependencies:
       rollup: ^1.20.0||^2.0.0
     dependencies:
-      rollup: 2.70.2
+      rollup: 2.71.1
       slash: 3.0.0
     dev: true
 
-  /@rollup/plugin-commonjs/22.0.0_rollup@2.70.2:
+  /@rollup/plugin-commonjs/22.0.0_rollup@2.71.1:
     resolution: {integrity: sha512-Ktvf2j+bAO+30awhbYoCaXpBcyPmJbaEUYClQns/+6SNCYFURbvBiNbWgHITEsIgDDWCDUclWRKEuf8cwZCFoQ==}
     engines: {node: '>= 12.0.0'}
     peerDependencies:
       rollup: ^2.68.0
     dependencies:
-      '@rollup/pluginutils': 3.1.0_rollup@2.70.2
+      '@rollup/pluginutils': 3.1.0_rollup@2.71.1
       commondir: 1.0.1
       estree-walker: 2.0.2
       glob: 7.2.0
       is-reference: 1.2.1
       magic-string: 0.25.9
       resolve: 1.22.0
-      rollup: 2.70.2
+      rollup: 2.71.1
     dev: true
 
-  /@rollup/plugin-inject/4.0.4_rollup@2.70.2:
+  /@rollup/plugin-inject/4.0.4_rollup@2.71.1:
     resolution: {integrity: sha512-4pbcU4J/nS+zuHk+c+OL3WtmEQhqxlZ9uqfjQMQDOHOPld7PsCd8k5LWs8h5wjwJN7MgnAn768F2sDxEP4eNFQ==}
     peerDependencies:
       rollup: ^1.20.0 || ^2.0.0
     dependencies:
-      '@rollup/pluginutils': 3.1.0_rollup@2.70.2
+      '@rollup/pluginutils': 3.1.0_rollup@2.71.1
       estree-walker: 2.0.2
       magic-string: 0.25.9
-      rollup: 2.70.2
+      rollup: 2.71.1
     dev: true
 
-  /@rollup/plugin-json/4.1.0_rollup@2.70.2:
+  /@rollup/plugin-json/4.1.0_rollup@2.71.1:
     resolution: {integrity: sha512-yfLbTdNS6amI/2OpmbiBoW12vngr5NW2jCJVZSBEz+H5KfUJZ2M7sDjk0U6GOOdCWFVScShte29o9NezJ53TPw==}
     peerDependencies:
       rollup: ^1.20.0 || ^2.0.0
     dependencies:
-      '@rollup/pluginutils': 3.1.0_rollup@2.70.2
-      rollup: 2.70.2
+      '@rollup/pluginutils': 3.1.0_rollup@2.71.1
+      rollup: 2.71.1
     dev: true
 
-  /@rollup/plugin-node-resolve/13.2.1_rollup@2.70.2:
-    resolution: {integrity: sha512-btX7kzGvp1JwShQI9V6IM841YKNPYjKCvUbNrQ2EcVYbULtUd/GH6wZ/qdqH13j9pOHBER+EZXNN2L8RSJhVRA==}
+  /@rollup/plugin-node-resolve/13.3.0_rollup@2.71.1:
+    resolution: {integrity: sha512-Lus8rbUo1eEcnS4yTFKLZrVumLPY+YayBdWXgFSHYhTT2iJbMhoaaBL3xl5NCdeRytErGr8tZ0L71BMRmnlwSw==}
     engines: {node: '>= 10.0.0'}
     peerDependencies:
       rollup: ^2.42.0
     dependencies:
-      '@rollup/pluginutils': 3.1.0_rollup@2.70.2
+      '@rollup/pluginutils': 3.1.0_rollup@2.71.1
       '@types/resolve': 1.17.1
-      builtin-modules: 3.2.0
       deepmerge: 4.2.2
+      is-builtin-module: 3.1.0
       is-module: 1.0.0
       resolve: 1.22.0
-      rollup: 2.70.2
+      rollup: 2.71.1
     dev: true
 
-  /@rollup/plugin-replace/4.0.0_rollup@2.70.2:
+  /@rollup/plugin-replace/4.0.0_rollup@2.71.1:
     resolution: {integrity: sha512-+rumQFiaNac9y64OHtkHGmdjm7us9bo1PlbgQfdihQtuNxzjpaB064HbRnewUOggLQxVCCyINfStkgmBeQpv1g==}
     peerDependencies:
       rollup: ^1.20.0 || ^2.0.0
     dependencies:
-      '@rollup/pluginutils': 3.1.0_rollup@2.70.2
+      '@rollup/pluginutils': 3.1.0_rollup@2.71.1
       magic-string: 0.25.9
-      rollup: 2.70.2
+      rollup: 2.71.1
     dev: true
 
-  /@rollup/pluginutils/3.1.0_rollup@2.70.2:
+  /@rollup/pluginutils/3.1.0_rollup@2.71.1:
     resolution: {integrity: sha512-GksZ6pr6TpIjHm8h9lSQ8pi8BE9VeubNT0OMJ3B5uZJ8pz73NPiqOtCog/x2/QzM1ENChPKxMDhiQuRHsqc+lg==}
     engines: {node: '>= 8.0.0'}
     peerDependencies:
@@ -234,7 +234,7 @@ packages:
       '@types/estree': 0.0.39
       estree-walker: 1.0.1
       picomatch: 2.3.1
-      rollup: 2.70.2
+      rollup: 2.71.1
     dev: true
 
   /@rollup/pluginutils/4.2.1:
@@ -303,6 +303,10 @@ packages:
     resolution: {integrity: sha512-oNBIZjIqyHYP8VCNAV9uEytXVeXG2oR0w9lgAXro20eugRQfY002qr3CUl6BAe+Yf/z3CRjPdz27Pu6WWtuSRw==}
     dev: true
 
+  /@types/node/17.0.31:
+    resolution: {integrity: sha512-AR0x5HbXGqkEx9CadRH3EBYx/VkiUgZIhP4wvPn/+5KIsgpNoyFaRlVe0Zlx9gRtg8fA06a9tskE2MSN7TcG4Q==}
+    dev: true
+
   /@types/normalize-package-data/2.4.1:
     resolution: {integrity: sha512-Gj7cI7z+98M282Tqmp2K5EIsoouUEzbBJhQQzDE3jSIRk6r9gsz0oUokqIUR4u1R3dMHo0pDHM7sNOHyhulypw==}
     dev: true
@@ -326,7 +330,7 @@ packages:
   /@types/resolve/1.17.1:
     resolution: {integrity: sha512-yy7HuzQhj0dhGpD8RLXSZWEkLsV9ibvxvi6EiJ3bkqLAO1RGo0WbkWQiwpRlSFymTJRz0d3k5LM3kkx8ArDbLw==}
     dependencies:
-      '@types/node': 17.0.30
+      '@types/node': 17.0.31
     dev: true
 
   /@types/scheduler/0.16.2:
@@ -2173,7 +2177,7 @@ packages:
       ink: '>=3.0.0'
       react: '>=16.8.0'
     dependencies:
-      ink: github.com/privatenumber/ink/d5bc8850c57b1fe0a34fbfe5a0769afaffbba67a_@types+react@18.0.8+react@17.0.2
+      ink: github.com/privatenumber/ink/596c5f5af2a41d8036ee7bfc89aa7c8fc8cd53c2_@types+react@18.0.8+react@17.0.2
       react: 17.0.2
     dev: true
 
@@ -3033,8 +3037,8 @@ packages:
       find-up: 5.0.0
     dev: true
 
-  /pkgroll/1.1.3_typescript@4.6.4:
-    resolution: {integrity: sha512-WBeaxyT1o1sWBJvsMLVde645uuk0/GdJJJX+7MwfH8E2lpVPZx4UUmTDspX5I0G4UvaH67jBzhYkW2UT1+gYTQ==}
+  /pkgroll/1.2.1_typescript@4.6.4:
+    resolution: {integrity: sha512-B+ZgXtarGXXGl0yAhqv8nGqVP677ymZuikPqJAHQTs4Ucb1DzyTsLZMOl2kv4cDEnijcOXZDvDjIWC7l6hbkCw==}
     hasBin: true
     peerDependencies:
       typescript: ^4.1
@@ -3042,16 +3046,16 @@ packages:
       typescript:
         optional: true
     dependencies:
-      '@rollup/plugin-alias': 3.1.9_rollup@2.70.2
-      '@rollup/plugin-commonjs': 22.0.0_rollup@2.70.2
-      '@rollup/plugin-inject': 4.0.4_rollup@2.70.2
-      '@rollup/plugin-json': 4.1.0_rollup@2.70.2
-      '@rollup/plugin-node-resolve': 13.2.1_rollup@2.70.2
-      '@rollup/plugin-replace': 4.0.0_rollup@2.70.2
+      '@rollup/plugin-alias': 3.1.9_rollup@2.71.1
+      '@rollup/plugin-commonjs': 22.0.0_rollup@2.71.1
+      '@rollup/plugin-inject': 4.0.4_rollup@2.71.1
+      '@rollup/plugin-json': 4.1.0_rollup@2.71.1
+      '@rollup/plugin-node-resolve': 13.3.0_rollup@2.71.1
+      '@rollup/plugin-replace': 4.0.0_rollup@2.71.1
       '@rollup/pluginutils': 4.2.1
       esbuild: 0.14.38
       magic-string: 0.26.1
-      rollup: 2.70.2
+      rollup: 2.71.1
       typescript: 4.6.4
     dev: true
 
@@ -3265,8 +3269,8 @@ packages:
       glob: 7.2.0
     dev: true
 
-  /rollup/2.70.2:
-    resolution: {integrity: sha512-EitogNZnfku65I1DD5Mxe8JYRUCy0hkK5X84IlDtUs+O6JRMpRciXTzyCUuX11b5L5pvjH+OmFXiQ3XjabcXgg==}
+  /rollup/2.71.1:
+    resolution: {integrity: sha512-lMZk3XfUBGjrrZQpvPSoXcZSfKcJ2Bgn+Z0L1MoW2V8Wh7BVM+LOBJTPo16yul2MwL59cXedzW1ruq3rCjSRgw==}
     engines: {node: '>=10.0.0'}
     hasBin: true
     optionalDependencies:
@@ -3812,9 +3816,9 @@ packages:
     dependencies:
       '@types/yoga-layout': 1.9.2
 
-  github.com/privatenumber/ink/d5bc8850c57b1fe0a34fbfe5a0769afaffbba67a_@types+react@18.0.8+react@17.0.2:
-    resolution: {tarball: https://codeload.github.com/privatenumber/ink/tar.gz/d5bc8850c57b1fe0a34fbfe5a0769afaffbba67a}
-    id: github.com/privatenumber/ink/d5bc8850c57b1fe0a34fbfe5a0769afaffbba67a
+  github.com/privatenumber/ink/596c5f5af2a41d8036ee7bfc89aa7c8fc8cd53c2_@types+react@18.0.8+react@17.0.2:
+    resolution: {tarball: https://codeload.github.com/privatenumber/ink/tar.gz/596c5f5af2a41d8036ee7bfc89aa7c8fc8cd53c2}
+    id: github.com/privatenumber/ink/596c5f5af2a41d8036ee7bfc89aa7c8fc8cd53c2
     name: ink
     version: 3.2.0
     engines: {node: '>=10'}
