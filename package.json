@@ -29,6 +29,7 @@
 	},
 	"scripts": {
 		"lint": "eslint --cache .",
+		"pretest": "npm run build",
 		"test": "esno tests/tasuku.spec.ts",
 		"test:tsd": "tsd",
 		"typecheck": "tsc --noEmit && :",
