@@ -29,7 +29,7 @@ devDependencies:
   eslint: 8.14.0
   esno: 0.14.1
   husky: 4.3.8
-  ink: github.com/privatenumber/ink/a981c11463934f89cfbfd7061df24dda97882ca9_@types+react@18.0.8+react@17.0.2
+  ink: github.com/privatenumber/ink/d5bc8850c57b1fe0a34fbfe5a0769afaffbba67a_@types+react@18.0.8+react@17.0.2
   ink-task-list: 2.0.0_ink@3.2.0+react@17.0.2
   lint-staged: 12.4.1
   manten: 0.0.3
@@ -2173,7 +2173,7 @@ packages:
       ink: '>=3.0.0'
       react: '>=16.8.0'
     dependencies:
-      ink: github.com/privatenumber/ink/a981c11463934f89cfbfd7061df24dda97882ca9_@types+react@18.0.8+react@17.0.2
+      ink: github.com/privatenumber/ink/d5bc8850c57b1fe0a34fbfe5a0769afaffbba67a_@types+react@18.0.8+react@17.0.2
       react: 17.0.2
     dev: true
 
@@ -3812,9 +3812,9 @@ packages:
     dependencies:
       '@types/yoga-layout': 1.9.2
 
-  github.com/privatenumber/ink/a981c11463934f89cfbfd7061df24dda97882ca9_@types+react@18.0.8+react@17.0.2:
-    resolution: {tarball: https://codeload.github.com/privatenumber/ink/tar.gz/a981c11463934f89cfbfd7061df24dda97882ca9}
-    id: github.com/privatenumber/ink/a981c11463934f89cfbfd7061df24dda97882ca9
+  github.com/privatenumber/ink/d5bc8850c57b1fe0a34fbfe5a0769afaffbba67a_@types+react@18.0.8+react@17.0.2:
+    resolution: {tarball: https://codeload.github.com/privatenumber/ink/tar.gz/d5bc8850c57b1fe0a34fbfe5a0769afaffbba67a}
+    id: github.com/privatenumber/ink/d5bc8850c57b1fe0a34fbfe5a0769afaffbba67a
     name: ink
     version: 3.2.0
     engines: {node: '>=10'}
