@@ -53,7 +53,7 @@
 		"eslint": "^8.14.0",
 		"esno": "^0.14.1",
 		"husky": "^4.3.8",
-		"ink": "github:privatenumber/ink#built/treeshake-lodash",
+		"ink": "github:privatenumber/ink#built/privatenumber",
 		"ink-task-list": "^2.0.0",
 		"lint-staged": "^12.4.1",
 		"manten": "^0.0.3",
