@@ -1,5 +1,5 @@
 import { expectType } from 'tsd';
-import task from '../dist/index.js';
+import task from '#tasuku';
 
 const booleanResult = await task('title', async () => false);
 expectType<boolean>(booleanResult.result);

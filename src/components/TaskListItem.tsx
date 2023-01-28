@@ -1,6 +1,6 @@
 import React, { type FC } from 'react';
 import { Task } from 'ink-task-list';
-import type { TaskObject } from '../types';
+import type { TaskObject } from '../types.js';
 
 type DeepReadonly<T> = { readonly [K in keyof T]: DeepReadonly<T[K]> };
 

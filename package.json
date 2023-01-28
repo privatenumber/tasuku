@@ -16,6 +16,7 @@
 		"name": "Hiroki Osame",
 		"email": "hiroki.osame@gmail.com"
 	},
+	"type": "module",
 	"files": [
 		"dist"
 	],
@@ -32,9 +33,16 @@
 			"default": "./dist/index.mjs"
 		}
 	},
+	"imports": {
+		"#tasuku": {
+			"types": "./src/index.ts",
+			"development": "./src/index.ts",
+			"default": "./dist/index.mjs"
+		}
+	},
 	"scripts": {
 		"lint": "eslint --cache .",
-		"test": "esno tests/tasuku.spec.ts",
+		"test": "tsx tests/tasuku.spec.ts",
 		"test:tsd": "tsd",
 		"type-check": "tsc --noEmit",
 		"build": "pkgroll --env.NODE_ENV=production --env.DEV=false --minify",
@@ -55,7 +63,6 @@
 		"@types/react": "^18.0.27",
 		"clean-pkg-json": "^1.2.0",
 		"eslint": "^8.32.0",
-		"esno": "^0.14.1",
 		"ink": "github:privatenumber/ink#built/treeshake-lodash",
 		"ink-task-list": "^2.0.0",
 		"lint-staged": "^13.1.0",
@@ -65,6 +72,7 @@
 		"react": "^17.0.2",
 		"simple-git-hooks": "^2.8.1",
 		"tsd": "^0.25.0",
+		"tsx": "github:esbuild-kit/tsx#npm/ts-file-matcher",
 		"typescript": "^4.9.4",
 		"valtio": "^1.2.11"
 	},

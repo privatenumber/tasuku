@@ -1,8 +1,0 @@
-{
-	"extends": "..",
-	"compilerOptions": {
-		"module": "ESNext",
-		"target": "ES2017"
-	},
-	"include": ["."]
-}

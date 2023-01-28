@@ -1,5 +1,5 @@
 import { test, describe, expect } from 'manten';
-import task from '../dist/index.js';
+import task from '#tasuku';
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => {
 	setTimeout(resolve, ms);

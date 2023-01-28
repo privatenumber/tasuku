@@ -1,7 +1,7 @@
 import { proxy } from 'valtio';
 import pMap from 'p-map';
-import { arrayAdd, arrayRemove } from './utils';
-import { createApp } from './components/CreateApp';
+import { arrayAdd, arrayRemove } from './utils.js';
+import { createApp } from './components/CreateApp.js';
 import type {
 	TaskList,
 	TaskObject,
@@ -11,8 +11,8 @@ import type {
 	TaskGroupAPI,
 	TaskFunction,
 	RegisteredTask,
-} from './types';
-import { runSymbol } from './types';
+} from './types.js';
+import { runSymbol } from './types.js';
 
 const createTaskInnerApi = (taskState: TaskObject) => {
 	const api: TaskInnerAPI = {
