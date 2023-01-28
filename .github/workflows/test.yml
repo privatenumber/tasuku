@@ -27,8 +27,8 @@ jobs:
         version: 7
         run_install: true
 
-    # - name: Type check
-    #   run: pnpm type-check
+    - name: Type check
+      run: pnpm type-check
 
     - name: Build
       run: pnpm build

@@ -31,7 +31,7 @@
 		"lint": "eslint --cache .",
 		"test": "esno tests/tasuku.spec.ts",
 		"test:tsd": "tsd",
-		"typecheck": "tsc --noEmit && :",
+		"type-check": "tsc --noEmit",
 		"build": "pkgroll --env.NODE_ENV=production --env.DEV=false --minify",
 		"prepack": "clean-pkg-json"
 	},
