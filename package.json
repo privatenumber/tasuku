@@ -1,0 +1,46 @@
+{
+  "name": "tasuku",
+  "version": "0.0.0-semantic-release",
+  "description": "タスク — The minimal task runner",
+  "keywords": [
+    "simple",
+    "minimal",
+    "task",
+    "runner",
+    "cli"
+  ],
+  "license": "MIT",
+  "repository": "privatenumber/tasuku",
+  "funding": "https://github.com/privatenumber/tasuku?sponsor=1",
+  "author": {
+    "name": "Hiroki Osame",
+    "email": "hiroki.osame@gmail.com"
+  },
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.cts",
+  "exports": {
+    "require": {
+      "types": "./dist/index.d.cts",
+      "default": "./dist/index.cjs"
+    },
+    "import": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "imports": {
+    "#tasuku": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "dependencies": {
+    "yoga-layout-prebuilt": "1.10.0"
+  }
+}
