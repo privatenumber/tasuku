@@ -1,7 +1,7 @@
 import { proxy } from 'valtio';
 import pMap from 'p-map';
 import { arrayAdd, arrayRemove } from './utils.js';
-import { createApp } from './components/CreateApp.js';
+import { createApp } from './components/CreateApp.jsx';
 import type {
 	TaskList,
 	TaskObject,
