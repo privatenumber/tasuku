@@ -15,7 +15,7 @@ specifiers:
   react: ^17.0.2
   simple-git-hooks: ^2.8.1
   tsd: ^0.25.0
-  tsx: github:esbuild-kit/tsx#npm/ts-file-matcher
+  tsx: ^3.12.3
   typescript: ^4.9.4
   valtio: ^1.2.11
   yoga-layout-prebuilt: 1.10.0
@@ -38,7 +38,7 @@ devDependencies:
   react: 17.0.2
   simple-git-hooks: 2.8.1
   tsd: 0.25.0
-  tsx: github.com/esbuild-kit/tsx/0276e1aefd83ecf151e43c74b5402c1b296af1f7
+  tsx: 3.12.3
   typescript: 4.9.4
   valtio: 1.2.11_react@17.0.2
 
@@ -65,11 +65,25 @@ packages:
       js-tokens: 4.0.0
     dev: true
 
+  /@esbuild-kit/cjs-loader/2.4.2:
+    resolution: {integrity: sha512-BDXFbYOJzT/NBEtp71cvsrGPwGAMGRB/349rwKuoxNSiKjPraNNnlK6MIIabViCjqZugu6j+xeMDlEkWdHHJSg==}
+    dependencies:
+      '@esbuild-kit/core-utils': 3.0.0
+      get-tsconfig: 4.4.0
+    dev: true
+
   /@esbuild-kit/core-utils/3.0.0:
     resolution: {integrity: sha512-TXmwH9EFS3DC2sI2YJWJBgHGhlteK0Xyu1VabwetMULfm3oYhbrsWV5yaSr2NTWZIgDGVLHbRf0inxbjXqAcmQ==}
     dependencies:
       esbuild: 0.15.18
       source-map-support: 0.5.21
+    dev: true
+
+  /@esbuild-kit/esm-loader/2.5.5:
+    resolution: {integrity: sha512-Qwfvj/qoPbClxCRNuac1Du01r9gvNOT+pMYtJDapfB1eoGN1YlJ1BixLyL9WVENRx5RXgNLdfYdx/CuswlGhMw==}
+    dependencies:
+      '@esbuild-kit/core-utils': 3.0.0
+      get-tsconfig: 4.4.0
     dev: true
 
   /@esbuild/android-arm/0.15.18:
@@ -1911,6 +1925,10 @@ packages:
     resolution: {integrity: sha512-YCcF28IqSay3fqpIu5y3Krg/utCBHBeoflkZyHj/QcqI2nrLPC3ZegS9CmIo+hJb8K7aiGsuUl7PwWVjNG2HQQ==}
     dev: true
 
+  /get-tsconfig/4.4.0:
+    resolution: {integrity: sha512-0Gdjo/9+FzsYhXCEFueo2aY1z1tpXrxWZzP7k8ul9qt1U5o8rYJwTJYmaeHdrVosYIVYkOy2iwCJ9FdpocJhPQ==}
+    dev: true
+
   /glob-parent/5.1.2:
     resolution: {integrity: sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow==}
     engines: {node: '>= 6'}
@@ -3606,6 +3624,17 @@ packages:
       typescript: 4.9.4
     dev: true
 
+  /tsx/3.12.3:
+    resolution: {integrity: sha512-Wc5BFH1xccYTXaQob+lEcimkcb/Pq+0en2s+ruiX0VEIC80nV7/0s7XRahx8NnsoCnpCVUPz8wrqVSPi760LkA==}
+    hasBin: true
+    dependencies:
+      '@esbuild-kit/cjs-loader': 2.4.2
+      '@esbuild-kit/core-utils': 3.0.0
+      '@esbuild-kit/esm-loader': 2.5.5
+    optionalDependencies:
+      fsevents: 2.3.2
+    dev: true
+
   /type-check/0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
     engines: {node: '>= 0.8.0'}
@@ -3835,43 +3864,6 @@ packages:
     engines: {node: '>=8'}
     dependencies:
       '@types/yoga-layout': 1.9.2
-
-  github.com/esbuild-kit/cjs-loader/592345ba978c64c98bd3f2797904335f17c7ec0c:
-    resolution: {tarball: https://codeload.github.com/esbuild-kit/cjs-loader/tar.gz/592345ba978c64c98bd3f2797904335f17c7ec0c}
-    name: '@esbuild-kit/cjs-loader'
-    version: 0.0.0-semantic-release
-    dependencies:
-      '@esbuild-kit/core-utils': 3.0.0
-      get-tsconfig: github.com/privatenumber/get-tsconfig/2a9640126cbcea030c9d2e762f5b4411136b296d
-    dev: true
-
-  github.com/esbuild-kit/esm-loader/bba6380ec81039dd5e41b0e5be491a7149393f7f:
-    resolution: {tarball: https://codeload.github.com/esbuild-kit/esm-loader/tar.gz/bba6380ec81039dd5e41b0e5be491a7149393f7f}
-    name: '@esbuild-kit/esm-loader'
-    version: 0.0.0-semantic-release
-    dependencies:
-      '@esbuild-kit/core-utils': 3.0.0
-      get-tsconfig: github.com/privatenumber/get-tsconfig/2a9640126cbcea030c9d2e762f5b4411136b296d
-    dev: true
-
-  github.com/esbuild-kit/tsx/0276e1aefd83ecf151e43c74b5402c1b296af1f7:
-    resolution: {tarball: https://codeload.github.com/esbuild-kit/tsx/tar.gz/0276e1aefd83ecf151e43c74b5402c1b296af1f7}
-    name: tsx
-    version: 0.0.0-semantic-release
-    hasBin: true
-    dependencies:
-      '@esbuild-kit/cjs-loader': github.com/esbuild-kit/cjs-loader/592345ba978c64c98bd3f2797904335f17c7ec0c
-      '@esbuild-kit/core-utils': 3.0.0
-      '@esbuild-kit/esm-loader': github.com/esbuild-kit/esm-loader/bba6380ec81039dd5e41b0e5be491a7149393f7f
-    optionalDependencies:
-      fsevents: 2.3.2
-    dev: true
-
-  github.com/privatenumber/get-tsconfig/2a9640126cbcea030c9d2e762f5b4411136b296d:
-    resolution: {tarball: https://codeload.github.com/privatenumber/get-tsconfig/tar.gz/2a9640126cbcea030c9d2e762f5b4411136b296d}
-    name: get-tsconfig
-    version: 0.0.0-semantic-release
-    dev: true
 
   github.com/privatenumber/ink/a981c11463934f89cfbfd7061df24dda97882ca9_op6x6bvlm6pgr65pxqyzps2lxi:
     resolution: {tarball: https://codeload.github.com/privatenumber/ink/tar.gz/a981c11463934f89cfbfd7061df24dda97882ca9}
