@@ -12,7 +12,7 @@
 
 → [Try it out online](https://stackblitz.com/edit/tasuku-demo?file=index.js&devtoolsheight=50&view=editor)
 
-<sub>Support this project by starring and sharing it. [Follow me](https://github.com/privatenumber) to see what other cool projects I'm working on.</sub>
+<sub>Found this package useful? Show your support & appreciation by [sponsoring](https://github.com/sponsors/privatenumber)! ❤️</sub>
 
 ## Install
 ```sh
@@ -351,3 +351,11 @@ Yes, but it should be fine as you don't need access to other `task` functions as
 Put `task` in the allow list:
 - `"no-shadow": ["error", { "allow": ["task"] }]`
 - `"@typescript-eslint/no-shadow": ["error", { "allow": ["task"] }]`
+
+
+## Sponsors
+<p align="center">
+	<a href="https://github.com/sponsors/privatenumber">
+		<img src="https://cdn.jsdelivr.net/gh/privatenumber/sponsors/sponsorkit/sponsors.svg">
+	</a>
+</p>
