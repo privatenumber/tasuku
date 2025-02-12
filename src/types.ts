@@ -8,11 +8,11 @@ export type TaskObject = {
 	children: TaskObject[];
 	status?: string;
 	output?: string;
-}
+};
 
 export type TaskList = TaskObject[] & {
 	isRoot?: boolean;
-}
+};
 
 export type TaskInnerAPI = {
 	task: Task;
@@ -27,13 +27,13 @@ export type TaskFunction<T> = (innerApi: TaskInnerAPI) => Promise<T>;
 
 export const runSymbol: unique symbol = Symbol('run');
 
-export type RegisteredTask<T = any> = {
+export type RegisteredTask<T = unknown> = {
 	[runSymbol]: () => Promise<T>; // ReturnType<TaskFunction<T>>;
 	task: TaskObject;
 	clear: () => void;
 };
 
-export type TaskAPI<Result = any> = {
+export type TaskAPI<Result = unknown> = {
 	result: Result;
 	state: State;
 	clear: () => void;
@@ -41,6 +41,7 @@ export type TaskAPI<Result = any> = {
 
 export type Task = (
 	<TaskReturnType>(
+
 		/**
 		 * The task title
 		 */
@@ -51,7 +52,7 @@ export type Task = (
 		 */
 		taskFunction: TaskFunction<TaskReturnType>
 	) => Promise<TaskAPI<TaskReturnType>>
-) & { group: TaskGroup }
+) & { group: TaskGroup };
 
 type TaskGroupResults<
 	RegisteredTasks extends RegisteredTask[]
@@ -63,11 +64,12 @@ type TaskGroupResults<
 	);
 };
 
-export type TaskGroupAPI<Results = any[]> = Results & {
+export type TaskGroupAPI<Results = unknown[]> = Results & {
 	clear(): void;
 };
 
 export type CreateTask = <ReturnType>(
+
 	/**
 	 * The task title
 	 */

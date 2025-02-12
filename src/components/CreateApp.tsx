@@ -3,15 +3,15 @@ import React from 'react';
 import type { TaskList } from '../types.js';
 import TaskListApp from './TaskListApp.js';
 
-export function createApp(taskList: TaskList) {
+export const createApp = (taskList: TaskList) => {
 	const inkApp = render(<TaskListApp taskList={taskList} />);
 
 	return {
-		remove() {
+		remove: () => {
 			inkApp.rerender(null);
 			inkApp.unmount();
 			inkApp.clear();
 			inkApp.cleanup();
 		},
 	};
-}
+};

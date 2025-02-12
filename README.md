@@ -230,7 +230,7 @@ Returns a Promise that resolves with object:
 ```ts
 type TaskAPI = {
     // Result from taskFunction
-    result: any
+    result: unknown
 
     // State of the task
     state: 'error' | 'warning' | 'success'
@@ -257,7 +257,7 @@ type TaskFunction = (taskInnerApi: {
     setOutput(output: string | { message: string }): void
     setWarning(warning: Error | string): void
     setError(error: Error | string): void
-}) => Promise<any>
+}) => Promise<unknown>
 ```
 
 Required: true
@@ -292,7 +292,7 @@ Returns a Promise that resolves with object:
 // The results from the taskFunctions
 type TaskGroupAPI = {
     // Result from taskFunction
-    result: any
+    result: unknown
 
     // State of the task
     state: 'error' | 'warning' | 'success'

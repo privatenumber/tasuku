@@ -1,13 +1,13 @@
 {
 	"compilerOptions": {
-		"module": "Node16",
-		"isolatedModules": true,
-		"esModuleInterop": true,
-		"jsx": "react",
-		"strict": true,
-		"skipLibCheck": true,
 
 		// Node 12
 		"target": "ES2019",
+		"jsx": "react",
+		"module": "Node16",
+		"strict": true,
+		"esModuleInterop": true,
+		"isolatedModules": true,
+		"skipLibCheck": true,
 	},
 }

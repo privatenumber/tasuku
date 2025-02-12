@@ -4,20 +4,20 @@
  * the array.
  */
 
-export function arrayAdd<T>(
+export const arrayAdd = <T>(
 	array: T[],
 	element: T,
-) {
+) => {
 	const index = array.push(element) - 1;
 	return array[index];
-}
+};
 
-export function arrayRemove<T>(
+export const arrayRemove = <T>(
 	array: T[],
 	element: T,
-) {
+) => {
 	const index = array.indexOf(element);
-	if (index > -1) {
+	if (index !== -1) {
 		array.splice(index, 1);
 	}
-}
+};

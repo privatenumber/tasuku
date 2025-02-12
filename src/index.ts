@@ -2,17 +2,16 @@ import { proxy } from 'valtio';
 import pMap from 'p-map';
 import { arrayAdd, arrayRemove } from './utils.js';
 import { createApp } from './components/CreateApp.jsx';
-import type {
-	TaskList,
-	TaskObject,
-	Task,
-	TaskAPI,
-	TaskInnerAPI,
-	TaskGroupAPI,
-	TaskFunction,
-	RegisteredTask,
+import {
+	type TaskList,
+	type TaskObject,
+	type Task,
+	type TaskAPI,
+	type TaskInnerAPI,
+	type TaskGroupAPI,
+	type TaskFunction,
+	type RegisteredTask, runSymbol,
 } from './types.js';
-import { runSymbol } from './types.js';
 
 const createTaskInnerApi = (taskState: TaskObject) => {
 	const api: TaskInnerAPI = {
@@ -54,11 +53,11 @@ const createTaskInnerApi = (taskState: TaskObject) => {
 
 let app: ReturnType<typeof createApp> | undefined;
 
-function registerTask<T>(
+const registerTask = <T>(
 	taskList: TaskList,
 	taskTitle: string,
 	taskFunction: TaskFunction<T>,
-): RegisteredTask<T> {
+): RegisteredTask<T> => {
 	if (!app) {
 		app = createApp(taskList);
 		taskList.isRoot = true;
@@ -72,7 +71,7 @@ function registerTask<T>(
 
 	return {
 		task,
-		async [runSymbol]() {
+		[runSymbol]: async () => {
 			const api = createTaskInnerApi(task);
 
 			task.state = 'loading';
@@ -81,7 +80,7 @@ function registerTask<T>(
 			try {
 				taskResult = await taskFunction(api);
 			} catch (error) {
-				api.setError(error as any);
+				api.setError(error as Error);
 				throw error;
 			}
 
@@ -91,7 +90,7 @@ function registerTask<T>(
 
 			return taskResult;
 		},
-		clear() {
+		clear: () => {
 			arrayRemove(taskList, task);
 
 			if (taskList.isRoot && taskList.length === 0) {
@@ -100,7 +99,7 @@ function registerTask<T>(
 			}
 		},
 	};
-}
+};
 
 function createTaskFunction(
 	taskList: TaskList,
@@ -147,10 +146,10 @@ function createTaskFunction(
 				concurrency: 1,
 				...options,
 			},
-		)) as any;
+		)) as any; // eslint-disable-line @typescript-eslint/no-explicit-any -- Temporary fix
 
 		return Object.assign(results, {
-			clear() {
+			clear: () => {
 				for (const taskApi of tasksQueue) {
 					taskApi.clear();
 				}
