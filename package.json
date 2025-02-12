@@ -94,5 +94,6 @@
 	},
 	"tsd": {
 		"directory": "tests"
-	}
+	},
+	"packageManager": "pnpm@9.15.4"
 }
