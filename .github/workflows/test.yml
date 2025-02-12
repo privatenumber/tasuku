@@ -36,7 +36,7 @@ jobs:
         run: pnpm test
 
       - name: Test Node.js v12
-        run: pnpm --use-node-version=12.22.12 test
+        run: pnpm --use-node-version=12.22.12 node ./tests/test.js
 
       - name: DTS test
         run: pnpm test:tsd
