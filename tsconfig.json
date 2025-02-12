@@ -5,6 +5,7 @@
 		"esModuleInterop": true,
 		"jsx": "react",
 		"strict": true,
+		"skipLibCheck": true,
 
 		// Node 12
 		"target": "ES2019",
