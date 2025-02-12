@@ -41,19 +41,12 @@
 		}
 	},
 	"scripts": {
-		"prepare": "simple-git-hooks",
 		"lint": "eslint --cache .",
 		"test": "tsx tests/tasuku.spec.ts",
 		"test:tsd": "tsd",
 		"type-check": "tsc --noEmit",
 		"build": "pkgroll --env.NODE_ENV=production --env.DEV=false --minify",
 		"prepack": "clean-pkg-json"
-	},
-	"simple-git-hooks": {
-		"pre-commit": "pnpm lint-staged"
-	},
-	"lint-staged": {
-		"*.{js,ts}": "eslint --cache"
 	},
 	"dependencies": {
 		"yoga-layout-prebuilt": "1.10.0"
@@ -66,12 +59,10 @@
 		"eslint": "^8.41.0",
 		"ink": "github:privatenumber/ink#built/treeshake-lodash",
 		"ink-task-list": "^2.0.0",
-		"lint-staged": "^13.2.2",
 		"manten": "^0.7.0",
 		"p-map": "^5.3.0",
 		"pkgroll": "^1.10.0",
 		"react": "^17.0.2",
-		"simple-git-hooks": "^2.8.1",
 		"tsd": "^0.28.1",
 		"tsx": "^3.12.7",
 		"typescript": "^5.7.3",
