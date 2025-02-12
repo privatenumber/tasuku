@@ -45,7 +45,7 @@
 		"lint": "lintroll --cache .",
 		"test": "tsx tests/tasuku.spec.ts",
 		"test:tsd": "tsd",
-		"type-check": "tsc --noEmit",
+		"type-check": "tsc",
 		"build": "pkgroll --env.NODE_ENV=production --env.DEV=false --minify",
 		"prepack": "clean-pkg-json"
 	},
