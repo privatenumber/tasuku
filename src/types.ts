@@ -34,7 +34,7 @@ export type RegisteredTask<T = unknown> = {
 };
 
 export type TaskAPI<Result = unknown> = {
-	result: Result;
+	result: Result | undefined;
 	state: State;
 	clear: () => void;
 };
