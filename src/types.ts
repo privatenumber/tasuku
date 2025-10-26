@@ -50,12 +50,12 @@ export type Task = (
 		/**
 		 * The task function
 		 */
-		taskFunction: TaskFunction<TaskReturnType>
+		taskFunction: TaskFunction<TaskReturnType>,
 	) => Promise<TaskAPI<TaskReturnType>>
 ) & { group: TaskGroup };
 
 type TaskGroupResults<
-	RegisteredTasks extends RegisteredTask[]
+	RegisteredTasks extends RegisteredTask[],
 > = {
 	[Key in keyof RegisteredTasks]: (
 		RegisteredTasks[Key] extends RegisteredTask<infer ReturnType>
@@ -82,8 +82,8 @@ export type CreateTask = <ReturnType>(
 ) => RegisteredTask<ReturnType>;
 
 type TaskGroup = <
-	RegisteredTasks extends RegisteredTask[]
+	RegisteredTasks extends RegisteredTask[],
 >(
 	createTasks: (taskCreator: CreateTask) => readonly [...RegisteredTasks],
-	options?: Options
+	options?: Options,
 ) => Promise<TaskGroupAPI<TaskGroupResults<RegisteredTasks>>>;

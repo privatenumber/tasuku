@@ -25,7 +25,7 @@ npm i tasuku
 For example, here's a simple script that copies a file from path A to B.
 
 ```ts
-import { copyFile } from 'fs/promises'
+import { copyFile } from 'node:fs/promises'
 import task from 'tasuku'
 
 task('Copying file from path A to B', async ({ setTitle }) => {
