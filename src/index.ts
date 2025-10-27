@@ -109,8 +109,10 @@ function createTaskFunction(
 		taskFunction,
 	) => {
 		const registeredTask = registerTask(taskList, title, taskFunction);
-		const result = await registeredTask[runSymbol]();
-
+		let result;
+		try {
+			result = await registeredTask[runSymbol]();
+		} catch (err) { }
 		return {
 			result,
 			get state() {
