@@ -2,7 +2,6 @@ import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
 import stripAnsi from 'strip-ansi';
 import { node } from '../utils/node.js';
-import { extractAnsiCodes } from '../utils/ansi.js';
 
 // Needs to be in project directory to resolve #tasuku via import maps
 const tempDir = new URL('../..', import.meta.url);
@@ -44,7 +43,6 @@ export default testSuite(({ describe }) => {
 			// After task completes, final output should show checkmark not spinner
 			expect(stripAnsi(result.output).includes('✔')).toBe(true);
 		});
-
 
 		test('multiple concurrent tasks show spinners', async () => {
 			await using fixture = await createFixture({
