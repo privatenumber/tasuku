@@ -12,9 +12,10 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task('Task', async () => {
-						await new Promise(resolve => setTimeout(resolve, 200));
+						await setTimeout(200);
 					});
 				`,
 			}, { tempDir });
@@ -31,9 +32,10 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task('Task', async () => {
-						await new Promise(resolve => setTimeout(resolve, 200));
+						await setTimeout(200);
 					});
 				`,
 			}, { tempDir });
@@ -49,11 +51,12 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task.group(task => [
-						task('one', async () => { await new Promise(resolve => setTimeout(resolve, 100)); }),
-						task('two', async () => { await new Promise(resolve => setTimeout(resolve, 100)); }),
-						task('three', async () => { await new Promise(resolve => setTimeout(resolve, 100)); }),
+						task('one', async () => { await setTimeout(100); }),
+						task('two', async () => { await setTimeout(100); }),
+						task('three', async () => { await setTimeout(100); }),
 					], { concurrency: 3 });
 				`,
 			}, { tempDir });

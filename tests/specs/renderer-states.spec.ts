@@ -13,9 +13,10 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task('Success task', async () => {
-						await new Promise(resolve => setTimeout(resolve, 50));
+						await setTimeout(50);
 					});
 				`,
 			}, { tempDir });
@@ -31,6 +32,7 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task('Error task', async ({ setError }) => {
 						setError('Something went wrong');
@@ -67,6 +69,7 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task('Warning task', async ({ setWarning }) => {
 						setWarning('Warning message');
@@ -85,10 +88,11 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task('Task with status', async ({ setStatus }) => {
 						setStatus('processing...');
-						await new Promise(resolve => setTimeout(resolve, 100));
+						await setTimeout(100);
 					});
 				`,
 			}, { tempDir });
@@ -102,10 +106,11 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task('Task with output', async ({ setOutput }) => {
 						setOutput('some output text');
-						await new Promise(resolve => setTimeout(resolve, 100));
+						await setTimeout(100);
 					});
 				`,
 			}, { tempDir });
@@ -119,10 +124,11 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task('Parent', async ({ task }) => {
 						await task('Child', async () => {
-							await new Promise(resolve => setTimeout(resolve, 50));
+							await setTimeout(50);
 						});
 					});
 				`,

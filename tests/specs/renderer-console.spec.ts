@@ -12,10 +12,11 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task('Task with console', async () => {
 						console.log('message 1');
-						await new Promise(resolve => setTimeout(resolve, 50));
+						await setTimeout(50);
 						console.log('message 2');
 					});
 				`,
@@ -32,6 +33,7 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task('Task with error', async () => {
 						console.error('error message');
@@ -48,6 +50,7 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task('Task with warning', async () => {
 						console.warn('warning message');
@@ -64,6 +67,7 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task('Task with multiple logs', async () => {
 						console.log('first');
@@ -85,6 +89,7 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task('Task', async () => {
 						console.log('during task');

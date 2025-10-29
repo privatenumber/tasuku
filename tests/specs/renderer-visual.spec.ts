@@ -12,9 +12,10 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task('Task', async () => {
-						await new Promise(resolve => setTimeout(resolve, 50));
+						await setTimeout(50);
 					});
 				`,
 			}, { tempDir });
@@ -32,9 +33,10 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task('Task', async () => {
-						await new Promise(resolve => setTimeout(resolve, 150));
+						await setTimeout(150);
 					});
 				`,
 			}, { tempDir });
@@ -49,10 +51,11 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task.group(task => [
-						task('one', async () => { await new Promise(resolve => setTimeout(resolve, 50)); }),
-						task('two', async () => { await new Promise(resolve => setTimeout(resolve, 50)); }),
+						task('one', async () => { await setTimeout(50); }),
+						task('two', async () => { await setTimeout(50); }),
 					], { concurrency: 1 });
 				`,
 			}, { tempDir });
@@ -67,10 +70,11 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task('Parent task', async ({ task }) => {
 						await task('Child task', async () => {
-							await new Promise(resolve => setTimeout(resolve, 50));
+							await setTimeout(50);
 						});
 					});
 				`,
@@ -98,10 +102,11 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task('Parent', async ({ task }) => {
 						await task('Child', async () => {
-							await new Promise(resolve => setTimeout(resolve, 50));
+							await setTimeout(50);
 						});
 					});
 				`,
@@ -149,10 +154,11 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task('Task completed', async ({ task }) => {
 						await task('Task completed', async () => {
-							await new Promise(resolve => setTimeout(resolve, 50));
+							await setTimeout(50);
 						});
 					});
 				`,

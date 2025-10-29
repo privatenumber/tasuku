@@ -12,9 +12,10 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task('Task', async () => {
-						await new Promise(resolve => setTimeout(resolve, 100));
+						await setTimeout(100);
 					});
 
 					// Process should exit cleanly after task completion
@@ -31,9 +32,10 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task('Task', async () => {
-						await new Promise(resolve => setTimeout(resolve, 50));
+						await setTimeout(50);
 					});
 				`,
 			}, { tempDir });
@@ -48,9 +50,10 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task('Task', async () => {
-						await new Promise(resolve => setTimeout(resolve, 50));
+						await setTimeout(50);
 					});
 				`,
 			}, { tempDir });
@@ -65,9 +68,10 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task('Task', async () => {
-						await new Promise(resolve => setTimeout(resolve, 50));
+						await setTimeout(50);
 					});
 
 					// After task completion, console should work normally

@@ -12,9 +12,10 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task('Task', async () => {
-						await new Promise(resolve => setTimeout(resolve, 100));
+						await setTimeout(100);
 					});
 				`,
 			}, { tempDir });
@@ -43,7 +44,7 @@ export default testSuite(({ describe }) => {
 		// 			import task from '#tasuku';
 
 		// 			await task('Task', async () => {
-		// 				await new Promise(resolve => setTimeout(resolve, 100));
+		// 				await setTimeout(100);
 		// 			});
 		// 		`,
 		// 	});
@@ -63,9 +64,10 @@ export default testSuite(({ describe }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
 					await task('Task', async () => {
-						await new Promise(resolve => setTimeout(resolve, 50));
+						await setTimeout(50);
 					});
 				`,
 			}, { tempDir });
