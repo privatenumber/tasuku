@@ -1,6 +1,6 @@
+import { stripVTControlCharacters } from 'node:util';
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
-import stripAnsi from 'strip-ansi';
 import { node } from '../utils/node.js';
 
 // Needs to be in project directory to resolve #tasuku via import maps
@@ -25,7 +25,7 @@ export default testSuite(({ describe }) => {
 			// In TTY environments, should use ANSI codes for clearing
 			// In non-TTY (like CI), renderer may not use ANSI codes
 			// Just verify task completes successfully
-			expect(stripAnsi(result.output).includes('Task')).toBe(true);
+			expect(stripVTControlCharacters(result.output).includes('Task')).toBe(true);
 		});
 
 		test('ANSI clear codes present during spinner animation', async () => {
@@ -44,7 +44,7 @@ export default testSuite(({ describe }) => {
 
 			// In TTY: ANSI codes for cursor movement and line clearing
 			// In non-TTY: simple text output
-			expect(stripAnsi(result.output).includes('Task')).toBe(true);
+			expect(stripVTControlCharacters(result.output).includes('Task')).toBe(true);
 		});
 
 		test('multiple line clears for multiple tasks', async () => {
@@ -62,7 +62,7 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			const textOutput = stripAnsi(result.output);
+			const textOutput = stripVTControlCharacters(result.output);
 
 			// In TTY: multiple cursor movements for updating tasks
 			// In non-TTY: all task names appear

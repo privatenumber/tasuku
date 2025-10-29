@@ -1,6 +1,6 @@
+import { stripVTControlCharacters } from 'node:util';
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
-import stripAnsi from 'strip-ansi';
 import { node } from '../utils/node.js';
 
 // Needs to be in project directory to resolve #tasuku via import maps
@@ -78,7 +78,7 @@ export default testSuite(({ describe }) => {
 					CI: 'true',
 				},
 			});
-			const textOutput = stripAnsi(result.output);
+			const textOutput = stripVTControlCharacters(result.output);
 
 			const hasCheckmark = textOutput.includes('✔');
 			const hasTaskName = textOutput.includes('Task');

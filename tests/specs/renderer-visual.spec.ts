@@ -1,6 +1,6 @@
+import { stripVTControlCharacters } from 'node:util';
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
-import stripAnsi from 'strip-ansi';
 import { node } from '../utils/node.js';
 
 // Needs to be in project directory to resolve #tasuku via import maps
@@ -21,7 +21,7 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			const textOutput = stripAnsi(result.output);
+			const textOutput = stripVTControlCharacters(result.output);
 
 			expect(textOutput.includes('✔')).toBe(true);
 
@@ -42,7 +42,7 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			const textOutput = stripAnsi(result.output);
+			const textOutput = stripVTControlCharacters(result.output);
 
 			expect(textOutput.includes('Task')).toBe(true);
 		});
@@ -61,7 +61,7 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			const textOutput = stripAnsi(result.output);
+			const textOutput = stripVTControlCharacters(result.output);
 
 			expect(textOutput.includes('one') && textOutput.includes('two')).toBe(true);
 		});
@@ -81,7 +81,7 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			const textOutput = stripAnsi(result.output);
+			const textOutput = stripVTControlCharacters(result.output);
 
 			// Check both tasks are present
 			expect(textOutput.includes('Parent task')).toBe(true);
@@ -113,7 +113,7 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			const textOutput = stripAnsi(result.output);
+			const textOutput = stripVTControlCharacters(result.output);
 
 			// Split into lines and find the final output structure
 			const lines = textOutput.split('\n').filter(line => line.trim());
@@ -143,11 +143,11 @@ export default testSuite(({ describe }) => {
 				expect(parentLine.match(/^❯/)).toBeTruthy();
 			}
 
-		// Checkmark (✔) should be green (\u001B[32m is green ANSI code)
-		expect(result.output).toMatch(/\u001B\[32m✔/);
+			// Checkmark (✔) should be green (\u001B[32m is green ANSI code)
+			expect(result.output).toMatch(/\u001B\[32m✔/);
 
-		// Pointer (❯) should be yellow (\u001B[33m is yellow ANSI code)
-		expect(result.output).toMatch(/\u001B\[33m❯/);
+			// Pointer (❯) should be yellow (\u001B[33m is yellow ANSI code)
+			expect(result.output).toMatch(/\u001B\[33m❯/);
 		});
 
 		test('validates exact nested format with pointer and checkmark', async () => {
@@ -165,7 +165,7 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			const textOutput = stripAnsi(result.output);
+			const textOutput = stripVTControlCharacters(result.output);
 
 			// Split output into non-empty lines
 			const lines = textOutput.split('\n').filter(line => line.trim());
@@ -180,16 +180,14 @@ export default testSuite(({ describe }) => {
 			expect(textOutput.includes('✔')).toBe(true);
 
 			// Check indentation pattern exists
-			const hasIndentedLine = lines.some(line =>
-				line.match(/^\s{2,}/) && line.includes('Task completed')
-			);
+			const hasIndentedLine = lines.some(line => line.match(/^\s{2,}/) && line.includes('Task completed'));
 			expect(hasIndentedLine).toBe(true);
 
 			// Parent task (with children) must have pointer (❯)
 			expect(textOutput.includes('❯')).toBe(true);
 
 			// Verify parent line has pointer and is not indented
-			const parentLine = taskLines.find(line => !line.match(/^\s{2,}/) && line.includes('❯'));
+			const parentLine = taskLines.find(line => !/^\s{2,}/.test(line) && line.includes('❯'));
 			expect(parentLine).toBeTruthy();
 
 			// Checkmark (✔) should be green (\u001B[32m is green ANSI code)

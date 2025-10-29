@@ -1,6 +1,6 @@
+import { stripVTControlCharacters } from 'node:util';
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
-import stripAnsi from 'strip-ansi';
 import { node } from '../utils/node.js';
 
 // Needs to be in project directory to resolve #tasuku via import maps
@@ -25,7 +25,7 @@ export default testSuite(({ describe }) => {
 			// In TTY environments, spinner should animate
 			// In non-TTY (like CI), spinner may not appear
 			// Just verify task completes successfully
-			expect(stripAnsi(result.output).includes('Task')).toBe(true);
+			expect(stripVTControlCharacters(result.output).includes('Task')).toBe(true);
 		});
 
 		test('spinner stops when task completes', async () => {
@@ -43,7 +43,7 @@ export default testSuite(({ describe }) => {
 			const result = await node(fixture.getPath('test.mjs'));
 
 			// After task completes, final output should show checkmark not spinner
-			expect(stripAnsi(result.output).includes('✔')).toBe(true);
+			expect(stripVTControlCharacters(result.output).includes('✔')).toBe(true);
 		});
 
 		test('multiple concurrent tasks show spinners', async () => {
@@ -60,7 +60,7 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			const textOutput = stripAnsi(result.output);
+			const textOutput = stripVTControlCharacters(result.output);
 
 			// In TTY: spinner frames appear
 			// In non-TTY: task names appear

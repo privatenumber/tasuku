@@ -1,6 +1,6 @@
+import { stripVTControlCharacters } from 'node:util';
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
-import stripAnsi from 'strip-ansi';
 import { node } from '../utils/node.js';
 import { extractAnsiCodes } from '../utils/ansi.js';
 
@@ -22,7 +22,7 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			const textOutput = stripAnsi(result.output);
+			const textOutput = stripVTControlCharacters(result.output);
 
 			expect(textOutput.includes('✔')).toBe(true);
 			expect(textOutput.includes('Success task')).toBe(true);
@@ -42,7 +42,7 @@ export default testSuite(({ describe }) => {
 
 			try {
 				const result = await node(fixture.getPath('test.mjs'));
-				const textOutput = stripAnsi(result.output);
+				const textOutput = stripVTControlCharacters(result.output);
 				// If it doesn't throw, check the output anyway
 
 				const ansi = extractAnsiCodes(result.output);
@@ -61,7 +61,7 @@ export default testSuite(({ describe }) => {
 				// setError causes task to throw, check error output
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Error type from nano-spawn
 				const output = (error as any).output || (error as any).stdout || '';
-				expect(stripAnsi(output).includes('❌') || stripAnsi(output).includes('Error task')).toBe(true);
+				expect(stripVTControlCharacters(output).includes('❌') || stripVTControlCharacters(output).includes('Error task')).toBe(true);
 			}
 		});
 
@@ -78,7 +78,7 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			const textOutput = stripAnsi(result.output);
+			const textOutput = stripVTControlCharacters(result.output);
 
 			expect(textOutput.includes('⚠️') || textOutput.includes('⚠')).toBe(true);
 			expect(textOutput.includes('Warning task')).toBe(true);
@@ -99,7 +99,7 @@ export default testSuite(({ describe }) => {
 
 			const result = await node(fixture.getPath('test.mjs'));
 
-			expect(stripAnsi(result.output).includes('processing...')).toBe(true);
+			expect(stripVTControlCharacters(result.output).includes('processing...')).toBe(true);
 		});
 
 		test('task with output shows output text', async () => {
@@ -117,7 +117,7 @@ export default testSuite(({ describe }) => {
 
 			const result = await node(fixture.getPath('test.mjs'));
 
-			expect(stripAnsi(result.output).includes('some output text')).toBe(true);
+			expect(stripVTControlCharacters(result.output).includes('some output text')).toBe(true);
 		});
 
 		test('nested tasks are indented', async () => {
@@ -135,7 +135,7 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			const textOutput = stripAnsi(result.output);
+			const textOutput = stripVTControlCharacters(result.output);
 
 			expect(textOutput.includes('Parent')).toBe(true);
 			expect(textOutput.includes('Child')).toBe(true);

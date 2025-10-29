@@ -1,6 +1,6 @@
+import { stripVTControlCharacters } from 'node:util';
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
-import stripAnsi from 'strip-ansi';
 import { node } from '../utils/node.js';
 
 // Needs to be in project directory to resolve #tasuku via import maps
@@ -23,7 +23,7 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			const textOutput = stripAnsi(result.output);
+			const textOutput = stripVTControlCharacters(result.output);
 
 			expect(textOutput.includes('message 1')).toBe(true);
 			expect(textOutput.includes('message 2')).toBe(true);
@@ -43,7 +43,7 @@ export default testSuite(({ describe }) => {
 
 			const result = await node(fixture.getPath('test.mjs'));
 
-			expect(stripAnsi(result.output).includes('error message')).toBe(true);
+			expect(stripVTControlCharacters(result.output).includes('error message')).toBe(true);
 		});
 
 		test('console.warn during task execution', async () => {
@@ -60,7 +60,7 @@ export default testSuite(({ describe }) => {
 
 			const result = await node(fixture.getPath('test.mjs'));
 
-			expect(stripAnsi(result.output).includes('warning message')).toBe(true);
+			expect(stripVTControlCharacters(result.output).includes('warning message')).toBe(true);
 		});
 
 		test('multiple console.log calls', async () => {
@@ -78,7 +78,7 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			const textOutput = stripAnsi(result.output);
+			const textOutput = stripVTControlCharacters(result.output);
 
 			expect(textOutput.includes('first')).toBe(true);
 			expect(textOutput.includes('second')).toBe(true);
@@ -99,7 +99,7 @@ export default testSuite(({ describe }) => {
 
 			const result = await node(fixture.getPath('test.mjs'));
 
-			expect(stripAnsi(result.output).includes('during task')).toBe(true);
+			expect(stripVTControlCharacters(result.output).includes('during task')).toBe(true);
 		});
 	});
 });
