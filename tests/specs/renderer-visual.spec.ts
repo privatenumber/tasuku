@@ -196,5 +196,54 @@ export default testSuite(({ describe }) => {
 			// Pointer (❯) should be yellow
 			expect(result.output).toContain(styleText('yellow', '❯'));
 		});
+
+		test('parent task shows yellow pointer while loading child', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task('Parent', async ({ task }) => {
+						await task('Child', async () => {
+							await setTimeout(150);
+						});
+					});
+				`,
+			}, { tempDir });
+
+			const result = await node(fixture.getPath('test.mjs'));
+
+			// Parent should show yellow pointer while child is loading
+			expect(result.output).toContain(styleText('yellow', '❯'));
+
+			// Verify it's actually yellow (ANSI code 33) not red (31)
+			expect(result.output).toContain(styleText('yellow', '❯'));
+			expect(result.output).not.toContain(styleText('red', '❯'));
+		});
+
+		test('parent task shows red pointer on error', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					try {
+						await task('Parent', async ({ task }) => {
+							await task('Child', async () => {
+								await setTimeout(50);
+								throw new Error('Test error');
+							});
+						});
+					} catch (error) {
+						// Expected error
+					}
+				`,
+			}, { tempDir });
+
+			const result = await node(fixture.getPath('test.mjs'));
+
+			// Parent should show red pointer when child fails
+			expect(result.output).toContain(styleText('red', '❯'));
+		});
 	});
 });
