@@ -84,5 +84,138 @@ export default testSuite(({ describe }) => {
 			// Verify console.log still works after cleanup
 			expect(stripVTControlCharacters(result.output).includes('test message')).toBe(true);
 		});
+
+		test('single task cleared removes task from output', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					const taskApi = await task('Task to clear', async () => {
+						await setTimeout(50);
+					});
+
+					taskApi.clear();
+
+					// Give renderer time to update
+					await setTimeout(50);
+
+					console.log('FINAL_OUTPUT');
+				`,
+			}, { tempDir });
+
+			const result = await node(fixture.getPath('test.mjs'));
+			const textOutput = stripVTControlCharacters(result.output);
+
+			// Task should be cleared - check output after marker
+			const parts = textOutput.split('FINAL_OUTPUT');
+			const afterMarker = parts[1] || '';
+			expect(afterMarker.includes('Task to clear')).toBe(false);
+		});
+
+		test('cleared task removed but other tasks remain', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					const task1 = await task('Task 1', async () => {
+						await setTimeout(50);
+					});
+
+					const task2 = await task('Task 2', async () => {
+						await setTimeout(50);
+					});
+
+					task1.clear();
+
+					// Give renderer time to update
+					await setTimeout(50);
+
+					console.log('FINAL_OUTPUT');
+				`,
+			}, { tempDir });
+
+			const result = await node(fixture.getPath('test.mjs'));
+			const textOutput = stripVTControlCharacters(result.output);
+
+			// Check output after marker
+			const parts = textOutput.split('FINAL_OUTPUT');
+			const afterMarker = parts[1] || '';
+
+			// Task 1 should be cleared
+			expect(afterMarker.includes('Task 1')).toBe(false);
+
+			// Task 2 should still be present
+			expect(afterMarker.includes('Task 2')).toBe(true);
+		});
+
+		test('clearing task triggers ANSI clear codes', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					const task1 = await task('Task 1', async () => {
+						await setTimeout(50);
+					});
+
+					const task2 = await task('Task 2', async () => {
+						await setTimeout(50);
+					});
+
+					task1.clear();
+
+					// Give renderer time to update
+					await setTimeout(50);
+				`,
+			}, { tempDir });
+
+			const result = await node(fixture.getPath('test.mjs'));
+
+			// Should contain ANSI clear codes (line clear: \u001B[2K, cursor up: \u001B[1A)
+			// These codes are used to clear Task 1 from the screen
+			expect(result.output.includes('\u001B[2K')).toBe(true);
+			expect(result.output.includes('\u001B[1A')).toBe(true);
+		});
+
+		test('all tasks cleared triggers renderer destroy', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					const task1 = await task('Task 1', async () => {
+						await setTimeout(50);
+					});
+
+					const task2 = await task('Task 2', async () => {
+						await setTimeout(50);
+					});
+
+					task1.clear();
+					task2.clear();
+
+					// Give renderer time to update
+					await setTimeout(50);
+
+					console.log('After all cleared');
+				`,
+			}, { tempDir });
+
+			const result = await node(fixture.getPath('test.mjs'));
+			const textOutput = stripVTControlCharacters(result.output);
+
+			// Check output after marker
+			const parts = textOutput.split('After all cleared');
+			const afterMarker = parts[1] || '';
+
+			// Both tasks should be cleared from final output
+			expect(afterMarker.includes('Task 1')).toBe(false);
+			expect(afterMarker.includes('Task 2')).toBe(false);
+
+			// Console should work normally after renderer destroyed
+			expect(textOutput.includes('After all cleared')).toBe(true);
+		});
 	});
 });
