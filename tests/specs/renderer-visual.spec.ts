@@ -1,4 +1,4 @@
-import { stripVTControlCharacters } from 'node:util';
+import { stripVTControlCharacters, styleText } from 'node:util';
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
 import { node } from '../utils/node.js';
@@ -25,8 +25,8 @@ export default testSuite(({ describe }) => {
 
 			expect(textOutput.includes('✔')).toBe(true);
 
-			// Checkmark (✔) should be green (\u001B[32m is green ANSI code)
-			expect(result.output).toMatch(/\u001B\[32m✔/);
+			// Checkmark (✔) should be green
+			expect(result.output).toContain(styleText('green', '✔'));
 		});
 
 		test('loading task shows spinner characters', async () => {
@@ -143,11 +143,11 @@ export default testSuite(({ describe }) => {
 				expect(parentLine.match(/^❯/)).toBeTruthy();
 			}
 
-			// Checkmark (✔) should be green (\u001B[32m is green ANSI code)
-			expect(result.output).toMatch(/\u001B\[32m✔/);
+			// Checkmark (✔) should be green
+			expect(result.output).toContain(styleText('green', '✔'));
 
-			// Pointer (❯) should be yellow (\u001B[33m is yellow ANSI code)
-			expect(result.output).toMatch(/\u001B\[33m❯/);
+			// Pointer (❯) should be yellow
+			expect(result.output).toContain(styleText('yellow', '❯'));
 		});
 
 		test('validates exact nested format with pointer and checkmark', async () => {
@@ -190,11 +190,11 @@ export default testSuite(({ describe }) => {
 			const parentLine = taskLines.find(line => !/^\s{2,}/.test(line) && line.includes('❯'));
 			expect(parentLine).toBeTruthy();
 
-			// Checkmark (✔) should be green (\u001B[32m is green ANSI code)
-			expect(result.output).toMatch(/\u001B\[32m✔/);
+			// Checkmark (✔) should be green
+			expect(result.output).toContain(styleText('green', '✔'));
 
-			// Pointer (❯) should be yellow (\u001B[33m is yellow ANSI code)
-			expect(result.output).toMatch(/\u001B\[33m❯/);
+			// Pointer (❯) should be yellow
+			expect(result.output).toContain(styleText('yellow', '❯'));
 		});
 	});
 });
