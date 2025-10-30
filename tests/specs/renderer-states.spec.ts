@@ -116,6 +116,26 @@ export default testSuite(({ describe }) => {
 			expect(stripVTControlCharacters(result.output).includes('some output text')).toBe(true);
 		});
 
+		test('task with multi-line output indents each line', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': String.raw`
+				import task from '#tasuku';
+
+				await task('Task with multi-line output', async ({ setOutput }) => {
+					setOutput('line 1\nline 2\nline 3');
+				});
+			`,
+			}, { tempDir });
+
+			const result = await node(fixture.getPath('test.mjs'));
+			const textOutput = stripVTControlCharacters(result.output);
+
+			// All output lines should be indented at the same level (2 spaces)
+			expect(textOutput).toMatch(/^ {2}→ line 1$/m);
+			expect(textOutput).toMatch(/^ {2}line 2$/m);
+			expect(textOutput).toMatch(/^ {2}line 3$/m);
+		});
+
 		test('nested tasks are indented', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
