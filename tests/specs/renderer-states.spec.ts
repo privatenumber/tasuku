@@ -1,11 +1,8 @@
-import { stripVTControlCharacters } from 'node:util';
+import { stripVTControlCharacters, styleText } from 'node:util';
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
 import { node } from '../utils/node.js';
-import { extractAnsiCodes } from '../utils/ansi.js';
-
-// Needs to be in project directory to resolve #tasuku via import maps
-const tempDir = new URL('../..', import.meta.url);
+import { tempDir } from '../utils/temp-dir.js';
 
 export default testSuite(({ describe }) => {
 	describe('task states', ({ test }) => {
@@ -41,27 +38,23 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			try {
-				const result = await node(fixture.getPath('test.mjs'));
+				const result = await node(fixture.getPath('test.mjs'), {
+					FORCE_COLOR: '1',
+				});
 				const textOutput = stripVTControlCharacters(result.output);
-				// If it doesn't throw, check the output anyway
+				expect(textOutput.includes('Error task')).toBe(true);
 
-				const ansi = extractAnsiCodes(result.output);
-
-				expect(textOutput.includes('❌') || textOutput.includes('Error task')).toBe(true);
-
-				// Style validation - error should use red (only in TTY environments)
-				if (
-					ansi.colors.red.length > 0
-					|| ansi.colors.green.length > 0
-					|| ansi.colors.reset.length > 0
-				) {
-					expect(ansi.colors.red.length).toBeGreaterThan(0);
-				}
+				// Red error icon with foreground-only reset
+				expect(result.output).toContain(styleText('red', '✖'));
 			} catch (error: unknown) {
 				// setError causes task to throw, check error output
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Error type from nano-spawn
 				const output = (error as any).output || (error as any).stdout || '';
-				expect(stripVTControlCharacters(output).includes('❌') || stripVTControlCharacters(output).includes('Error task')).toBe(true);
+				const textOutput = stripVTControlCharacters(output);
+				expect(textOutput.includes('Error task')).toBe(true);
+
+				// Red error icon with foreground-only reset
+				expect(output).toContain(styleText('red', '✖'));
 			}
 		});
 
@@ -77,11 +70,14 @@ export default testSuite(({ describe }) => {
 				`,
 			}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'));
+			const result = await node(fixture.getPath('test.mjs'), {
+				FORCE_COLOR: '1',
+			});
 			const textOutput = stripVTControlCharacters(result.output);
-
-			expect(textOutput.includes('⚠️') || textOutput.includes('⚠')).toBe(true);
 			expect(textOutput.includes('Warning task')).toBe(true);
+
+			// Yellow warning icon with foreground-only reset
+			expect(result.output).toContain(styleText('yellow', '⚠'));
 		});
 
 		test('task with status shows status text', async () => {
@@ -140,6 +136,48 @@ export default testSuite(({ describe }) => {
 			expect(textOutput.includes('Parent')).toBe(true);
 			expect(textOutput.includes('Child')).toBe(true);
 			expect(textOutput.includes('  ')).toBe(true);
+		});
+
+		test('warning message shows with arrow format', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+					import task from '#tasuku';
+
+					await task('Warning task', async ({ setWarning }) => {
+						setWarning('This is a warning message');
+					});
+				`,
+			}, { tempDir });
+
+			const result = await node(fixture.getPath('test.mjs'), {
+				FORCE_COLOR: '1',
+			});
+			const textOutput = stripVTControlCharacters(result.output);
+			expect(textOutput.includes('→ This is a warning message')).toBe(true);
+
+			// Gray arrow and message with foreground-only reset
+			expect(result.output).toContain(styleText('gray', '→ This is a warning message'));
+		});
+
+		test('error message shows with arrow format', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+					import task from '#tasuku';
+
+					await task('Error task', async ({ setError }) => {
+						setError('This is an error message');
+					});
+				`,
+			}, { tempDir });
+
+			const result = await node(fixture.getPath('test.mjs'), {
+				FORCE_COLOR: '1',
+			});
+			const textOutput = stripVTControlCharacters(result.output);
+			expect(textOutput.includes('→ This is an error message')).toBe(true);
+
+			// Gray arrow and message with foreground-only reset
+			expect(result.output).toContain(styleText('gray', '→ This is an error message'));
 		});
 	});
 });

@@ -2,9 +2,7 @@ import { stripVTControlCharacters } from 'node:util';
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
 import { node } from '../utils/node.js';
-
-// Needs to be in project directory to resolve #tasuku via import maps
-const tempDir = new URL('../..', import.meta.url);
+import { tempDir } from '../utils/temp-dir.js';
 
 export default testSuite(({ describe }) => {
 	describe('ANSI codes', ({ test }) => {

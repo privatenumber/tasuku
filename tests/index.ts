@@ -13,6 +13,7 @@ await describe('tasuku', ({ runTestSuite }) => {
 	runTestSuite(import('./specs/renderer-ansi.spec.js'));
 	runTestSuite(import('./specs/renderer-spinner.spec.js'));
 	runTestSuite(import('./specs/renderer-ci-mode.spec.js'));
+	runTestSuite(import('./specs/renderer-colors.spec.js'));
 	runTestSuite(import('./specs/renderer-cleanup.spec.js'));
 	runTestSuite(import('./specs/renderer-console.spec.js'));
 });

@@ -2,9 +2,7 @@ import { stripVTControlCharacters } from 'node:util';
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
 import { node } from '../utils/node.js';
-
-// Needs to be in project directory to resolve #tasuku via import maps
-const tempDir = new URL('../..', import.meta.url);
+import { tempDir } from '../utils/temp-dir.js';
 
 export default testSuite(({ describe }) => {
 	describe('cleanup', ({ test }) => {
@@ -216,6 +214,47 @@ export default testSuite(({ describe }) => {
 
 			// Console should work normally after renderer destroyed
 			expect(textOutput.includes('After all cleared')).toBe(true);
+		});
+
+		test('tasks cleared with console output interspersed', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					let counter = 0;
+					console.log(counter++);
+
+					const interval = setInterval(() => {
+						console.log(counter++);
+					}, 100);
+
+					const taskApi = await task('Some task', async ({ task }) => {
+						await setTimeout(500);
+						await task('Nested task', async () => {
+							await setTimeout(500);
+						});
+					});
+
+					clearInterval(interval);
+					taskApi.clear();
+
+					// No console output after clear - program exits
+					// Without fix: tasks remain visible at end of output
+				`,
+			}, { tempDir });
+
+			const result = await node(fixture.getPath('test.mjs'));
+
+			// Check that ANSI clear codes are present
+			const hasMoveCursor = result.output.includes('\u001B[1A');
+			const hasClearLine = result.output.includes('\u001B[2K');
+			expect(hasMoveCursor).toBe(true);
+			expect(hasClearLine).toBe(true);
+
+			// Console output should have happened during execution
+			const textOutput = stripVTControlCharacters(result.output);
+			expect(textOutput.includes('0')).toBe(true);
 		});
 	});
 });

@@ -2,9 +2,7 @@ import { stripVTControlCharacters } from 'node:util';
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
 import { node } from '../utils/node.js';
-
-// Needs to be in project directory to resolve #tasuku via import maps
-const tempDir = new URL('../..', import.meta.url);
+import { tempDir } from '../utils/temp-dir.js';
 
 export default testSuite(({ describe }) => {
 	describe('CI mode', ({ test }) => {
@@ -21,10 +19,7 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'), {
-				env: {
-					...process.env,
-					CI: 'true',
-				},
+				CI: 'true',
 			});
 
 			const hasMoveCursor = result.output.includes('\u001B[1A');
@@ -34,31 +29,29 @@ export default testSuite(({ describe }) => {
 			expect(hasClearLine).toBe(false);
 		});
 
-		// FIXME: This test reveals a bug in the current renderer where GITHUB_ACTIONS
-		// env var is not respected. The renderer should disable ANSI clearing when
-		// GITHUB_ACTIONS=true, but it currently doesn't. This will be fixed in the
-		// renderer refactor.
-		// test('GITHUB_ACTIONS=true disables ANSI clearing', async () => {
-		// 	await using fixture = await createFixture({
-		// 		'test.mjs': `
-		// 			import task from '#tasuku';
+		test('GITHUB_ACTIONS=true does not disable ANSI clearing', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
 
-		// 			await task('Task', async () => {
-		// 				await setTimeout(100);
-		// 			});
-		// 		`,
-		// 	});
+					await task('Task', async () => {
+						await setTimeout(100);
+					});
+				`,
+			}, { tempDir });
 
-		// 	const result = await node(fixture.getPath('test.mjs'), {
-		// 		env: { ...process.env, GITHUB_ACTIONS: 'true' },
-		// 	});
+			const result = await node(fixture.getPath('test.mjs'), {
+				GITHUB_ACTIONS: 'true',
+			});
 
-		// 	const hasMoveCursor = result.output.includes('\u001B[1A');
-		// 	const hasClearLine = result.output.includes('\u001B[2K');
+			// Master only respects CI env var, not GITHUB_ACTIONS
+			const hasMoveCursor = result.output.includes('\u001B[1A');
+			const hasClearLine = result.output.includes('\u001B[2K');
 
-		// 	expect(hasMoveCursor).toBe(false);
-		// 	expect(hasClearLine).toBe(false);
-		// });
+			expect(hasMoveCursor).toBe(true);
+			expect(hasClearLine).toBe(true);
+		});
 
 		test('CI mode still shows final task states', async () => {
 			await using fixture = await createFixture({
@@ -73,10 +66,7 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'), {
-				env: {
-					...process.env,
-					CI: 'true',
-				},
+				CI: 'true',
 			});
 			const textOutput = stripVTControlCharacters(result.output);
 

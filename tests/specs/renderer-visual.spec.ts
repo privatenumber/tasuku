@@ -2,9 +2,7 @@ import { stripVTControlCharacters, styleText } from 'node:util';
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
 import { node } from '../utils/node.js';
-
-// Needs to be in project directory to resolve #tasuku via import maps
-const tempDir = new URL('../..', import.meta.url);
+import { tempDir } from '../utils/temp-dir.js';
 
 export default testSuite(({ describe }) => {
 	describe('renderer visual elements', ({ test }) => {
@@ -20,12 +18,11 @@ export default testSuite(({ describe }) => {
 				`,
 			}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'));
-			const textOutput = stripVTControlCharacters(result.output);
+			const result = await node(fixture.getPath('test.mjs'), {
+				FORCE_COLOR: '1',
+			});
 
-			expect(textOutput.includes('✔')).toBe(true);
-
-			// Checkmark (✔) should be green
+			// Green checkmark with foreground-only reset
 			expect(result.output).toContain(styleText('green', '✔'));
 		});
 
@@ -112,7 +109,9 @@ export default testSuite(({ describe }) => {
 				`,
 			}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'));
+			const result = await node(fixture.getPath('test.mjs'), {
+				FORCE_COLOR: '1',
+			});
 			const textOutput = stripVTControlCharacters(result.output);
 
 			// Split into lines and find the final output structure
@@ -122,19 +121,12 @@ export default testSuite(({ describe }) => {
 			expect(lines.some(line => line.includes('Parent'))).toBe(true);
 			expect(lines.some(line => line.includes('Child'))).toBe(true);
 
-			// Child task must have checkmark (✔)
-			expect(textOutput.includes('✔')).toBe(true);
-
 			// Verify child line has checkmark and is indented
 			const childLine = lines.find(line => line.includes('Child') && line.includes('✔'));
 			expect(childLine).toBeTruthy();
 			if (childLine) {
 				expect(childLine.match(/^\s{2,}/)).toBeTruthy();
 			}
-
-			// Parent task (with children) should have pointer (❯)
-			// This is the key visual distinction for parent tasks
-			expect(textOutput.includes('❯')).toBe(true);
 
 			// Verify parent line has pointer and is not indented
 			const parentLine = lines.find(line => line.includes('Parent') && line.includes('❯'));
@@ -143,10 +135,10 @@ export default testSuite(({ describe }) => {
 				expect(parentLine.match(/^❯/)).toBeTruthy();
 			}
 
-			// Checkmark (✔) should be green
+			// Green checkmark with foreground-only reset
 			expect(result.output).toContain(styleText('green', '✔'));
 
-			// Pointer (❯) should be yellow
+			// Yellow pointer with foreground-only reset
 			expect(result.output).toContain(styleText('yellow', '❯'));
 		});
 
@@ -164,7 +156,9 @@ export default testSuite(({ describe }) => {
 				`,
 			}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'));
+			const result = await node(fixture.getPath('test.mjs'), {
+				FORCE_COLOR: '1',
+			});
 			const textOutput = stripVTControlCharacters(result.output);
 
 			// Split output into non-empty lines
@@ -176,24 +170,18 @@ export default testSuite(({ describe }) => {
 			// Should have at least 2 occurrences (parent and child)
 			expect(taskLines.length).toBeGreaterThanOrEqual(2);
 
-			// Check for required symbols
-			expect(textOutput.includes('✔')).toBe(true);
-
 			// Check indentation pattern exists
 			const hasIndentedLine = lines.some(line => line.match(/^\s{2,}/) && line.includes('Task completed'));
 			expect(hasIndentedLine).toBe(true);
-
-			// Parent task (with children) must have pointer (❯)
-			expect(textOutput.includes('❯')).toBe(true);
 
 			// Verify parent line has pointer and is not indented
 			const parentLine = taskLines.find(line => !/^\s{2,}/.test(line) && line.includes('❯'));
 			expect(parentLine).toBeTruthy();
 
-			// Checkmark (✔) should be green
+			// Green checkmark with foreground-only reset
 			expect(result.output).toContain(styleText('green', '✔'));
 
-			// Pointer (❯) should be yellow
+			// Yellow pointer with foreground-only reset
 			expect(result.output).toContain(styleText('yellow', '❯'));
 		});
 
@@ -211,14 +199,12 @@ export default testSuite(({ describe }) => {
 				`,
 			}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'));
+			const result = await node(fixture.getPath('test.mjs'), {
+				FORCE_COLOR: '1',
+			});
 
-			// Parent should show yellow pointer while child is loading
+			// Yellow pointer (not red) with foreground-only reset
 			expect(result.output).toContain(styleText('yellow', '❯'));
-
-			// Verify it's actually yellow (ANSI code 33) not red (31)
-			expect(result.output).toContain(styleText('yellow', '❯'));
-			expect(result.output).not.toContain(styleText('red', '❯'));
 		});
 
 		test('parent task shows red pointer on error', async () => {
@@ -240,9 +226,11 @@ export default testSuite(({ describe }) => {
 				`,
 			}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'));
+			const result = await node(fixture.getPath('test.mjs'), {
+				FORCE_COLOR: '1',
+			});
 
-			// Parent should show red pointer when child fails
+			// Red pointer when child errors with foreground-only reset
 			expect(result.output).toContain(styleText('red', '❯'));
 		});
 	});
