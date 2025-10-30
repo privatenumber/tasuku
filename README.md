@@ -339,11 +339,11 @@ _Tasuku_  or タスク is the phonetic Japanese pronounciation of the word "task
 
 ### Why did you make this?
 
-For writing scripts or CLI tools. _Tasuku_ is a great way to convey the state of the tasks that are running in your script without being imposing about the way you write your code.
+I built _Tasuku_ as a lightweight task runner for scripts and CLI tools. It's designed to show task progress clearly without forcing a rigid structure on how you write your code.
 
-Major shoutout to [listr](https://github.com/SamVerschueren/listr) + [listr2](https://github.com/cenk1cenk2/listr2) for being the motivation and visual inspiration for _Tasuku_, and for being my go-to task runner for a long time. I made _Tasuku_ because I eventually found that they were too structured and declarative for my needs.
+Big thanks to [listr](https://github.com/SamVerschueren/listr) and [listr2](https://github.com/cenk1cenk2/listr2), which inspired both the visuals and the idea—I've relied on them for years. But over time, I found their declarative approach too restrictive for my workflow, so I created something simpler and more flexible.
 
-Big thanks to [ink](https://github.com/vadimdemedes/ink) for doing all the heavy lifting for rendering interfaces in the terminal. Implementing a dynamic task list that doesn't interfere with `console.logs()` wouldn't have been so easy without it.
+_Tasuku_ uses its own minimal ANSI-based renderer for terminal output, giving you smooth `console.log()` integration with zero runtime dependencies. The rendering model was originally inspired by [ink](https://github.com/vadimdemedes/ink)'s approach to terminal UIs.
 
 ### Doesn't the usage of nested `task` functions violate ESLint's [no-shadow](https://eslint.org/docs/rules/no-shadow)?
 Yes, but it should be fine as you don't need access to other `task` functions aside from the immediate one.

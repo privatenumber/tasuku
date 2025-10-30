@@ -3,7 +3,10 @@
 
 		// Node 12
 		"target": "ES2019",
-		"jsx": "react",
+		"lib": [
+			"ES2019",
+			"esnext.disposable",
+		],
 		"module": "Preserve",
 		"strict": true,
 		"noEmit": true,
