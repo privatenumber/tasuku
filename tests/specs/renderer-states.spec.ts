@@ -99,8 +99,8 @@ export default testSuite(({ describe }) => {
 			// Status appears in brackets after title
 			expect(textOutput).toContain('My task [loading]');
 
-			// Status has dim/gray styling
-			expect(result.output).toContain(styleText('gray', '[loading]'));
+			// Status has dim styling
+			expect(result.output).toContain(styleText('dim', '[loading]'));
 		});
 
 		test('status can be updated and cleared', async () => {

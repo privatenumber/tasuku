@@ -16,4 +16,5 @@ await describe('tasuku', ({ runTestSuite }) => {
 	runTestSuite(import('./specs/renderer-colors.spec.js'));
 	runTestSuite(import('./specs/renderer-cleanup.spec.js'));
 	runTestSuite(import('./specs/renderer-console.spec.js'));
+	runTestSuite(import('./specs/renderer-api-coverage.spec.js'));
 });
