@@ -5,7 +5,7 @@ import { node } from '../utils/node.js';
 import { tempDir } from '../utils/temp-dir.js';
 
 export default testSuite(({ describe }) => {
-	describe('API coverage', ({ test }) => {
+	describe('task methods', ({ test }) => {
 		test('setTitle updates task title dynamically', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
@@ -34,6 +34,29 @@ export default testSuite(({ describe }) => {
 			expect(result.output).toContain(styleText('green', '✔'));
 		});
 
+		test('setOutput with string', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+					import task from '#tasuku';
+
+					await task('Task', async ({ setOutput }) => {
+						setOutput('string output');
+					});
+				`,
+			}, { tempDir });
+
+			const result = await node(fixture.getPath('test.mjs'), {
+				FORCE_COLOR: '1',
+			});
+			const textOutput = stripVTControlCharacters(result.output);
+
+			expect(textOutput).toContain('string output');
+
+			// Check for green checkmark and gray arrow
+			expect(result.output).toContain(styleText('green', '✔'));
+			expect(result.output).toContain(styleText('gray', '→ string output'));
+		});
+
 		test('setOutput with object form', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
@@ -55,6 +78,29 @@ export default testSuite(({ describe }) => {
 			// Check for green checkmark and gray arrow
 			expect(result.output).toContain(styleText('green', '✔'));
 			expect(result.output).toContain(styleText('gray', '→ object output'));
+		});
+
+		test('setError with string', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+					import task from '#tasuku';
+
+					await task('Task', async ({ setError }) => {
+						setError('String error message');
+					});
+				`,
+			}, { tempDir });
+
+			const result = await node(fixture.getPath('test.mjs'), {
+				FORCE_COLOR: '1',
+			});
+			const textOutput = stripVTControlCharacters(result.output);
+
+			expect(textOutput).toContain('String error message');
+
+			// Check for red X and gray arrow
+			expect(result.output).toContain(styleText('red', '✖'));
+			expect(result.output).toContain(styleText('gray', '→ String error message'));
 		});
 
 		test('setError with Error object', async () => {
@@ -80,6 +126,29 @@ export default testSuite(({ describe }) => {
 			expect(result.output).toContain(styleText('gray', '→ Error object message'));
 		});
 
+		test('setWarning with string', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+					import task from '#tasuku';
+
+					await task('Task', async ({ setWarning }) => {
+						setWarning('String warning message');
+					});
+				`,
+			}, { tempDir });
+
+			const result = await node(fixture.getPath('test.mjs'), {
+				FORCE_COLOR: '1',
+			});
+			const textOutput = stripVTControlCharacters(result.output);
+
+			expect(textOutput).toContain('String warning message');
+
+			// Check for yellow warning and gray arrow
+			expect(result.output).toContain(styleText('yellow', '⚠'));
+			expect(result.output).toContain(styleText('gray', '→ String warning message'));
+		});
+
 		test('setWarning with Error object', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
@@ -101,6 +170,28 @@ export default testSuite(({ describe }) => {
 			// Check for yellow warning and gray arrow
 			expect(result.output).toContain(styleText('yellow', '⚠'));
 			expect(result.output).toContain(styleText('gray', '→ Warning object message'));
+		});
+
+		test('setStatus with string', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+					import task from '#tasuku';
+
+					await task('Task', async ({ setStatus }) => {
+						setStatus('processing');
+					});
+				`,
+			}, { tempDir });
+
+			const result = await node(fixture.getPath('test.mjs'), {
+				FORCE_COLOR: '1',
+			});
+			const textOutput = stripVTControlCharacters(result.output);
+
+			expect(textOutput).toContain('Task [processing]');
+
+			// Status has dim styling
+			expect(result.output).toContain(styleText('dim', '[processing]'));
 		});
 
 		test('task function throws error', async () => {
@@ -130,7 +221,38 @@ export default testSuite(({ describe }) => {
 			expect(result.output).toContain(styleText('gray', '→ Task failed'));
 		});
 
-		test('group clear method removes all tasks', async () => {
+		test('clear method removes single task', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					const taskApi = await task('Task to clear', async () => {
+						await setTimeout(50);
+					});
+
+					taskApi.clear();
+					await setTimeout(50);
+
+					console.log('AFTER_CLEAR');
+				`,
+			}, { tempDir });
+
+			const result = await node(fixture.getPath('test.mjs'), {
+				FORCE_COLOR: '1',
+			});
+			const textOutput = stripVTControlCharacters(result.output);
+
+			// Task should be cleared after marker
+			const parts = textOutput.split('AFTER_CLEAR');
+			const afterClear = parts[1] || '';
+			expect(afterClear.includes('Task to clear')).toBe(false);
+
+			// Check for ANSI clear codes
+			expect(result.output).toContain('\u001B[2K\u001B[1A');
+		});
+
+		test('group.clear method removes all tasks', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';

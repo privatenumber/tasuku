@@ -1,10 +1,84 @@
-import { stripVTControlCharacters } from 'node:util';
+import { stripVTControlCharacters, styleText } from 'node:util';
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
 import { node } from '../utils/node.js';
 import { tempDir } from '../utils/temp-dir.js';
 
 export default testSuite(({ describe }) => {
+	describe('CI mode', ({ test }) => {
+		test('CI=true disables ANSI clearing', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task('Task', async () => {
+						await setTimeout(100);
+					});
+				`,
+			}, { tempDir });
+
+			const result = await node(fixture.getPath('test.mjs'), {
+				CI: 'true',
+			});
+
+			// Should NOT contain ANSI cursor movement codes
+			const hasMoveCursor = result.output.includes('\u001B[1A');
+			const hasClearLine = result.output.includes('\u001B[2K');
+
+			expect(hasMoveCursor).toBe(false);
+			expect(hasClearLine).toBe(false);
+		});
+
+		test('GITHUB_ACTIONS=true does not disable ANSI clearing', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task('Task', async () => {
+						await setTimeout(100);
+					});
+				`,
+			}, { tempDir });
+
+			const result = await node(fixture.getPath('test.mjs'), {
+				GITHUB_ACTIONS: 'true',
+			});
+
+			// Master only respects CI env var, not GITHUB_ACTIONS
+			const hasMoveCursor = result.output.includes('\u001B[1A');
+			const hasClearLine = result.output.includes('\u001B[2K');
+
+			expect(hasMoveCursor).toBe(true);
+			expect(hasClearLine).toBe(true);
+		});
+
+		test('CI mode still shows final task states', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task('Task', async () => {
+						await setTimeout(50);
+					});
+				`,
+			}, { tempDir });
+
+			const result = await node(fixture.getPath('test.mjs'), {
+				CI: 'true',
+			});
+			const textOutput = stripVTControlCharacters(result.output);
+
+			const hasCheckmark = textOutput.includes('✔');
+			const hasTaskName = textOutput.includes('Task');
+
+			expect(hasCheckmark).toBe(true);
+			expect(hasTaskName).toBe(true);
+		});
+	});
+
 	describe('color environment variables', ({ test }) => {
 		test('NO_COLOR disables colors', async () => {
 			await using fixture = await createFixture({
@@ -27,7 +101,7 @@ export default testSuite(({ describe }) => {
 			// Should contain the checkmark but without color codes
 			expect(textOutput.includes('✔')).toBe(true);
 
-			// Should NOT contain color codes (green for checkmark)
+			// Should NOT contain color codes (green for checkmark: 32m)
 			expect(result.output.includes('\u001B[32m')).toBe(false);
 		});
 
@@ -52,7 +126,7 @@ export default testSuite(({ describe }) => {
 			// Should contain the checkmark but without color codes
 			expect(textOutput.includes('✔')).toBe(true);
 
-			// Should NOT contain color codes (green for checkmark)
+			// Should NOT contain color codes (green for checkmark: 32m)
 			expect(result.output.includes('\u001B[32m')).toBe(false);
 		});
 
@@ -77,7 +151,7 @@ export default testSuite(({ describe }) => {
 			// Should contain the checkmark but without color codes
 			expect(textOutput.includes('✔')).toBe(true);
 
-			// Should NOT contain color codes (green for checkmark)
+			// Should NOT contain color codes (green for checkmark: 32m)
 			expect(result.output.includes('\u001B[32m')).toBe(false);
 		});
 
@@ -102,8 +176,11 @@ export default testSuite(({ describe }) => {
 			// Should contain the checkmark
 			expect(textOutput.includes('✔')).toBe(true);
 
-			// Should contain color codes (green for checkmark: \u001B[32m)
+			// Should contain color codes (green for checkmark: 32m)
 			expect(result.output.includes('\u001B[32m')).toBe(true);
+
+			// Green checkmark styled
+			expect(result.output).toContain(styleText('green', '✔'));
 		});
 
 		test('colors work with error state', async () => {
@@ -127,6 +204,10 @@ export default testSuite(({ describe }) => {
 
 			// Should contain the error icon
 			expect(textOutput.includes('✖')).toBe(true);
+
+			// Red error icon (31m = red)
+			expect(result.output.includes('\u001B[31m')).toBe(true);
+			expect(result.output).toContain(styleText('red', '✖'));
 		});
 
 		test('NO_COLOR removes all colors including warning', async () => {
@@ -151,7 +232,7 @@ export default testSuite(({ describe }) => {
 			// Should contain the warning icon
 			expect(textOutput.includes('⚠')).toBe(true);
 
-			// Should NOT contain yellow color code (\u001B[33m)
+			// Should NOT contain yellow color code (33m)
 			expect(result.output.includes('\u001B[33m')).toBe(false);
 		});
 
@@ -180,11 +261,13 @@ export default testSuite(({ describe }) => {
 			expect(textOutput.includes('❯')).toBe(true);
 			expect(textOutput.includes('✔')).toBe(true);
 
-			// Should contain yellow color for pointer (\u001B[33m)
+			// Should contain yellow color for pointer (33m)
 			expect(result.output.includes('\u001B[33m')).toBe(true);
+			expect(result.output).toContain(styleText('yellow', '❯'));
 
-			// Should contain green color for checkmark (\u001B[32m)
+			// Should contain green color for checkmark (32m)
 			expect(result.output.includes('\u001B[32m')).toBe(true);
+			expect(result.output).toContain(styleText('green', '✔'));
 		});
 
 		test('NO_COLOR with nested tasks removes all colors', async () => {

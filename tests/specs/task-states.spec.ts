@@ -6,7 +6,7 @@ import { tempDir } from '../utils/temp-dir.js';
 
 export default testSuite(({ describe }) => {
 	describe('task states', ({ test }) => {
-		test('success state shows checkmark', async () => {
+		test('success state shows green checkmark', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
@@ -18,14 +18,20 @@ export default testSuite(({ describe }) => {
 				`,
 			}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'));
+			const result = await node(fixture.getPath('test.mjs'), {
+				FORCE_COLOR: '1',
+			});
 			const textOutput = stripVTControlCharacters(result.output);
 
 			expect(textOutput.includes('✔')).toBe(true);
 			expect(textOutput.includes('Success task')).toBe(true);
+
+			// Green checkmark (32m = green foreground, 39m = default foreground)
+			expect(result.output).toContain(styleText('green', '✔'));
+			expect(result.output).toContain('\u001B[32m');
 		});
 
-		test('error state shows error icon', async () => {
+		test('error state shows red X with gray message', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
@@ -44,8 +50,13 @@ export default testSuite(({ describe }) => {
 				const textOutput = stripVTControlCharacters(result.output);
 				expect(textOutput.includes('Error task')).toBe(true);
 
-				// Red error icon with foreground-only reset
+				// Red error icon (31m = red)
 				expect(result.output).toContain(styleText('red', '✖'));
+				expect(result.output).toContain('\u001B[31m');
+
+				// Gray arrow and message (90m = gray/bright black)
+				expect(result.output).toContain(styleText('gray', '→ Something went wrong'));
+				expect(result.output).toContain('\u001B[90m');
 			} catch (error: unknown) {
 				// setError causes task to throw, check error output
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Error type from nano-spawn
@@ -53,12 +64,12 @@ export default testSuite(({ describe }) => {
 				const textOutput = stripVTControlCharacters(output);
 				expect(textOutput.includes('Error task')).toBe(true);
 
-				// Red error icon with foreground-only reset
 				expect(output).toContain(styleText('red', '✖'));
+				expect(output).toContain(styleText('gray', '→ Something went wrong'));
 			}
 		});
 
-		test('warning state shows warning icon', async () => {
+		test('warning state shows yellow warning with gray message', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
@@ -76,8 +87,58 @@ export default testSuite(({ describe }) => {
 			const textOutput = stripVTControlCharacters(result.output);
 			expect(textOutput.includes('Warning task')).toBe(true);
 
-			// Yellow warning icon with foreground-only reset
+			// Yellow warning icon (33m = yellow)
 			expect(result.output).toContain(styleText('yellow', '⚠'));
+			expect(result.output).toContain('\u001B[33m');
+
+			// Gray arrow and message
+			expect(result.output).toContain(styleText('gray', '→ Warning message'));
+			expect(result.output).toContain('\u001B[90m');
+		});
+
+		test('pending state shows square symbol', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task.group(task => [
+						task('one', async () => { await setTimeout(50); }),
+						task('two', async () => { await setTimeout(50); }),
+					], { concurrency: 1 });
+				`,
+			}, { tempDir });
+
+			const result = await node(fixture.getPath('test.mjs'));
+			const textOutput = stripVTControlCharacters(result.output);
+
+			expect(textOutput.includes('one') && textOutput.includes('two')).toBe(true);
+			expect(textOutput.includes('◼')).toBe(true);
+		});
+
+		test('loading state shows yellow spinner', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task('Loading task', async () => {
+						await setTimeout(150);
+					});
+				`,
+			}, { tempDir });
+
+			const result = await node(fixture.getPath('test.mjs'), {
+				FORCE_COLOR: '1',
+			});
+
+			// Yellow spinner characters (33m = yellow)
+			expect(result.output).toContain('\u001B[33m');
+
+			// Should contain at least one spinner character
+			const spinnerChars = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏';
+			const hasSpinner = spinnerChars.split('').some(char => result.output.includes(char));
+			expect(hasSpinner).toBe(true);
 		});
 
 		test('status displays in brackets with dim styling', async () => {
@@ -99,8 +160,9 @@ export default testSuite(({ describe }) => {
 			// Status appears in brackets after title
 			expect(textOutput).toContain('My task [loading]');
 
-			// Status has dim styling
+			// Status has dim styling (2m = dim, 22m = reset dim)
 			expect(result.output).toContain(styleText('dim', '[loading]'));
+			expect(result.output).toContain('\u001B[2m[loading]\u001B[22m');
 		});
 
 		test('status can be updated and cleared', async () => {
@@ -120,12 +182,18 @@ export default testSuite(({ describe }) => {
 			`,
 			}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'));
+			const result = await node(fixture.getPath('test.mjs'), {
+				FORCE_COLOR: '1',
+			});
 			const textOutput = stripVTControlCharacters(result.output);
 
 			// Both status updates appear in output
 			expect(textOutput).toContain('Task [step 1]');
 			expect(textOutput).toContain('Task [step 2]');
+
+			// Dim styling for status
+			expect(result.output).toContain(styleText('dim', '[step 1]'));
+			expect(result.output).toContain(styleText('dim', '[step 2]'));
 
 			// Final output has no status brackets after clearing
 			const lines = textOutput.split('\n');
@@ -134,7 +202,7 @@ export default testSuite(({ describe }) => {
 			expect(finalTaskLine).not.toContain('[');
 		});
 
-		test('task with output shows output text', async () => {
+		test('task with output shows output text with gray arrow', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
@@ -147,9 +215,15 @@ export default testSuite(({ describe }) => {
 				`,
 			}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'));
+			const result = await node(fixture.getPath('test.mjs'), {
+				FORCE_COLOR: '1',
+			});
+			const textOutput = stripVTControlCharacters(result.output);
 
-			expect(stripVTControlCharacters(result.output).includes('some output text')).toBe(true);
+			expect(textOutput.includes('some output text')).toBe(true);
+
+			// Gray arrow and output
+			expect(result.output).toContain(styleText('gray', '→ some output text'));
 		});
 
 		test('task with multi-line output indents each line', async () => {
@@ -192,48 +266,6 @@ export default testSuite(({ describe }) => {
 			expect(textOutput.includes('Parent')).toBe(true);
 			expect(textOutput.includes('Child')).toBe(true);
 			expect(textOutput.includes('  ')).toBe(true);
-		});
-
-		test('warning message shows with arrow format', async () => {
-			await using fixture = await createFixture({
-				'test.mjs': `
-					import task from '#tasuku';
-
-					await task('Warning task', async ({ setWarning }) => {
-						setWarning('This is a warning message');
-					});
-				`,
-			}, { tempDir });
-
-			const result = await node(fixture.getPath('test.mjs'), {
-				FORCE_COLOR: '1',
-			});
-			const textOutput = stripVTControlCharacters(result.output);
-			expect(textOutput.includes('→ This is a warning message')).toBe(true);
-
-			// Gray arrow and message with foreground-only reset
-			expect(result.output).toContain(styleText('gray', '→ This is a warning message'));
-		});
-
-		test('error message shows with arrow format', async () => {
-			await using fixture = await createFixture({
-				'test.mjs': `
-					import task from '#tasuku';
-
-					await task('Error task', async ({ setError }) => {
-						setError('This is an error message');
-					});
-				`,
-			}, { tempDir });
-
-			const result = await node(fixture.getPath('test.mjs'), {
-				FORCE_COLOR: '1',
-			});
-			const textOutput = stripVTControlCharacters(result.output);
-			expect(textOutput.includes('→ This is an error message')).toBe(true);
-
-			// Gray arrow and message with foreground-only reset
-			expect(result.output).toContain(styleText('gray', '→ This is an error message'));
 		});
 	});
 });

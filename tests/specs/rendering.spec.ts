@@ -5,15 +5,15 @@ import { node } from '../utils/node.js';
 import { tempDir } from '../utils/temp-dir.js';
 
 export default testSuite(({ describe }) => {
-	describe('renderer visual elements', ({ test }) => {
-		test('success task shows checkmark', async () => {
+	describe('visual rendering', ({ test }) => {
+		test('spinner animates through multiple frames with yellow color', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
 					import { setTimeout } from 'node:timers/promises';
 
 					await task('Task', async () => {
-						await setTimeout(50);
+						await setTimeout(200);
 					});
 				`,
 			}, { tempDir });
@@ -22,45 +22,69 @@ export default testSuite(({ describe }) => {
 				FORCE_COLOR: '1',
 			});
 
-			// Green checkmark with foreground-only reset
-			expect(result.output).toContain(styleText('green', '✔'));
+			// Spinner characters: ⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏
+			const spinnerChars = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏';
+			const hasSpinner = spinnerChars.split('').some(char => result.output.includes(char));
+			expect(hasSpinner).toBe(true);
+
+			// Yellow color for spinner (33m = yellow)
+			expect(result.output).toContain('\u001B[33m');
+
+			// Task completes successfully
+			expect(stripVTControlCharacters(result.output).includes('Task')).toBe(true);
 		});
 
-		test('loading task shows spinner characters', async () => {
+		test('spinner stops when task completes', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
 					import { setTimeout } from 'node:timers/promises';
 
 					await task('Task', async () => {
-						await setTimeout(150);
+						await setTimeout(100);
 					});
 				`,
 			}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'));
-			const textOutput = stripVTControlCharacters(result.output);
+			const result = await node(fixture.getPath('test.mjs'), {
+				FORCE_COLOR: '1',
+			});
 
-			expect(textOutput.includes('Task')).toBe(true);
+			// After task completes, final output should show checkmark not spinner
+			expect(stripVTControlCharacters(result.output).includes('✔')).toBe(true);
+
+			// Green checkmark in final output
+			expect(result.output).toContain(styleText('green', '✔'));
 		});
 
-		test('pending task shows square symbol', async () => {
+		test('multiple concurrent tasks show spinners', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
 					import { setTimeout } from 'node:timers/promises';
 
 					await task.group(task => [
-						task('one', async () => { await setTimeout(50); }),
-						task('two', async () => { await setTimeout(50); }),
-					], { concurrency: 1 });
+						task('one', async () => { await setTimeout(150); }),
+						task('two', async () => { await setTimeout(150); }),
+					], { concurrency: 2 });
 				`,
 			}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'));
+			const result = await node(fixture.getPath('test.mjs'), {
+				FORCE_COLOR: '1',
+			});
 			const textOutput = stripVTControlCharacters(result.output);
 
+			// Both task names appear
 			expect(textOutput.includes('one') && textOutput.includes('two')).toBe(true);
+
+			// Spinner characters present
+			const spinnerChars = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏';
+			const hasSpinner = spinnerChars.split('').some(char => result.output.includes(char));
+			expect(hasSpinner).toBe(true);
+
+			// Yellow spinners
+			expect(result.output).toContain('\u001B[33m');
 		});
 
 		test('nested tasks show proper indentation and symbols', async () => {
@@ -77,7 +101,9 @@ export default testSuite(({ describe }) => {
 				`,
 			}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'));
+			const result = await node(fixture.getPath('test.mjs'), {
+				FORCE_COLOR: '1',
+			});
 			const textOutput = stripVTControlCharacters(result.output);
 
 			// Check both tasks are present
@@ -93,9 +119,12 @@ export default testSuite(({ describe }) => {
 
 			// Check final output contains completed symbols
 			expect(textOutput.includes('✔')).toBe(true);
+
+			// Green checkmark
+			expect(result.output).toContain(styleText('green', '✔'));
 		});
 
-		test('nested tasks final format shows parent with pointer and child with checkmark', async () => {
+		test('nested tasks final format shows parent with yellow pointer and child with green checkmark', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
@@ -140,6 +169,10 @@ export default testSuite(({ describe }) => {
 
 			// Yellow pointer with foreground-only reset
 			expect(result.output).toContain(styleText('yellow', '❯'));
+
+			// Verify exact ANSI codes
+			expect(result.output).toContain('\u001B[32m'); // green
+			expect(result.output).toContain('\u001B[33m'); // yellow
 		});
 
 		test('validates exact nested format with pointer and checkmark', async () => {
@@ -205,6 +238,7 @@ export default testSuite(({ describe }) => {
 
 			// Yellow pointer (not red) with foreground-only reset
 			expect(result.output).toContain(styleText('yellow', '❯'));
+			expect(result.output).toContain('\u001B[33m❯');
 		});
 
 		test('parent task shows red pointer on error', async () => {
@@ -232,6 +266,7 @@ export default testSuite(({ describe }) => {
 
 			// Red pointer when child errors with foreground-only reset
 			expect(result.output).toContain(styleText('red', '❯'));
+			expect(result.output).toContain('\u001B[31m❯');
 		});
 	});
 });
