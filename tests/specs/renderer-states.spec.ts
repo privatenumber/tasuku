@@ -80,22 +80,58 @@ export default testSuite(({ describe }) => {
 			expect(result.output).toContain(styleText('yellow', '⚠'));
 		});
 
-		test('task with status shows status text', async () => {
+		test('status displays in brackets with dim styling', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-					import task from '#tasuku';
-					import { setTimeout } from 'node:timers/promises';
+				import task from '#tasuku';
 
-					await task('Task with status', async ({ setStatus }) => {
-						setStatus('processing...');
-						await setTimeout(100);
-					});
-				`,
+				await task('My task', async ({ setStatus }) => {
+					setStatus('loading');
+				});
+			`,
+			}, { tempDir });
+
+			const result = await node(fixture.getPath('test.mjs'), {
+				FORCE_COLOR: '1',
+			});
+			const textOutput = stripVTControlCharacters(result.output);
+
+			// Status appears in brackets after title
+			expect(textOutput).toContain('My task [loading]');
+
+			// Status has dim/gray styling
+			expect(result.output).toContain(styleText('gray', '[loading]'));
+		});
+
+		test('status can be updated and cleared', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+				import task from '#tasuku';
+				import { setTimeout } from 'node:timers/promises';
+
+				await task('Task', async ({ setStatus }) => {
+					setStatus('step 1');
+					await setTimeout(50);
+					setStatus('step 2');
+					await setTimeout(50);
+					setStatus(undefined);
+					await setTimeout(50);
+				});
+			`,
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
+			const textOutput = stripVTControlCharacters(result.output);
 
-			expect(stripVTControlCharacters(result.output).includes('processing...')).toBe(true);
+			// Both status updates appear in output
+			expect(textOutput).toContain('Task [step 1]');
+			expect(textOutput).toContain('Task [step 2]');
+
+			// Final output has no status brackets after clearing
+			const lines = textOutput.split('\n');
+			const finalTaskLine = lines.reverse().find(line => line.includes('✔') && line.includes('Task'));
+			expect(finalTaskLine).toBeTruthy();
+			expect(finalTaskLine).not.toContain('[');
 		});
 
 		test('task with output shows output text', async () => {
