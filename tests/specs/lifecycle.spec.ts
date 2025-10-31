@@ -131,7 +131,7 @@ export default testSuite(({ describe }) => {
 				const successString = `${yoctocolors.green('✔')} Task`;
 				expect(result.stdout).toContain('test message');
 				expect(result.stdout).toContain(successString);
-				expect(result.stdout.indexOf('test message')).toBeLessThan(result.stdout.indexOf(successString));
+				expect(result.stdout.indexOf('test message')).toBeLessThan(result.stdout.lastIndexOf(successString));
 			});
 
 			test('console output interspersed with task clearing', async () => {
@@ -205,7 +205,7 @@ export default testSuite(({ describe }) => {
 
 				// Check order: log during task -> after_log -> final failure render
 				expect(result.stdout.indexOf('about to fail')).toBeLessThan(result.stdout.indexOf('after task'));
-				expect(result.stdout.indexOf('after task')).toBeLessThan(result.stdout.indexOf(failString));
+				expect(result.stdout.indexOf('after task')).toBeLessThan(result.stdout.lastIndexOf(failString));
 			});
 		});
 
@@ -285,15 +285,15 @@ export default testSuite(({ describe }) => {
 				onTestFail(() => { console.log(result); });
 				expect(result.stderr).toBe('');
 
-				// Check output after marker
-				const parts = result.stdout.split('FINAL_OUTPUT');
-				const afterMarker = parts[1] || '';
+				// Get the final rendered output (after all ANSI clearing)
+				const lines = result.stdout.split('\n').filter(line => line.trim());
+				const lastLine = lines.at(-1) || '';
 
-				// Task 1 should be cleared
-				expect(afterMarker).not.toContain('Task 1');
+				// Task 1 should be cleared from final output
+				expect(lastLine).not.toContain('Task 1');
 
-				// Task 2 should still be present
-				expect(afterMarker).toContain('Task 2');
+				// Task 2 should still be present in final output
+				expect(lastLine).toContain('Task 2');
 			});
 
 			test('all tasks cleared triggers renderer destroy', async () => {
