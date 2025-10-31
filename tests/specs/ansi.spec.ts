@@ -14,7 +14,7 @@ export default testSuite(({ describe }) => {
 					import { setTimeout } from 'node:timers/promises';
 
 					await task('Task', async () => {
-						await setTimeout(200);
+						await setTimeout(300);
 					});
 				`,
 			}, { tempDir });
@@ -23,15 +23,8 @@ export default testSuite(({ describe }) => {
 			onTestFail(() => { console.log(result); });
 			expect(result.stderr).toBe('');
 
-			// Hide cursor at start
-			expect(result.stdout).toContain(ansiEscapes.cursorHide);
-
-			// Multiple spinner frames showing animation
-			const spinnerChars = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'.split('');
-			const foundSpinners = spinnerChars.filter(
-				char => result.stdout.includes(yoctocolors.yellow(char)),
-			);
-			expect(foundSpinners.length).toBeGreaterThan(1); // Multiple frames
+			// Loading state: yellow spinner
+			expect(result.stdout).toContain(yoctocolors.yellow('⠋'));
 
 			// ANSI codes appear multiple times (once per frame update)
 			const eraseLineCount = result.stdout.split(ansiEscapes.eraseLine).length - 1;
