@@ -1,191 +1,153 @@
-import { stripVTControlCharacters, styleText } from 'node:util';
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
+import ansiEscapes from 'ansi-escapes';
+import ansiRegex from 'ansi-regex';
+import yoctocolors from 'yoctocolors';
 import { node } from '../utils/node.js';
 import { tempDir } from '../utils/temp-dir.js';
 
+// Non-color ANSI codes that are allowed even when colors are disabled
+const nonColorAnsiCodes = new Set([
+	ansiEscapes.cursorHide,
+	ansiEscapes.cursorShow,
+	ansiEscapes.eraseLine,
+	ansiEscapes.cursorUp(),
+	ansiEscapes.cursorDown(),
+	ansiEscapes.cursorLeft,
+]);
+
 export default testSuite(({ describe }) => {
-	describe('CI mode', ({ test }) => {
-		test('CI=true disables ANSI clearing', async () => {
-			await using fixture = await createFixture({
-				'test.mjs': `
+	describe('environment', ({ describe }) => {
+		describe('CI mode', ({ test }) => {
+			test('CI=true disables ANSI clearing', async () => {
+				await using fixture = await createFixture({
+					'test.mjs': `
 					import task from '#tasuku';
 					import { setTimeout } from 'node:timers/promises';
 
 					await task('Task', async () => {
 						await setTimeout(100);
 					});
-				`,
-			}, { tempDir });
+					`,
+				}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'), {
-				CI: 'true',
+				const result = await node(fixture.getPath('test.mjs'), {
+					CI: 'true',
+				});
+				expect(result.stderr).toBe('');
+
+				// Should NOT contain ANSI cursor movement codes
+				expect(result.stdout).not.toContain(ansiEscapes.cursorUp());
+				expect(result.stdout).not.toContain(ansiEscapes.eraseLine);
 			});
 
-			// Should NOT contain ANSI cursor movement codes
-			const hasMoveCursor = result.output.includes('\u001B[1A');
-			const hasClearLine = result.output.includes('\u001B[2K');
-
-			expect(hasMoveCursor).toBe(false);
-			expect(hasClearLine).toBe(false);
-		});
-
-		test('GITHUB_ACTIONS=true does not disable ANSI clearing', async () => {
-			await using fixture = await createFixture({
-				'test.mjs': `
+			test('GITHUB_ACTIONS=true does not disable ANSI clearing', async () => {
+				await using fixture = await createFixture({
+					'test.mjs': `
 					import task from '#tasuku';
 					import { setTimeout } from 'node:timers/promises';
 
 					await task('Task', async () => {
 						await setTimeout(100);
 					});
-				`,
-			}, { tempDir });
+					`,
+				}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'), {
-				GITHUB_ACTIONS: 'true',
+				const result = await node(fixture.getPath('test.mjs'), {
+					GITHUB_ACTIONS: 'true',
+				});
+				expect(result.stderr).toBe('');
+
+				// Only respects CI env var, not GITHUB_ACTIONS
+				expect(result.stdout).toContain(ansiEscapes.cursorUp());
+				expect(result.stdout).toContain(ansiEscapes.eraseLine);
 			});
 
-			// Master only respects CI env var, not GITHUB_ACTIONS
-			const hasMoveCursor = result.output.includes('\u001B[1A');
-			const hasClearLine = result.output.includes('\u001B[2K');
-
-			expect(hasMoveCursor).toBe(true);
-			expect(hasClearLine).toBe(true);
-		});
-
-		test('CI mode still shows final task states', async () => {
-			await using fixture = await createFixture({
-				'test.mjs': `
+			test('CI mode still shows final task states', async () => {
+				await using fixture = await createFixture({
+					'test.mjs': `
 					import task from '#tasuku';
 					import { setTimeout } from 'node:timers/promises';
 
 					await task('Task', async () => {
 						await setTimeout(50);
 					});
-				`,
-			}, { tempDir });
+					`,
+				}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'), {
-				CI: 'true',
+				const result = await node(fixture.getPath('test.mjs'), {
+					CI: 'true',
+				});
+				expect(result.stderr).toBe('');
+
+				expect(result.stdout).toContain(yoctocolors.green('✔'));
+				expect(result.stdout).toContain('Task');
 			});
-			const textOutput = stripVTControlCharacters(result.output);
-
-			const hasCheckmark = textOutput.includes('✔');
-			const hasTaskName = textOutput.includes('Task');
-
-			expect(hasCheckmark).toBe(true);
-			expect(hasTaskName).toBe(true);
 		});
-	});
 
-	describe('color environment variables', ({ test }) => {
-		test('NO_COLOR disables colors', async () => {
-			await using fixture = await createFixture({
-				'test.mjs': `
+		describe('color environment variables', ({ test }) => {
+			test('environment variables disable colors', async () => {
+				const envVariables = [
+					{
+						name: 'NO_COLOR',
+						value: '1',
+					},
+					{
+						name: 'NODE_DISABLE_COLORS',
+						value: '1',
+					},
+					{
+						name: 'FORCE_COLOR',
+						value: '0',
+					},
+				];
+
+				for (const { name, value } of envVariables) {
+					await using fixture = await createFixture({
+						'test.mjs': `
+						import task from '#tasuku';
+						import { setTimeout } from 'node:timers/promises';
+
+						await task('Success task', async () => {
+							await setTimeout(50);
+						});
+						`,
+					}, { tempDir });
+
+					const result = await node(fixture.getPath('test.mjs'), {
+						[name]: value,
+					});
+					expect(result.stderr).toBe('');
+					expect(result.stdout).toContain('✔');
+
+					// Verify no ANSI color codes present (only cursor/erase codes allowed)
+					const ansiMatches = result.stdout.match(ansiRegex());
+					const colorCodes = ansiMatches?.filter(code => !nonColorAnsiCodes.has(code));
+					expect(colorCodes?.length ?? 0).toBe(0);
+				}
+			});
+
+			test('FORCE_COLOR=1 enables colors', async () => {
+				await using fixture = await createFixture({
+					'test.mjs': `
 					import task from '#tasuku';
 					import { setTimeout } from 'node:timers/promises';
 
 					await task('Success task', async () => {
 						await setTimeout(50);
 					});
-				`,
-			}, { tempDir });
+					`,
+				}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'), {
-				NO_COLOR: '1',
+				const result = await node(fixture.getPath('test.mjs'));
+				expect(result.stderr).toBe('');
+
+				expect(result.stdout).toContain(yoctocolors.green('✔'));
 			});
 
-			const textOutput = stripVTControlCharacters(result.output);
-
-			// Should contain the checkmark but without color codes
-			expect(textOutput.includes('✔')).toBe(true);
-
-			// Should NOT contain color codes (green for checkmark: 32m)
-			expect(result.output.includes('\u001B[32m')).toBe(false);
-		});
-
-		test('NODE_DISABLE_COLORS disables colors', async () => {
-			await using fixture = await createFixture({
-				'test.mjs': `
-					import task from '#tasuku';
-					import { setTimeout } from 'node:timers/promises';
-
-					await task('Success task', async () => {
-						await setTimeout(50);
-					});
-				`,
-			}, { tempDir });
-
-			const result = await node(fixture.getPath('test.mjs'), {
-				NODE_DISABLE_COLORS: '1',
-			});
-
-			const textOutput = stripVTControlCharacters(result.output);
-
-			// Should contain the checkmark but without color codes
-			expect(textOutput.includes('✔')).toBe(true);
-
-			// Should NOT contain color codes (green for checkmark: 32m)
-			expect(result.output.includes('\u001B[32m')).toBe(false);
-		});
-
-		test('FORCE_COLOR=0 disables colors', async () => {
-			await using fixture = await createFixture({
-				'test.mjs': `
-					import task from '#tasuku';
-					import { setTimeout } from 'node:timers/promises';
-
-					await task('Success task', async () => {
-						await setTimeout(50);
-					});
-				`,
-			}, { tempDir });
-
-			const result = await node(fixture.getPath('test.mjs'), {
-				FORCE_COLOR: '0',
-			});
-
-			const textOutput = stripVTControlCharacters(result.output);
-
-			// Should contain the checkmark but without color codes
-			expect(textOutput.includes('✔')).toBe(true);
-
-			// Should NOT contain color codes (green for checkmark: 32m)
-			expect(result.output.includes('\u001B[32m')).toBe(false);
-		});
-
-		test('FORCE_COLOR=1 enables colors', async () => {
-			await using fixture = await createFixture({
-				'test.mjs': `
-					import task from '#tasuku';
-					import { setTimeout } from 'node:timers/promises';
-
-					await task('Success task', async () => {
-						await setTimeout(50);
-					});
-				`,
-			}, { tempDir });
-
-			const result = await node(fixture.getPath('test.mjs'), {
-				FORCE_COLOR: '1',
-			});
-
-			const textOutput = stripVTControlCharacters(result.output);
-
-			// Should contain the checkmark
-			expect(textOutput.includes('✔')).toBe(true);
-
-			// Should contain color codes (green for checkmark: 32m)
-			expect(result.output.includes('\u001B[32m')).toBe(true);
-
-			// Green checkmark styled
-			expect(result.output).toContain(styleText('green', '✔'));
-		});
-
-		test('colors work with error state', async () => {
-			await using fixture = await createFixture({
-				'test.mjs': `
+			test('colors work with error state', async () => {
+				await using fixture = await createFixture({
+					'test.mjs': `
 					import task from '#tasuku';
 					import { setTimeout } from 'node:timers/promises';
 
@@ -193,26 +155,18 @@ export default testSuite(({ describe }) => {
 						await setTimeout(50);
 						setError('Something failed');
 					});
-				`,
-			}, { tempDir });
+					`,
+				}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'), {
-				FORCE_COLOR: '1',
+				const result = await node(fixture.getPath('test.mjs'));
+				expect(result.stderr).toBe('');
+
+				expect(result.stdout).toContain(yoctocolors.red('✖'));
 			});
 
-			const textOutput = stripVTControlCharacters(result.output);
-
-			// Should contain the error icon
-			expect(textOutput.includes('✖')).toBe(true);
-
-			// Red error icon (31m = red)
-			expect(result.output.includes('\u001B[31m')).toBe(true);
-			expect(result.output).toContain(styleText('red', '✖'));
-		});
-
-		test('NO_COLOR removes all colors including warning', async () => {
-			await using fixture = await createFixture({
-				'test.mjs': `
+			test('NO_COLOR removes all colors including warning', async () => {
+				await using fixture = await createFixture({
+					'test.mjs': `
 					import task from '#tasuku';
 					import { setTimeout } from 'node:timers/promises';
 
@@ -220,25 +174,25 @@ export default testSuite(({ describe }) => {
 						await setTimeout(50);
 						setWarning('A warning');
 					});
-				`,
-			}, { tempDir });
+					`,
+				}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'), {
-				NO_COLOR: '1',
+				const result = await node(fixture.getPath('test.mjs'), {
+					NO_COLOR: '1',
+				});
+				expect(result.stderr).toBe('');
+
+				expect(result.stdout).toContain('⚠');
+
+				// Verify no ANSI color codes present (only cursor/erase codes allowed)
+				const ansiMatches = result.stdout.match(ansiRegex());
+				const colorCodes = ansiMatches?.filter(code => !nonColorAnsiCodes.has(code));
+				expect(colorCodes?.length ?? 0).toBe(0);
 			});
 
-			const textOutput = stripVTControlCharacters(result.output);
-
-			// Should contain the warning icon
-			expect(textOutput.includes('⚠')).toBe(true);
-
-			// Should NOT contain yellow color code (33m)
-			expect(result.output.includes('\u001B[33m')).toBe(false);
-		});
-
-		test('colors work with nested tasks', async () => {
-			await using fixture = await createFixture({
-				'test.mjs': `
+			test('colors work with nested tasks', async () => {
+				await using fixture = await createFixture({
+					'test.mjs': `
 					import task from '#tasuku';
 					import { setTimeout } from 'node:timers/promises';
 
@@ -248,31 +202,19 @@ export default testSuite(({ describe }) => {
 							await setTimeout(50);
 						});
 					});
-				`,
-			}, { tempDir });
+					`,
+				}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'), {
-				FORCE_COLOR: '1',
+				const result = await node(fixture.getPath('test.mjs'));
+				expect(result.stderr).toBe('');
+
+				expect(result.stdout).toContain(yoctocolors.yellow('❯'));
+				expect(result.stdout).toContain(yoctocolors.green('✔'));
 			});
 
-			const textOutput = stripVTControlCharacters(result.output);
-
-			// Should contain both pointer and checkmark
-			expect(textOutput.includes('❯')).toBe(true);
-			expect(textOutput.includes('✔')).toBe(true);
-
-			// Should contain yellow color for pointer (33m)
-			expect(result.output.includes('\u001B[33m')).toBe(true);
-			expect(result.output).toContain(styleText('yellow', '❯'));
-
-			// Should contain green color for checkmark (32m)
-			expect(result.output.includes('\u001B[32m')).toBe(true);
-			expect(result.output).toContain(styleText('green', '✔'));
-		});
-
-		test('NO_COLOR with nested tasks removes all colors', async () => {
-			await using fixture = await createFixture({
-				'test.mjs': `
+			test('NO_COLOR with nested tasks removes all colors', async () => {
+				await using fixture = await createFixture({
+					'test.mjs': `
 					import task from '#tasuku';
 					import { setTimeout } from 'node:timers/promises';
 
@@ -282,24 +224,22 @@ export default testSuite(({ describe }) => {
 							await setTimeout(50);
 						});
 					});
-				`,
-			}, { tempDir });
+					`,
+				}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'), {
-				NO_COLOR: '1',
+				const result = await node(fixture.getPath('test.mjs'), {
+					NO_COLOR: '1',
+				});
+				expect(result.stderr).toBe('');
+
+				expect(result.stdout).toContain('❯');
+				expect(result.stdout).toContain('✔');
+
+				// Verify no ANSI color codes present (only cursor/erase codes allowed)
+				const ansiMatches = result.stdout.match(ansiRegex());
+				const colorCodes = ansiMatches?.filter(code => !nonColorAnsiCodes.has(code));
+				expect(colorCodes?.length ?? 0).toBe(0);
 			});
-
-			const textOutput = stripVTControlCharacters(result.output);
-
-			// Should contain both pointer and checkmark (text only)
-			expect(textOutput.includes('❯')).toBe(true);
-			expect(textOutput.includes('✔')).toBe(true);
-
-			// Should NOT contain any color codes
-			expect(result.output.includes('\u001B[32m')).toBe(false); // green
-			expect(result.output.includes('\u001B[33m')).toBe(false); // yellow
-			expect(result.output.includes('\u001B[31m')).toBe(false); // red
-			expect(result.output.includes('\u001B[36m')).toBe(false); // cyan
 		});
 	});
 });
