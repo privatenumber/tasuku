@@ -1,55 +1,40 @@
-import { stripVTControlCharacters } from 'node:util';
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
+import ansiEscapes from 'ansi-escapes';
+import yoctocolors from 'yoctocolors';
 import { node } from '../utils/node.js';
 import { tempDir } from '../utils/temp-dir.js';
 
 export default testSuite(({ describe }) => {
 	describe('ANSI control codes', ({ test }) => {
-		test('uses ANSI clear and cursor movement codes', async () => {
+		test('uses ANSI clear and cursor movement codes during spinner animation', async ({ onTestFail }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
 					import { setTimeout } from 'node:timers/promises';
 
 					await task('Task', async () => {
-						await setTimeout(200);
+						await setTimeout(100);
 					});
 				`,
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
+			onTestFail(() => { console.log(result); });
+			expect(result.stderr).toBe('');
 
-			// Task completes successfully
-			expect(stripVTControlCharacters(result.output).includes('Task')).toBe(true);
+			// Loading state: yellow spinner
+			expect(result.stdout).toContain(yoctocolors.yellow('⠋'));
 
-			// ANSI codes for line clearing and cursor movement
-			// \x1B[2K = clear line
-			// \x1B[1A = move cursor up one line
-			expect(result.output).toContain('\u001B[2K');
-			expect(result.output).toContain('\u001B[1A');
-		});
+			// ANSI codes used for animation
+			const eraseLineCount = result.stdout.split(ansiEscapes.eraseLine).length - 1;
+			const cursorUpCount = result.stdout.split(ansiEscapes.cursorUp()).length - 1;
+			expect(eraseLineCount).toBeGreaterThanOrEqual(1); // At least one clear
+			expect(cursorUpCount).toBeGreaterThanOrEqual(1); // At least one cursor move
 
-		test('ANSI clear codes present during spinner animation', async () => {
-			await using fixture = await createFixture({
-				'test.mjs': `
-					import task from '#tasuku';
-					import { setTimeout } from 'node:timers/promises';
-
-					await task('Task', async () => {
-						await setTimeout(200);
-					});
-				`,
-			}, { tempDir });
-
-			const result = await node(fixture.getPath('test.mjs'));
-
-			// Verify task completed
-			expect(stripVTControlCharacters(result.output).includes('Task')).toBe(true);
-
-			// ANSI codes for cursor movement and line clearing during spinner updates
-			expect(result.output).toContain('\u001B[2K'); // clear line
-			expect(result.output).toContain('\u001B[1A'); // move up
+			// Final state: green checkmark
+			expect(result.stdout).toContain(yoctocolors.green('✔'));
+			expect(result.stdout).toContain('Task');
 		});
 
 		test('multiple line clears for multiple tasks', async () => {
@@ -67,16 +52,19 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			const textOutput = stripVTControlCharacters(result.output);
+			expect(result.stderr).toBe('');
 
-			// All task names appear
-			expect(textOutput.includes('one')).toBe(true);
-			expect(textOutput.includes('two')).toBe(true);
-			expect(textOutput.includes('three')).toBe(true);
+			// All task names appear with checkmarks
+			expect(result.stdout).toContain('one');
+			expect(result.stdout).toContain('two');
+			expect(result.stdout).toContain('three');
+			expect(result.stdout).toContain(yoctocolors.green('✔'));
 
-			// Multiple ANSI clear codes for updating multiple tasks
-			expect(result.output).toContain('\u001B[2K');
-			expect(result.output).toContain('\u001B[1A');
+			// Count ANSI codes - should appear multiple times for multiple task updates
+			const eraseLineCount = result.stdout.split(ansiEscapes.eraseLine).length - 1;
+			const cursorUpCount = result.stdout.split(ansiEscapes.cursorUp()).length - 1;
+			expect(eraseLineCount).toBeGreaterThan(1); // Multiple line clears
+			expect(cursorUpCount).toBeGreaterThan(1); // Multiple cursor moves
 		});
 
 		test('clearing task triggers ANSI clear codes', async () => {
@@ -94,18 +82,24 @@ export default testSuite(({ describe }) => {
 					});
 
 					task1.clear();
-
-					// Give renderer time to update
-					await setTimeout(50);
 				`,
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
+			expect(result.stderr).toBe('');
 
-			// Should contain ANSI clear codes (line clear and cursor up)
-			// These codes are used to clear Task 1 from the screen
-			expect(result.output).toContain('\u001B[2K'); // clear line
-			expect(result.output).toContain('\u001B[1A'); // move cursor up
+			// Both tasks appear with checkmarks initially
+			expect(result.stdout).toContain('Task 1');
+			expect(result.stdout).toContain('Task 2');
+			expect(result.stdout).toContain(yoctocolors.green('✔'));
+
+			// Clearing triggers additional ANSI codes for re-rendering
+			const eraseLineCount = result.stdout.split(ansiEscapes.eraseLine).length - 1;
+			const cursorUpCount = result.stdout.split(ansiEscapes.cursorUp()).length - 1;
+			// Multiple clears for task updates + clear operation
+			expect(eraseLineCount).toBeGreaterThan(1);
+			// Multiple cursor moves
+			expect(cursorUpCount).toBeGreaterThan(1);
 		});
 	});
 });

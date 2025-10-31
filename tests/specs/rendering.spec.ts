@@ -1,272 +1,171 @@
-import { stripVTControlCharacters, styleText } from 'node:util';
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
+import yoctocolors from 'yoctocolors';
 import { node } from '../utils/node.js';
 import { tempDir } from '../utils/temp-dir.js';
 
 export default testSuite(({ describe }) => {
-	describe('visual rendering', ({ test }) => {
+	describe('rendering', ({ test }) => {
 		test('spinner animates through multiple frames with yellow color', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-					import task from '#tasuku';
-					import { setTimeout } from 'node:timers/promises';
+				import task from '#tasuku';
+				import { setTimeout } from 'node:timers/promises';
 
-					await task('Task', async () => {
-						await setTimeout(200);
-					});
+				await task('Task', async () => {
+					await setTimeout(100);
+				});
 				`,
 			}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'), {
-				FORCE_COLOR: '1',
-			});
+			const result = await node(fixture.getPath('test.mjs'));
+			expect(result.stderr).toBe('');
 
-			// Spinner characters: ⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏
-			const spinnerChars = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏';
-			const hasSpinner = spinnerChars.split('').some(char => result.output.includes(char));
-			expect(hasSpinner).toBe(true);
-
-			// Yellow color for spinner (33m = yellow)
-			expect(result.output).toContain('\u001B[33m');
+			expect(result.stdout).toContain(yoctocolors.yellow('⠋'));
 
 			// Task completes successfully
-			expect(stripVTControlCharacters(result.output).includes('Task')).toBe(true);
+			expect(result.stdout).toContain(yoctocolors.green('✔'));
+			expect(result.stdout).toContain('Task');
+
+			// Verify spinner appears before completion
+			const spinnerIndex = result.stdout.indexOf(yoctocolors.yellow('⠋'));
+			const checkmarkIndex = result.stdout.indexOf(yoctocolors.green('✔'));
+			expect(spinnerIndex).toBeLessThan(checkmarkIndex);
 		});
 
 		test('spinner stops when task completes', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-					import task from '#tasuku';
-					import { setTimeout } from 'node:timers/promises';
+				import task from '#tasuku';
+				import { setTimeout } from 'node:timers/promises';
 
-					await task('Task', async () => {
-						await setTimeout(100);
-					});
+				await task('Task', async () => {
+					await setTimeout(100);
+				});
 				`,
 			}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'), {
-				FORCE_COLOR: '1',
-			});
+			const result = await node(fixture.getPath('test.mjs'));
+			expect(result.stderr).toBe('');
 
 			// After task completes, final output should show checkmark not spinner
-			expect(stripVTControlCharacters(result.output).includes('✔')).toBe(true);
+			expect(result.stdout).toContain('✔');
 
 			// Green checkmark in final output
-			expect(result.output).toContain(styleText('green', '✔'));
+			expect(result.stdout).toContain(yoctocolors.green('✔'));
 		});
 
 		test('multiple concurrent tasks show spinners', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-					import task from '#tasuku';
-					import { setTimeout } from 'node:timers/promises';
+				import task from '#tasuku';
+				import { setTimeout } from 'node:timers/promises';
 
-					await task.group(task => [
-						task('one', async () => { await setTimeout(150); }),
-						task('two', async () => { await setTimeout(150); }),
-					], { concurrency: 2 });
+				await task.group(task => [
+					task('one', async () => { await setTimeout(150); }),
+					task('two', async () => { await setTimeout(150); }),
+				], { concurrency: 2 });
 				`,
 			}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'), {
-				FORCE_COLOR: '1',
-			});
-			const textOutput = stripVTControlCharacters(result.output);
+			const result = await node(fixture.getPath('test.mjs'));
+			expect(result.stderr).toBe('');
 
 			// Both task names appear
-			expect(textOutput.includes('one') && textOutput.includes('two')).toBe(true);
-
-			// Spinner characters present
-			const spinnerChars = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏';
-			const hasSpinner = spinnerChars.split('').some(char => result.output.includes(char));
-			expect(hasSpinner).toBe(true);
+			expect(result.stdout).toContain('one');
+			expect(result.stdout).toContain('two');
+			expect(result.stdout).toContain(yoctocolors.green('✔'));
 
 			// Yellow spinners
-			expect(result.output).toContain('\u001B[33m');
+			expect(result.stdout).toContain(yoctocolors.yellow('⠋'));
 		});
 
-		test('nested tasks show proper indentation and symbols', async () => {
+		test('nested tasks render correctly on success', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-					import task from '#tasuku';
-					import { setTimeout } from 'node:timers/promises';
+				import task from '#tasuku';
+				import { setTimeout } from 'node:timers/promises';
 
-					await task('Parent task', async ({ task }) => {
-						await task('Child task', async () => {
-							await setTimeout(50);
-						});
+				await task('Parent', async ({ task }) => {
+					await task('Child', async () => {
+						await setTimeout(50);
 					});
+				});
 				`,
 			}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'), {
-				FORCE_COLOR: '1',
-			});
-			const textOutput = stripVTControlCharacters(result.output);
+			const result = await node(fixture.getPath('test.mjs'));
+			expect(result.stderr).toBe('');
 
-			// Check both tasks are present
-			expect(textOutput.includes('Parent task')).toBe(true);
-			expect(textOutput.includes('Child task')).toBe(true);
+			// Define the exact final lines we expect
+			const finalParentLine = `${yoctocolors.yellow('❯')} Parent`;
+			const finalChildLine = `  ${yoctocolors.green('✔')} Child`;
 
-			// Check for indentation (child should have leading spaces)
-			const lines = textOutput.split('\n');
-			const childLine = lines.find(line => line.includes('Child task'));
-			if (childLine) {
-				expect(childLine.startsWith(' ')).toBe(true);
-			}
+			// Check that these lines exist in the output
+			expect(result.stdout).toContain(finalParentLine);
+			expect(result.stdout).toContain(finalChildLine);
 
-			// Check final output contains completed symbols
-			expect(textOutput.includes('✔')).toBe(true);
+			// For a more robust check, verify they are the *last* two lines
+			const lines = result.stdout.split('\n').filter(line => line.trim());
+			const secondToLastLine = lines.at(-2);
+			const lastLine = lines.at(-1);
 
-			// Green checkmark
-			expect(result.output).toContain(styleText('green', '✔'));
-		});
-
-		test('nested tasks final format shows parent with yellow pointer and child with green checkmark', async () => {
-			await using fixture = await createFixture({
-				'test.mjs': `
-					import task from '#tasuku';
-					import { setTimeout } from 'node:timers/promises';
-
-					await task('Parent', async ({ task }) => {
-						await task('Child', async () => {
-							await setTimeout(50);
-						});
-					});
-				`,
-			}, { tempDir });
-
-			const result = await node(fixture.getPath('test.mjs'), {
-				FORCE_COLOR: '1',
-			});
-			const textOutput = stripVTControlCharacters(result.output);
-
-			// Split into lines and find the final output structure
-			const lines = textOutput.split('\n').filter(line => line.trim());
-
-			// Verify both tasks are present
-			expect(lines.some(line => line.includes('Parent'))).toBe(true);
-			expect(lines.some(line => line.includes('Child'))).toBe(true);
-
-			// Verify child line has checkmark and is indented
-			const childLine = lines.find(line => line.includes('Child') && line.includes('✔'));
-			expect(childLine).toBeTruthy();
-			if (childLine) {
-				expect(childLine.match(/^\s{2,}/)).toBeTruthy();
-			}
-
-			// Verify parent line has pointer and is not indented
-			const parentLine = lines.find(line => line.includes('Parent') && line.includes('❯'));
-			expect(parentLine).toBeTruthy();
-			if (parentLine) {
-				expect(parentLine.match(/^❯/)).toBeTruthy();
-			}
-
-			// Green checkmark with foreground-only reset
-			expect(result.output).toContain(styleText('green', '✔'));
-
-			// Yellow pointer with foreground-only reset
-			expect(result.output).toContain(styleText('yellow', '❯'));
-
-			// Verify exact ANSI codes
-			expect(result.output).toContain('\u001B[32m'); // green
-			expect(result.output).toContain('\u001B[33m'); // yellow
-		});
-
-		test('validates exact nested format with pointer and checkmark', async () => {
-			await using fixture = await createFixture({
-				'test.mjs': `
-					import task from '#tasuku';
-					import { setTimeout } from 'node:timers/promises';
-
-					await task('Task completed', async ({ task }) => {
-						await task('Task completed', async () => {
-							await setTimeout(50);
-						});
-					});
-				`,
-			}, { tempDir });
-
-			const result = await node(fixture.getPath('test.mjs'), {
-				FORCE_COLOR: '1',
-			});
-			const textOutput = stripVTControlCharacters(result.output);
-
-			// Split output into non-empty lines
-			const lines = textOutput.split('\n').filter(line => line.trim());
-
-			// Find lines with "Task completed"
-			const taskLines = lines.filter(line => line.includes('Task completed'));
-
-			// Should have at least 2 occurrences (parent and child)
-			expect(taskLines.length).toBeGreaterThanOrEqual(2);
-
-			// Check indentation pattern exists
-			const hasIndentedLine = lines.some(line => line.match(/^\s{2,}/) && line.includes('Task completed'));
-			expect(hasIndentedLine).toBe(true);
-
-			// Verify parent line has pointer and is not indented
-			const parentLine = taskLines.find(line => !/^\s{2,}/.test(line) && line.includes('❯'));
-			expect(parentLine).toBeTruthy();
-
-			// Green checkmark with foreground-only reset
-			expect(result.output).toContain(styleText('green', '✔'));
-
-			// Yellow pointer with foreground-only reset
-			expect(result.output).toContain(styleText('yellow', '❯'));
+			// Use .includes() because the line may have other ANSI codes (like clear)
+			expect(secondToLastLine).toContain(finalParentLine);
+			expect(lastLine).toContain(finalChildLine);
 		});
 
 		test('parent task shows yellow pointer while loading child', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-					import task from '#tasuku';
-					import { setTimeout } from 'node:timers/promises';
+				import task from '#tasuku';
+				import { setTimeout } from 'node:timers/promises';
 
-					await task('Parent', async ({ task }) => {
-						await task('Child', async () => {
-							await setTimeout(150);
-						});
+				await task('Parent', async ({ task }) => {
+					await task('Child', async () => {
+						await setTimeout(150);
 					});
+				});
 				`,
 			}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'), {
-				FORCE_COLOR: '1',
-			});
+			const result = await node(fixture.getPath('test.mjs'));
+			expect(result.stderr).toBe('');
 
 			// Yellow pointer (not red) with foreground-only reset
-			expect(result.output).toContain(styleText('yellow', '❯'));
-			expect(result.output).toContain('\u001B[33m❯');
+			expect(result.stdout).toContain(yoctocolors.yellow('❯'));
+
+			// Verify spinner appears while child is loading
+			expect(result.stdout).toContain(yoctocolors.yellow('⠋'));
 		});
 
 		test('parent task shows red pointer on error', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-					import task from '#tasuku';
-					import { setTimeout } from 'node:timers/promises';
+				import task from '#tasuku';
+				import { setTimeout } from 'node:timers/promises';
 
-					try {
-						await task('Parent', async ({ task }) => {
-							await task('Child', async () => {
-								await setTimeout(50);
-								throw new Error('Test error');
-							});
+				try {
+					await task('Parent', async ({ task }) => {
+						await task('Child', async () => {
+							await setTimeout(50);
+							throw new Error('Test error');
 						});
-					} catch (error) {
-						// Expected error
-					}
+					});
+				} catch (error) {
+					// Expected error
+				}
 				`,
 			}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'), {
-				FORCE_COLOR: '1',
-			});
+			const result = await node(fixture.getPath('test.mjs'));
+			expect(result.stderr).toBe('');
 
 			// Red pointer when child errors with foreground-only reset
-			expect(result.output).toContain(styleText('red', '❯'));
-			expect(result.output).toContain('\u001B[31m❯');
+			expect(result.stdout).toContain(yoctocolors.red('❯'));
+
+			// Red X for failed child task
+			expect(result.stdout).toContain(yoctocolors.red('✖'));
 		});
 	});
 });
