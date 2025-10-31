@@ -77,6 +77,7 @@ export const createRenderer = (
 	let lastOutput = '';
 	let lastLineCount = 0;
 	let restoreConsole: (() => void) | undefined;
+	let cursorHidden = false;
 
 	const isTTY = stdout.isTTY !== false; // Treat undefined as TTY
 	const useColors = detectColors(stdout);
@@ -161,6 +162,9 @@ export const createRenderer = (
 				stdout.write(eraseLine);
 				stdout.write(cursorUp());
 			}
+			// Erase the final line we're now on and move cursor to column 0
+			stdout.write(eraseLine);
+			stdout.write('\u001B[G'); // Cursor to column 0
 			lastLineCount = 0; // Reset so we don't clear console output next time
 		}
 
@@ -169,8 +173,14 @@ export const createRenderer = (
 		// to keep it synchronized with the task UI
 		stdout.write(data);
 
-		// Re-render our task UI below console message
-		render();
+		// Always render an empty line after console output
+		// This ensures console output doesn't get mixed with task UI
+		// and provides a placeholder for the next console output to clear
+		if (taskList.length > 0) {
+			stdout.write('\n');
+			lastOutput = '\n';
+			lastLineCount = 1;
+		}
 	};
 
 	const render = () => {
@@ -193,12 +203,22 @@ export const createRenderer = (
 			return;
 		}
 
-		// Clear previous output
+		// Hide cursor only when rendering loading/pending tasks (spinner states)
+		// Don't hide for completed tasks or empty lines
+		if (!cursorHidden && isTTY && output !== '' && output !== '\n' && !allDone) {
+			stdout.write(cursorHide);
+			cursorHidden = true;
+		}
+
+		// Clear previous output (same logic as handleConsoleOutput)
 		if (lastLineCount > 0) {
 			for (let i = 0; i < lastLineCount; i += 1) {
 				stdout.write(eraseLine);
 				stdout.write(cursorUp());
 			}
+			// Erase the final line we're now on and move cursor to column 0
+			stdout.write(eraseLine);
+			stdout.write('\u001B[G'); // Cursor to column 0
 		}
 
 		// Write new output
@@ -252,9 +272,6 @@ export const createRenderer = (
 
 	// Initialize
 	if (!isCI && isTTY) {
-		// Hide cursor
-		stdout.write(cursorHide);
-
 		// Start spinner animation (80ms interval like Ink)
 		spinnerInterval = setInterval(() => {
 			spinnerFrame = (spinnerFrame + 1) % SPINNER_FRAMES.length;
@@ -265,8 +282,8 @@ export const createRenderer = (
 		restoreConsole = patchConsole(handleConsoleOutput);
 	}
 
-	// Initial render
-	scheduleRender();
+	// Don't do initial render - wait for first state change or console output
+	// This prevents showing spinners for fast-completing tasks
 
 	return {
 		triggerRender: scheduleRender,
