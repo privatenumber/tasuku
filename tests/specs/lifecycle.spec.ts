@@ -30,7 +30,7 @@ export default testSuite(({ describe }) => {
 				expect(result.stdout.indexOf('message 1')).toBeLessThan(result.stdout.indexOf('message 2'));
 			});
 
-			test('console.error during task execution', async () => {
+			test('console.error during task execution', async ({ onTestFail }) => {
 				await using fixture = await createFixture({
 					'test.mjs': `
 					import task from '#tasuku';
@@ -42,12 +42,13 @@ export default testSuite(({ describe }) => {
 				}, { tempDir });
 
 				const result = await node(fixture.getPath('test.mjs'));
+				onTestFail(() => { console.log(result); });
 				expect(result.stderr).toBe('');
 
 				expect(result.stdout).toContain('error message');
 			});
 
-			test('console.warn during task execution', async () => {
+			test('console.warn during task execution', async ({ onTestFail }) => {
 				await using fixture = await createFixture({
 					'test.mjs': `
 					import task from '#tasuku';
@@ -59,6 +60,7 @@ export default testSuite(({ describe }) => {
 				}, { tempDir });
 
 				const result = await node(fixture.getPath('test.mjs'));
+				onTestFail(() => { console.log(result); });
 				expect(result.stderr).toBe('');
 
 				expect(result.stdout).toContain('warning message');
@@ -106,7 +108,7 @@ export default testSuite(({ describe }) => {
 				expect(result.stdout).toContain('during task');
 			});
 
-			test('console restored after cleanup', async () => {
+			test('console restored after cleanup', async ({ onTestFail }) => {
 				await using fixture = await createFixture({
 					'test.mjs': `
 					import task from '#tasuku';
@@ -122,6 +124,7 @@ export default testSuite(({ describe }) => {
 				}, { tempDir });
 
 				const result = await node(fixture.getPath('test.mjs'));
+				onTestFail(() => { console.log(result); });
 				expect(result.stderr).toBe('');
 
 				// Verify console.log still works after cleanup
@@ -167,7 +170,7 @@ export default testSuite(({ describe }) => {
 				expect(result.stdout).toContain('0');
 			});
 
-			test('console.log during failing task', async () => {
+			test('console.log during failing task', async ({ onTestFail }) => {
 				await using fixture = await createFixture({
 					'test.mjs': `
 					import task from '#tasuku';
@@ -186,6 +189,7 @@ export default testSuite(({ describe }) => {
 				}, { tempDir });
 
 				const result = await node(fixture.getPath('test.mjs'));
+				onTestFail(() => { console.log(result); });
 				expect(result.stderr).toBe('');
 
 				// Check that the log is preserved during task
@@ -257,7 +261,7 @@ export default testSuite(({ describe }) => {
 				expect(result.stdout).toContain(ansiEscapes.cursorUp());
 			});
 
-			test('cleared task removed but other tasks remain', async () => {
+			test('cleared task removed but other tasks remain', async ({ onTestFail }) => {
 				await using fixture = await createFixture({
 					'test.mjs': `
 					import task from '#tasuku';
@@ -278,6 +282,7 @@ export default testSuite(({ describe }) => {
 				}, { tempDir });
 
 				const result = await node(fixture.getPath('test.mjs'));
+				onTestFail(() => { console.log(result); });
 				expect(result.stderr).toBe('');
 
 				// Check output after marker

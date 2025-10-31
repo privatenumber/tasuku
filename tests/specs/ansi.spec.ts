@@ -7,7 +7,7 @@ import { tempDir } from '../utils/temp-dir.js';
 
 export default testSuite(({ describe }) => {
 	describe('ANSI control codes', ({ test }) => {
-		test('uses ANSI clear and cursor movement codes during spinner animation', async () => {
+		test('uses ANSI clear and cursor movement codes during spinner animation', async ({ onTestFail }) => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 					import task from '#tasuku';
@@ -20,6 +20,7 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
+			onTestFail(() => { console.log(result); });
 			expect(result.stderr).toBe('');
 
 			// Hide cursor at start
