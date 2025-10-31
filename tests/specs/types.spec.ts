@@ -30,5 +30,15 @@ export default testSuite(({ describe }) => {
 			expectTypeOf(groupTasks[1].result).toBeString();
 			expectTypeOf(groupTasks[2].result).toBeBoolean();
 		});
+
+		test('nested task return type', async () => {
+			const someTask = await task('title', async ({ task }) => {
+				const nestedTask = await task('nested', async () => 'nested value');
+				expectTypeOf(nestedTask.result).toBeString();
+				return 42;
+			});
+
+			expectTypeOf(someTask.result).toBeNumber();
+		});
 	});
 });
