@@ -154,7 +154,7 @@ export const createRenderer = (
 
 	const renderTaskList = (tasks: TaskList, depth = 0) => tasks.map(task => renderTask(task, depth)).join('');
 
-	const handleConsoleOutput = (stream: 'stdout' | 'stderr', data: string) => {
+	const handleConsoleOutput = (_stream: 'stdout' | 'stderr', data: string) => {
 		// Clear our task UI output
 		if (lastLineCount > 0) {
 			for (let i = 0; i < lastLineCount; i += 1) {
