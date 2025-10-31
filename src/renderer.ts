@@ -1,25 +1,13 @@
 import patchConsole from 'patch-console';
+import {
+	cursorUp, cursorHide, cursorShow, eraseLine,
+} from 'ansi-escapes';
+import {
+	green, red, yellow, gray, dim,
+} from 'yoctocolors';
 import type { TaskList } from './types.js';
 
 const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-
-const ANSI = {
-	HIDE_CURSOR: '\u001B[?25l',
-	SHOW_CURSOR: '\u001B[?25h',
-
-	MOVE_UP: '\u001B[1A',
-	CLEAR_LINE: '\u001B[2K',
-
-	COLOR_GREEN: '\u001B[32m',
-	COLOR_CYAN: '\u001B[36m',
-	COLOR_RED: '\u001B[31m',
-	COLOR_YELLOW: '\u001B[33m',
-	COLOR_GRAY: '\u001B[90m',
-	STYLE_DIM: '\u001B[2m',
-
-	RESET_FOREGROUND: '\u001B[39m',
-	RESET_DIM: '\u001B[22m',
-};
 
 // Simple CI detection (inline instead of is-in-ci dependency)
 // Only enable CI mode if explicitly in CI environment, not just !isTTY
@@ -52,8 +40,14 @@ const detectColors = (stdout: NodeJS.WriteStream): boolean => {
 	return stdout.isTTY !== false;
 };
 
-const colorize = (useColors: boolean, code: string, text: string): string => (
-	useColors ? `${code}${text}${ANSI.RESET_FOREGROUND}` : text
+const colorize = (
+	useColors: boolean,
+	colorFunction: (text: string) => string,
+	text: string,
+): string => (
+	useColors
+		? colorFunction(text)
+		: text
 );
 
 const areAllTasksDone = (tasks: TaskList): boolean => {
@@ -89,38 +83,38 @@ export const createRenderer = (
 
 	const getIcon = (state: TaskList[number]['state'], hasChildren: boolean): string => {
 		if (state === 'pending') {
-			return colorize(useColors, ANSI.COLOR_GRAY, '◼');
+			return colorize(useColors, gray, '◼');
 		}
 
 		if (state === 'loading') {
 			// Parent tasks with children show yellow pointer while loading
 			if (hasChildren) {
-				return colorize(useColors, ANSI.COLOR_YELLOW, '❯');
+				return colorize(useColors, yellow, '❯');
 			}
-			return colorize(useColors, ANSI.COLOR_YELLOW, SPINNER_FRAMES[spinnerFrame]);
+			return colorize(useColors, yellow, SPINNER_FRAMES[spinnerFrame]);
 		}
 
 		if (state === 'success') {
 			// Parent tasks with children show yellow pointer
 			if (hasChildren) {
-				return colorize(useColors, ANSI.COLOR_YELLOW, '❯');
+				return colorize(useColors, yellow, '❯');
 			}
-			return colorize(useColors, ANSI.COLOR_GREEN, '✔');
+			return colorize(useColors, green, '✔');
 		}
 
 		if (state === 'error') {
 			// Parent tasks with children show red pointer
 			if (hasChildren) {
-				return colorize(useColors, ANSI.COLOR_RED, '❯');
+				return colorize(useColors, red, '❯');
 			}
-			return colorize(useColors, ANSI.COLOR_RED, '✖');
+			return colorize(useColors, red, '✖');
 		}
 
 		if (state === 'warning') {
-			return colorize(useColors, ANSI.COLOR_YELLOW, '⚠');
+			return colorize(useColors, yellow, '⚠');
 		}
 
-		return colorize(useColors, ANSI.COLOR_GRAY, '◼');
+		return colorize(useColors, gray, '◼');
 	};
 
 	const renderTask = (task: TaskList[number], depth: number): string => {
@@ -131,7 +125,7 @@ export const createRenderer = (
 		let line = `${indent}${icon} ${task.title}`;
 		if (task.status) {
 			const styledStatus = useColors
-				? `${ANSI.STYLE_DIM}[${task.status}]${ANSI.RESET_DIM}`
+				? dim(`[${task.status}]`)
 				: `[${task.status}]`;
 			line += ` ${styledStatus}`;
 		}
@@ -141,7 +135,7 @@ export const createRenderer = (
 		if (task.output) {
 			const outputIndent = `${indent}  `;
 			const styleText = (text: string) => (useColors
-				? `${ANSI.COLOR_GRAY}${text}${ANSI.RESET_FOREGROUND}`
+				? gray(text)
 				: text);
 
 			line += `${task.output
@@ -164,8 +158,8 @@ export const createRenderer = (
 		// Clear our task UI output
 		if (lastLineCount > 0) {
 			for (let i = 0; i < lastLineCount; i += 1) {
-				stdout.write(ANSI.CLEAR_LINE);
-				stdout.write(ANSI.MOVE_UP);
+				stdout.write(eraseLine);
+				stdout.write(cursorUp());
 			}
 			lastLineCount = 0; // Reset so we don't clear console output next time
 		}
@@ -202,8 +196,8 @@ export const createRenderer = (
 		// Clear previous output
 		if (lastLineCount > 0) {
 			for (let i = 0; i < lastLineCount; i += 1) {
-				stdout.write(ANSI.CLEAR_LINE);
-				stdout.write(ANSI.MOVE_UP);
+				stdout.write(eraseLine);
+				stdout.write(cursorUp());
 			}
 		}
 
@@ -245,21 +239,21 @@ export const createRenderer = (
 		// Clear all task output before destroying
 		if (!isCI && isTTY && lastLineCount > 0) {
 			for (let i = 0; i < lastLineCount; i += 1) {
-				stdout.write(ANSI.CLEAR_LINE);
-				stdout.write(ANSI.MOVE_UP);
+				stdout.write(eraseLine);
+				stdout.write(cursorUp());
 			}
 		}
 
 		if (!isCI && isTTY) {
 			// Show cursor
-			stdout.write(ANSI.SHOW_CURSOR);
+			stdout.write(cursorShow);
 		}
 	};
 
 	// Initialize
 	if (!isCI && isTTY) {
 		// Hide cursor
-		stdout.write(ANSI.HIDE_CURSOR);
+		stdout.write(cursorHide);
 
 		// Start spinner animation (80ms interval like Ink)
 		spinnerInterval = setInterval(() => {
