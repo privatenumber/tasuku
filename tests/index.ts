@@ -20,4 +20,7 @@ await describe('tasuku', ({ runTestSuite }) => {
 
 	// Lifecycle
 	runTestSuite(import('./specs/lifecycle.spec.js'));
+
+	// Console interleaving
+	runTestSuite(import('./specs/console-interleave.spec.js'));
 });
