@@ -18,30 +18,6 @@ interface Options {
 	@default true
 	*/
 	readonly stopOnError?: boolean;
-
-	/**
-	You can abort the promises using [`AbortController`](https://developer.mozilla.org/en-US/docs/Web/API/AbortController).
-
-	**Requires Node.js 16 or later.*
-
-	@example
-	```
-	import pMap from 'p-map';
-	import delay from 'delay';
-
-	const abortController = new AbortController();
-
-	setTimeout(() => {
-		abortController.abort();
-	}, 500);
-
-	const mapper = async value => value;
-
-	await pMap([delay(1000), delay(1000)], mapper, {signal: abortController.signal});
-	// Throws AbortError (DOMException) after 500 ms.
-	```
-	*/
-	readonly signal?: AbortSignal;
 }
 
 type State = 'pending' | 'loading' | 'error' | 'warning' | 'success';
