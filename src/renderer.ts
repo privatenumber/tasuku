@@ -271,15 +271,17 @@ export const createRenderer = (
 	};
 
 	// Initialize
-	if (!isCI && isTTY) {
-		// Start spinner animation (80ms interval like Ink)
-		spinnerInterval = setInterval(() => {
-			spinnerFrame = (spinnerFrame + 1) % SPINNER_FRAMES.length;
-			scheduleRender();
-		}, 80);
-
-		// Patch console to intercept output
+	if (!isCI) {
+		// Patch console to intercept output (even in non-TTY mode for testing/piping)
 		restoreConsole = patchConsole(handleConsoleOutput);
+
+		if (isTTY) {
+			// Start spinner animation (80ms interval like Ink)
+			spinnerInterval = setInterval(() => {
+				spinnerFrame = (spinnerFrame + 1) % SPINNER_FRAMES.length;
+				scheduleRender();
+			}, 80);
+		}
 	}
 
 	// Don't do initial render - wait for first state change or console output
