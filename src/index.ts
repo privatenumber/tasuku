@@ -1,7 +1,6 @@
-import { proxy } from 'valtio';
 import pMap from 'p-map';
-import { arrayAdd, arrayRemove } from './utils.js';
-import { createApp } from './components/CreateApp.jsx';
+import { createRenderer, type Renderer } from './renderer.js';
+import { reactive, setRenderCallback } from './reactive.js';
 import {
 	type TaskList,
 	type TaskObject,
@@ -9,8 +8,11 @@ import {
 	type TaskAPI,
 	type TaskInnerAPI,
 	type TaskGroupAPI,
+	type TaskGroupResults,
 	type TaskFunction,
-	type RegisteredTask, runSymbol,
+	type TaskGroup,
+	type RegisteredTask,
+	runSymbol,
 } from './types.js';
 
 const createTaskInnerApi = (taskState: TaskObject) => {
@@ -51,23 +53,25 @@ const createTaskInnerApi = (taskState: TaskObject) => {
 	return api;
 };
 
-let app: ReturnType<typeof createApp> | undefined;
+let renderer: Renderer | undefined;
 
 const registerTask = <T>(
 	taskList: TaskList,
 	taskTitle: string,
 	taskFunction: TaskFunction<T>,
 ): RegisteredTask<T> => {
-	if (!app) {
-		app = createApp(taskList);
+	if (!renderer) {
+		renderer = createRenderer(taskList);
+		setRenderCallback(() => renderer!.triggerRender());
 		taskList.isRoot = true;
 	}
 
-	const task = arrayAdd(taskList, {
+	const task = reactive<TaskObject>({
 		title: taskTitle,
 		state: 'pending',
 		children: [],
 	});
+	taskList.push(task);
 
 	return {
 		task,
@@ -91,11 +95,19 @@ const registerTask = <T>(
 			return taskResult;
 		},
 		clear: () => {
-			arrayRemove(taskList, task);
+			const index = taskList.indexOf(task);
+			if (index !== -1) {
+				taskList.splice(index, 1);
+			}
 
-			if (taskList.isRoot && taskList.length === 0) {
-				app!.remove();
-				app = undefined;
+			// Trigger a render to update the display
+			if (renderer) {
+				renderer.triggerRender();
+			}
+
+			if (taskList.isRoot && taskList.length === 0 && renderer) {
+				renderer.destroy();
+				renderer = undefined;
 			}
 		},
 	};
@@ -120,7 +132,7 @@ function createTaskFunction(
 		};
 	};
 
-	task.group = async (
+	task.group = (async (
 		createTasks,
 		options,
 	) => {
@@ -132,6 +144,15 @@ function createTaskFunction(
 			title,
 			taskFunction,
 		));
+
+		// pMap doesn't preserve tuple types, so we need to cast the result
+		// The cast is safe because:
+		// 1. pMap preserves array order and length
+		// 2. We're mapping RegisteredTask<T> → TaskAPI<T>
+		// 3. TaskGroupResults preserves the tuple structure
+		type TasksQueueType = typeof tasksQueue extends readonly [...infer T extends RegisteredTask[]]
+			? T
+			: never;
 
 		const results = (await pMap(
 			tasksQueue,
@@ -146,21 +167,23 @@ function createTaskFunction(
 				concurrency: 1,
 				...options,
 			},
-		)) as any; // eslint-disable-line @typescript-eslint/no-explicit-any -- Temporary fix
+		)) as unknown as TaskGroupResults<TasksQueueType>;
 
+		// TypeScript can't prove TasksQueueType matches the generic RegisteredTasks
+		// so we need to assert the return type
 		return Object.assign(results, {
 			clear: () => {
 				for (const taskApi of tasksQueue) {
 					taskApi.clear();
 				}
 			},
-		});
-	};
+		}) as unknown as TaskGroupAPI<typeof results>;
+	}) as TaskGroup;
 
 	return task;
 }
 
-const rootTaskList = proxy<TaskList>([]);
+const rootTaskList: TaskList = [];
 
 export default createTaskFunction(rootTaskList);
 export type {
