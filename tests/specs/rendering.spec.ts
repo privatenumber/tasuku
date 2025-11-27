@@ -1,5 +1,6 @@
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
+import ansiEscapes from 'ansi-escapes';
 import yoctocolors from 'yoctocolors';
 import { node } from '../utils/node.js';
 import { tempDir } from '../utils/temp-dir.js';
@@ -166,6 +167,33 @@ export default testSuite(({ describe }) => {
 
 			// Red X for failed child task
 			expect(result.stdout).toContain(yoctocolors.red('✖'));
+		});
+
+		test('child task starts with frame 0 spinner', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+				import task from '#tasuku';
+				import { setTimeout } from 'node:timers/promises';
+
+				await task('Parent', async ({ task }) => {
+					await setTimeout(50);
+					await task('Child', async () => {
+						await setTimeout(50);
+					});
+				});
+				`,
+			}, { tempDir });
+
+			const result = await node(fixture.getPath('test.mjs'));
+			expect(result.stderr).toBe('');
+
+			expect(result.stdout).toBe(
+				`${yoctocolors.yellow('⠋')} Parent\n`
+				+ `${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorLeft}${yoctocolors.yellow('❯')} Parent\n`
+				+ `  ${yoctocolors.yellow('⠋')} Child\n`
+				+ `${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorLeft}${yoctocolors.yellow('❯')} Parent\n`
+				+ `  ${yoctocolors.green('✔')} Child`,
+			);
 		});
 	});
 });

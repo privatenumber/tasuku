@@ -100,14 +100,16 @@ const registerTask = <T>(
 				taskList.splice(index, 1);
 			}
 
-			// Trigger a render to update the display
 			if (renderer) {
-				renderer.triggerRender();
-			}
-
-			if (taskList.isRoot && taskList.length === 0 && renderer) {
-				renderer.destroy();
-				renderer = undefined;
+				if (taskList.isRoot && taskList.length === 0) {
+					// Final render to clear output before destroying
+					renderer.renderFinal();
+					renderer.destroy();
+					renderer = undefined;
+				} else {
+					// Normal render for non-final clear
+					renderer.triggerRender();
+				}
 			}
 		},
 	};
