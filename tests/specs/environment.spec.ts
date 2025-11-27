@@ -1,20 +1,9 @@
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
 import ansiEscapes from 'ansi-escapes';
-import ansiRegex from 'ansi-regex';
 import yoctocolors from 'yoctocolors';
 import { node } from '../utils/node.js';
 import { tempDir } from '../utils/temp-dir.js';
-
-// Non-color ANSI codes that are allowed even when colors are disabled
-const nonColorAnsiCodes = new Set([
-	ansiEscapes.cursorHide,
-	ansiEscapes.cursorShow,
-	ansiEscapes.eraseLine,
-	ansiEscapes.cursorUp(),
-	ansiEscapes.cursorDown(),
-	ansiEscapes.cursorLeft,
-]);
 
 export default testSuite(({ describe }) => {
 	describe('environment', ({ describe }) => {
@@ -83,6 +72,190 @@ export default testSuite(({ describe }) => {
 				expect(result.stdout).toContain(yoctocolors.green('✔'));
 				expect(result.stdout).toContain('Task');
 			});
+
+			test('CI=1 produces clean append-only output', async () => {
+				await using fixture = await createFixture({
+					'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task('Simple task', async () => {
+						await setTimeout(100);
+					});
+
+					await task('Task with nested', async ({ task }) => {
+						await setTimeout(50);
+						await task('Nested task', async () => {
+							await setTimeout(50);
+						});
+					});
+					`,
+				}, { tempDir });
+
+				const result = await node(fixture.getPath('test.mjs'), {
+					CI: '1',
+				});
+				expect(result.stderr).toBe('');
+
+				expect(result.stdout).toBe(
+					`${yoctocolors.green('✔')} Simple task\n`
+					+ `${yoctocolors.yellow('❯')} Task with nested\n`
+					+ `  ${yoctocolors.green('✔')} Nested task`,
+				);
+			});
+
+			test('CI=1 shows error states correctly', async () => {
+				await using fixture = await createFixture({
+					'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task('Error task', async ({ setError }) => {
+						await setTimeout(50);
+						setError('Something failed');
+					});
+					`,
+				}, { tempDir });
+
+				const result = await node(fixture.getPath('test.mjs'), {
+					CI: '1',
+				});
+				expect(result.stderr).toBe('');
+
+				expect(result.stdout).toBe(
+					`${yoctocolors.red('✖')} Error task\n`
+					+ `  ${yoctocolors.gray('→ Something failed')}`,
+				);
+			});
+
+			test('CI=1 shows warning states correctly', async () => {
+				await using fixture = await createFixture({
+					'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task('Warning task', async ({ setWarning }) => {
+						await setTimeout(50);
+						setWarning('Warning message');
+					});
+					`,
+				}, { tempDir });
+
+				const result = await node(fixture.getPath('test.mjs'), {
+					CI: '1',
+				});
+				expect(result.stderr).toBe('');
+
+				expect(result.stdout).toBe(
+					`${yoctocolors.yellow('⚠')} Warning task\n`
+					+ `  ${yoctocolors.gray('→ Warning message')}`,
+				);
+			});
+
+			test('CI=1 handles nested tasks correctly', async () => {
+				await using fixture = await createFixture({
+					'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task('Parent task', async ({ task }) => {
+						await setTimeout(50);
+						await task('Child 1', async () => {
+							await setTimeout(50);
+						});
+						await task('Child 2', async ({ setWarning }) => {
+							await setTimeout(50);
+							setWarning('Child warning');
+						});
+					});
+					`,
+				}, { tempDir });
+
+				const result = await node(fixture.getPath('test.mjs'), {
+					CI: '1',
+				});
+				expect(result.stderr).toBe('');
+
+				expect(result.stdout).toBe(
+					`${yoctocolors.yellow('❯')} Parent task\n`
+					+ `  ${yoctocolors.green('✔')} Child 1\n`
+					+ `  ${yoctocolors.yellow('⚠')} Child 2\n`
+					+ `    ${yoctocolors.gray('→ Child warning')}`,
+				);
+			});
+
+			test('CI=1 with setTitle shows updated title', async () => {
+				await using fixture = await createFixture({
+					'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task('Initial title', async ({ setTitle }) => {
+						await setTimeout(50);
+						setTitle('Updated title');
+						await setTimeout(50);
+					});
+					`,
+				}, { tempDir });
+
+				const result = await node(fixture.getPath('test.mjs'), {
+					CI: '1',
+				});
+				expect(result.stderr).toBe('');
+
+				expect(result.stdout).toBe(
+					`${yoctocolors.green('✔')} Updated title`,
+				);
+			});
+
+			test('CI=1 with setStatus shows status', async () => {
+				await using fixture = await createFixture({
+					'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task('Task with status', async ({ setStatus }) => {
+						setStatus('processing...');
+						await setTimeout(50);
+						setStatus('finalizing...');
+						await setTimeout(50);
+					});
+					`,
+				}, { tempDir });
+
+				const result = await node(fixture.getPath('test.mjs'), {
+					CI: '1',
+				});
+				expect(result.stderr).toBe('');
+
+				expect(result.stdout).toBe(
+					`${yoctocolors.green('✔')} Task with status ${yoctocolors.dim('[finalizing...]')}`,
+				);
+			});
+
+			test('CI=1 with setOutput shows output', async () => {
+				await using fixture = await createFixture({
+					'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task('Task with output', async ({ setOutput }) => {
+						setOutput('Some output text');
+						await setTimeout(50);
+					});
+					`,
+				}, { tempDir });
+
+				const result = await node(fixture.getPath('test.mjs'), {
+					CI: '1',
+				});
+				expect(result.stderr).toBe('');
+
+				expect(result.stdout).toBe(
+					`${yoctocolors.green('✔')} Task with output\n`
+					+ `  ${yoctocolors.gray('→ Some output text')}`,
+				);
+			});
 		});
 
 		describe('color environment variables', ({ test }) => {
@@ -118,12 +291,12 @@ export default testSuite(({ describe }) => {
 						[name]: value,
 					});
 					expect(result.stderr).toBe('');
-					expect(result.stdout).toContain('✔');
 
 					// Verify no ANSI color codes present (only cursor/erase codes allowed)
-					const ansiMatches = result.stdout.match(ansiRegex());
-					const colorCodes = ansiMatches?.filter(code => !nonColorAnsiCodes.has(code));
-					expect(colorCodes?.length ?? 0).toBe(0);
+					expect(result.stdout).toBe(
+						'⠋ Success task\n'
+						+ `${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorLeft}✔ Success task`,
+					);
 				}
 			});
 
@@ -142,7 +315,10 @@ export default testSuite(({ describe }) => {
 				const result = await node(fixture.getPath('test.mjs'));
 				expect(result.stderr).toBe('');
 
-				expect(result.stdout).toContain(yoctocolors.green('✔'));
+				expect(result.stdout).toBe(
+					`${yoctocolors.yellow('⠋')} Success task\n`
+					+ `${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorLeft}${yoctocolors.green('✔')} Success task`,
+				);
 			});
 
 			test('colors work with error state', async () => {
@@ -161,7 +337,11 @@ export default testSuite(({ describe }) => {
 				const result = await node(fixture.getPath('test.mjs'));
 				expect(result.stderr).toBe('');
 
-				expect(result.stdout).toContain(yoctocolors.red('✖'));
+				expect(result.stdout).toBe(
+					`${yoctocolors.yellow('⠋')} Error task\n`
+					+ `${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorLeft}${yoctocolors.red('✖')} Error task\n`
+					+ `  ${yoctocolors.gray('→ Something failed')}`,
+				);
 			});
 
 			test('NO_COLOR removes all colors including warning', async () => {
@@ -182,12 +362,11 @@ export default testSuite(({ describe }) => {
 				});
 				expect(result.stderr).toBe('');
 
-				expect(result.stdout).toContain('⚠');
-
-				// Verify no ANSI color codes present (only cursor/erase codes allowed)
-				const ansiMatches = result.stdout.match(ansiRegex());
-				const colorCodes = ansiMatches?.filter(code => !nonColorAnsiCodes.has(code));
-				expect(colorCodes?.length ?? 0).toBe(0);
+				expect(result.stdout).toBe(
+					'⠋ Warning task\n'
+					+ `${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorLeft}⚠ Warning task\n`
+					+ '  → A warning',
+				);
 			});
 
 			test('colors work with nested tasks', async () => {
@@ -208,8 +387,13 @@ export default testSuite(({ describe }) => {
 				const result = await node(fixture.getPath('test.mjs'));
 				expect(result.stderr).toBe('');
 
-				expect(result.stdout).toContain(yoctocolors.yellow('❯'));
-				expect(result.stdout).toContain(yoctocolors.green('✔'));
+				expect(result.stdout).toBe(
+					`${yoctocolors.yellow('⠋')} Parent task\n`
+					+ `${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorLeft}${yoctocolors.yellow('❯')} Parent task\n`
+					+ `  ${yoctocolors.yellow('⠋')} Child task\n`
+					+ `${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorLeft}${yoctocolors.yellow('❯')} Parent task\n`
+					+ `  ${yoctocolors.green('✔')} Child task`,
+				);
 			});
 
 			test('NO_COLOR with nested tasks removes all colors', async () => {
@@ -232,13 +416,13 @@ export default testSuite(({ describe }) => {
 				});
 				expect(result.stderr).toBe('');
 
-				expect(result.stdout).toContain('❯');
-				expect(result.stdout).toContain('✔');
-
-				// Verify no ANSI color codes present (only cursor/erase codes allowed)
-				const ansiMatches = result.stdout.match(ansiRegex());
-				const colorCodes = ansiMatches?.filter(code => !nonColorAnsiCodes.has(code));
-				expect(colorCodes?.length ?? 0).toBe(0);
+				expect(result.stdout).toBe(
+					'⠋ Parent task\n'
+					+ `${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorLeft}❯ Parent task\n`
+					+ '  ⠋ Child task\n'
+					+ `${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorLeft}❯ Parent task\n`
+					+ '  ✔ Child task',
+				);
 			});
 		});
 	});

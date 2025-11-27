@@ -27,7 +27,6 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			console.log({ stdout: result.stdout });
 			expect(result.stderr).toBe('');
 
 			expect(result.stdout).toBe(
@@ -73,7 +72,6 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			console.log({ stdout: result.stdout });
 			expect(result.stderr).toBe('');
 
 			expect(result.stdout).toBe(
@@ -123,7 +121,6 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			console.log({ stdout: result.stdout });
 			expect(result.stderr).toBe('');
 
 			expect(result.stdout).toBe(
@@ -183,7 +180,6 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			console.log({ stdout: result.stdout });
 			expect(result.stderr).toBe('');
 
 			expect(result.stdout).toBe(
@@ -225,7 +221,6 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			console.log({ stdout: result.stdout });
 			expect(result.stderr).toBe('');
 
 			expect(result.stdout).toBe(

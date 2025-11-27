@@ -36,8 +36,8 @@ const detectColors = (stdout: NodeJS.WriteStream): boolean => {
 		return process.env.FORCE_COLOR !== '0';
 	}
 
-	// Default: use colors if TTY
-	return stdout.isTTY !== false;
+	// Default: use colors only if explicitly TTY
+	return stdout.isTTY === true;
 };
 
 const colorize = (
@@ -64,6 +64,7 @@ const areAllTasksDone = (tasks: TaskList): boolean => {
 
 export type Renderer = {
 	triggerRender: () => void;
+	renderFinal: () => void;
 	destroy: () => void;
 };
 
@@ -79,7 +80,7 @@ export const createRenderer = (
 	let restoreConsole: (() => void) | undefined;
 	let cursorHidden = false;
 
-	const isTTY = stdout.isTTY !== false; // Treat undefined as TTY
+	const isTTY = stdout.isTTY === true; // Only true counts as TTY
 	const useColors = detectColors(stdout);
 
 	const getIcon = (state: TaskList[number]['state'], hasChildren: boolean): string => {
@@ -183,7 +184,7 @@ export const createRenderer = (
 		}
 	};
 
-	const render = () => {
+	const render = (final = false) => {
 		const output = renderTaskList(taskList);
 
 		// Check if all tasks are done (no loading tasks)
@@ -194,9 +195,10 @@ export const createRenderer = (
 			spinnerInterval = undefined;
 		}
 
-		if (isCI) {
-			// CI mode: just write final output once
-			if (output !== lastOutput) {
+		if (isCI && !final) {
+			// CI mode: only write final output when all tasks are done
+			// This produces clean append-only output without intermediate states
+			if (areAllTasksDone(taskList) && output !== lastOutput) {
 				stdout.write(output);
 				lastOutput = output;
 			}
@@ -289,6 +291,7 @@ export const createRenderer = (
 
 	return {
 		triggerRender: scheduleRender,
+		renderFinal: () => render(true),
 		destroy,
 	};
 };
