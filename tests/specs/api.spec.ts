@@ -131,6 +131,69 @@ export default testSuite(({ describe }) => {
 					result: 3,
 				});
 			});
+
+			test('signal - abort pending tasks', async () => {
+				const abortController = new AbortController();
+				const executedTasks: number[] = [];
+
+				await expect(
+					task.group(task => [
+						task('one', async () => {
+							executedTasks.push(1);
+							// Abort after first task completes
+							abortController.abort();
+							return 1;
+						}),
+						task('two', async () => {
+							// Never resolves - but abort should prevent this from starting
+							await new Promise(() => {});
+							executedTasks.push(2);
+							return 2;
+						}),
+						task('three', async () => {
+							executedTasks.push(3);
+							return 3;
+						}),
+					], { signal: abortController.signal }),
+				).rejects.toThrow('aborted');
+
+				// Only first task should complete before abort
+				expect(executedTasks).toEqual([1]);
+			});
+
+			test('stopOnError - false aggregates errors', async () => {
+				const error = await task.group(task => [
+					task('one', async () => {
+						throw new Error('error 1');
+					}),
+					task('two', async () => {
+						throw new Error('error 2');
+					}),
+				], { stopOnError: false }).catch((caughtError: Error) => caughtError);
+
+				expect((error as Error).message).toContain('error 1');
+				expect((error as Error).message).toContain('error 2');
+			});
+
+			test('stopOnError - true (default) stops on first error', async () => {
+				const executedTasks: number[] = [];
+
+				await expect(
+					task.group(task => [
+						task('one', async () => {
+							executedTasks.push(1);
+							throw new Error('first error');
+						}),
+						task('two', async () => {
+							executedTasks.push(2);
+							return 2;
+						}),
+					]),
+				).rejects.toThrow('first error');
+
+				// Only first task should execute before stopping
+				expect(executedTasks).toEqual([1]);
+			});
 		});
 	});
 });

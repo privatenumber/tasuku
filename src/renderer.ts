@@ -283,6 +283,8 @@ export const createRenderer = (
 				spinnerFrame = (spinnerFrame + 1) % SPINNER_FRAMES.length;
 				scheduleRender();
 			}, 80);
+			// Don't keep process alive just for spinner animation
+			spinnerInterval.unref();
 		}
 	}
 
