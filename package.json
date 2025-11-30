@@ -42,7 +42,7 @@
 	},
 	"packageManager": "pnpm@10.19.0",
 	"scripts": {
-		"lint": "lintroll --node --cache .",
+		"lint": "lintroll --node --cache --git",
 		"test": "tsx tests",
 		"type-check": "tsc",
 		"build": "pkgroll --target=node12 --minify --clean-dist",
