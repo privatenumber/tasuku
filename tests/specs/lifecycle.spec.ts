@@ -214,6 +214,28 @@ export default testSuite(({ describe }) => {
 		});
 
 		describe('cleanup', ({ test }) => {
+			test('throwing task - process exits cleanly', async () => {
+				await using fixture = await createFixture({
+					'test.mjs': `
+					import task from '#tasuku';
+
+					await task('Throwing task', async () => {
+						throw new Error('task error');
+					}).catch((error) => {
+						console.log('CAUGHT:', error.message);
+					});
+
+					// Process should exit cleanly without needing to call .clear()
+					console.log('PROCESS_COMPLETED');
+					`,
+				}, { tempDir });
+
+				const result = await node(fixture.getPath('test.mjs'));
+				expect(result.stderr).toBe('');
+				expect(result.stdout).toContain('CAUGHT: task error');
+				expect(result.stdout).toContain('PROCESS_COMPLETED');
+			});
+
 			test('process exits after tasks complete', async () => {
 				await using fixture = await createFixture({
 					'test.mjs': `
