@@ -1,6 +1,33 @@
-import type { Options } from 'p-map';
+import type { Options as PMapOptions } from 'p-map';
 
 type State = 'pending' | 'loading' | 'error' | 'warning' | 'success';
+
+export type TaskGroupOptions = {
+
+	/**
+	 * Number of tasks to run at a time.
+	 *
+	 * Must be an integer from 1 and up or `Infinity`.
+	 *
+	 * @default 1
+	 */
+	concurrency?: PMapOptions['concurrency'];
+
+	/**
+	 * When `true`, the first task rejection will be rejected back to the consumer.
+	 *
+	 * When `false`, instead of stopping when a task rejects, it will wait for all
+	 * tasks to settle and then reject with an aggregated error.
+	 *
+	 * @default true
+	 */
+	stopOnError?: PMapOptions['stopOnError'];
+
+	/**
+	 * Abort signal to cancel pending tasks.
+	 */
+	signal?: PMapOptions['signal'];
+};
 
 export type TaskObject = {
 	title: string;
@@ -85,5 +112,5 @@ export type TaskGroup = <
 	RegisteredTasks extends RegisteredTask[],
 >(
 	createTasks: (taskCreator: CreateTask) => readonly [...RegisteredTasks],
-	options?: Options,
+	options?: TaskGroupOptions,
 ) => Promise<TaskGroupAPI<TaskGroupResults<RegisteredTasks>>>;
