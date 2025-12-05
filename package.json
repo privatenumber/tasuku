@@ -58,7 +58,7 @@
 		"lintroll": "^1.25.0",
 		"manten": "^1.9.0",
 		"nano-spawn": "^2.0.0",
-		"p-map": "^5.5.0",
+		"p-map": "^7.0.4",
 		"patch-console": "^2.0.0",
 		"pkgroll": "^2.21.4",
 		"tsx": "^4.20.6",
