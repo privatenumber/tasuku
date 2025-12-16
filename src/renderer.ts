@@ -80,8 +80,23 @@ export const createRenderer = (
 	let restoreConsole: (() => void) | undefined;
 	let cursorHidden = false;
 
-	const isTTY = stdout.isTTY === true; // Only true counts as TTY
+	const isTTY = stdout.isTTY === true;
 	const useColors = detectColors(stdout);
+	const isInteractive = isTTY && !isCI;
+
+	// Restore cursor - used by exit handlers and destroy()
+	const restoreCursor = () => {
+		if (cursorHidden) {
+			stdout.write(cursorShow);
+			cursorHidden = false;
+		}
+	};
+
+	// Register exit handlers to restore cursor even if clear() is not called
+	// This prevents cursor from disappearing after process exits
+	if (isInteractive) {
+		process.on('exit', restoreCursor);
+	}
 
 	const getIcon = (state: TaskList[number]['state'], hasChildren: boolean): string => {
 		if (state === 'pending') {
@@ -246,6 +261,11 @@ export const createRenderer = (
 	};
 
 	const destroy = () => {
+		// Remove exit handler to prevent memory leaks
+		if (isInteractive) {
+			process.off('exit', restoreCursor);
+		}
+
 		if (spinnerInterval) {
 			clearInterval(spinnerInterval);
 		}
@@ -259,17 +279,15 @@ export const createRenderer = (
 		}
 
 		// Clear all task output before destroying
-		if (!isCI && isTTY && lastLineCount > 0) {
+		if (isInteractive && lastLineCount > 0) {
 			for (let i = 0; i < lastLineCount; i += 1) {
 				stdout.write(eraseLine);
 				stdout.write(cursorUp());
 			}
 		}
 
-		if (!isCI && isTTY) {
-			// Show cursor
-			stdout.write(cursorShow);
-		}
+		// Restore cursor
+		restoreCursor();
 	};
 
 	// Initialize
