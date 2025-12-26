@@ -56,7 +56,7 @@
 		"expect-type": "^1.2.2",
 		"fs-fixture": "^2.11.0",
 		"lintroll": "^1.26.0",
-		"manten": "^1.9.0",
+		"manten": "^1.10.0",
 		"nano-spawn": "^2.0.0",
 		"p-map": "^5.5.0",
 		"patch-console": "^2.0.0",
