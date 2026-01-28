@@ -5,6 +5,36 @@ import { tempDir } from '../utils/temp-dir.js';
 
 export default testSuite(({ describe }) => {
 	describe('console interleaving', ({ test }) => {
+		test('console.log after task completion preserves all output', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+				import task from '#tasuku';
+				import { setTimeout } from 'node:timers/promises';
+
+				await task('Test task', async () => {
+					// Task completes
+				});
+
+				// Wait for render to complete, then log
+				await setTimeout(50);
+				console.log('After task');
+				`,
+			}, { tempDir });
+
+			const result = await node(fixture.getPath('test.mjs'));
+			expect(result.stderr).toBe('');
+
+			// Both task and console.log should be visible
+			expect(result.stdout).toContain('\u001B[32m✔\u001B[39m Test task');
+			expect(result.stdout).toContain('After task');
+
+			// Critical: task must be RE-RENDERED after console.log (not overwritten)
+			// The output should end with the task, proving it was restored after console.log
+			const afterTaskIndex = result.stdout.indexOf('After task');
+			const lastTaskIndex = result.stdout.lastIndexOf('Test task');
+			expect(lastTaskIndex).toBeGreaterThan(afterTaskIndex);
+		});
+
 		test('console.logs between tasks appear in order', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `

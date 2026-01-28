@@ -189,13 +189,21 @@ export const createRenderer = (
 		// to keep it synchronized with the task UI
 		stdout.write(data);
 
-		// Always render an empty line after console output
-		// This ensures console output doesn't get mixed with task UI
-		// and provides a placeholder for the next console output to clear
+		// After console output, either re-render task UI or write placeholder
 		if (taskList.length > 0) {
-			stdout.write('\n');
-			lastOutput = '\n';
-			lastLineCount = 1;
+			// Only re-render if:
+			// 1. All tasks are done (no more state changes expected)
+			// 2. There's been an actual render (not just a placeholder)
+			// This fixes console.log after task completion overwriting the task,
+			// while preserving existing behavior during/between task execution
+			if (areAllTasksDone(taskList) && lastOutput !== '\n') {
+				render();
+			} else {
+				// During task execution or between tasks, use placeholder
+				stdout.write('\n');
+				lastOutput = '\n';
+				lastLineCount = 1;
+			}
 		}
 	};
 
