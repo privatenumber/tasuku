@@ -15,6 +15,7 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    if: github.repository_owner == 'privatenumber'
 
     steps:
       - name: Checkout
