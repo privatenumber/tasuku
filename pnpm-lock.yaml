@@ -27,7 +27,7 @@ importers:
         specifier: ^2.11.0
         version: 2.11.0
       lintroll:
-        specifier: ^1.26.1
+        specifier: ^1.28.1
         version: 1.28.1(@types/estree@1.0.8)(@typescript-eslint/utils@8.50.1(eslint@9.39.2)(typescript@5.9.3))(jsonc-eslint-parser@2.4.1)(typescript@5.9.3)
       manten:
         specifier: ^1.10.0
