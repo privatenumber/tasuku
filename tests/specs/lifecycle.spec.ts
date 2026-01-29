@@ -359,21 +359,19 @@ export default testSuite(({ describe }) => {
 			});
 		});
 
-		describe('cursor restoration', ({ test }) => {
-			test('cursor is restored on exit even without clear()', async ({ onTestFail }) => {
+		describe('cursor visibility', ({ test }) => {
+			test('cursor is not hidden during task execution', async ({ onTestFail }) => {
 				await using fixture = await createFixture({
 					'test.mjs': `
-					// Force TTY mode before importing tasuku (works for both Ink and custom renderer)
+					// Force TTY mode before importing tasuku
 					process.stdout.isTTY = true;
 
 					import task from '#tasuku';
 					import { setTimeout } from 'node:timers/promises';
 
-					await task('Task without clear', async () => {
-						await setTimeout(50);
+					await task('Task', async () => {
+						await setTimeout(100);
 					});
-
-					// No .clear() called - cursor should still be restored on exit
 					`,
 				}, { tempDir });
 
@@ -387,15 +385,42 @@ export default testSuite(({ describe }) => {
 					});
 				});
 
-				// Cursor hide should be present (during loading)
-				expect(result.output).toContain(ansiEscapes.cursorHide);
-
-				// Cursor show should be present (restored on exit)
-				// Note: Ink writes cursor codes to stderr, custom renderer to stdout
-				expect(result.output).toContain(ansiEscapes.cursorShow);
+				expect(result.output).not.toContain(ansiEscapes.cursorHide);
 			});
 
-			test('cursor is restored on exit after error without clear()', async ({ onTestFail }) => {
+			test('cursor is not hidden on exit even without clear()', async ({ onTestFail }) => {
+				await using fixture = await createFixture({
+					'test.mjs': `
+					// Force TTY mode before importing tasuku (works for both Ink and custom renderer)
+					process.stdout.isTTY = true;
+
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task('Task without clear', async () => {
+						await setTimeout(50);
+					});
+
+					// No .clear() called - cursor should remain visible
+					`,
+				}, { tempDir });
+
+				const result = await node(fixture.getPath('test.mjs'), {
+					FORCE_COLOR: '1',
+				});
+				onTestFail(() => {
+					console.log({
+						stdout: result.stdout,
+						stderr: result.stderr,
+					});
+				});
+
+				// Cursor should never be hidden
+				expect(result.output).not.toContain(ansiEscapes.cursorHide);
+				expect(result.output).not.toContain(ansiEscapes.cursorShow);
+			});
+
+			test('cursor is not hidden on exit after error without clear()', async ({ onTestFail }) => {
 				await using fixture = await createFixture({
 					'test.mjs': `
 					// Force TTY mode before importing tasuku
@@ -411,7 +436,7 @@ export default testSuite(({ describe }) => {
 						// Catch error so process exits 0
 					});
 
-					// No .clear() called - cursor should still be restored on exit
+					// No .clear() called - cursor should remain visible
 					`,
 				}, { tempDir });
 
@@ -425,11 +450,11 @@ export default testSuite(({ describe }) => {
 					});
 				});
 
-				// Cursor show should be present (restored on exit)
-				expect(result.output).toContain(ansiEscapes.cursorShow);
+				expect(result.output).not.toContain(ansiEscapes.cursorHide);
+				expect(result.output).not.toContain(ansiEscapes.cursorShow);
 			});
 
-			test('cursor restored via clear() removes exit handler', async ({ onTestFail }) => {
+			test('cursor is not hidden via clear()', async ({ onTestFail }) => {
 				await using fixture = await createFixture({
 					'test.mjs': `
 					// Force TTY mode before importing tasuku
@@ -444,7 +469,7 @@ export default testSuite(({ describe }) => {
 
 					taskApi.clear();
 
-					// .clear() was called - cursor should be restored by destroy()
+					// .clear() was called - cursor should remain visible
 					`,
 				}, { tempDir });
 
@@ -458,8 +483,8 @@ export default testSuite(({ describe }) => {
 					});
 				});
 
-				// Cursor show should be present (restored by destroy())
-				expect(result.output).toContain(ansiEscapes.cursorShow);
+				expect(result.output).not.toContain(ansiEscapes.cursorHide);
+				expect(result.output).not.toContain(ansiEscapes.cursorShow);
 			});
 		});
 	});

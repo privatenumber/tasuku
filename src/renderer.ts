@@ -1,7 +1,7 @@
 import stringWidth from 'string-width';
 import patchConsole from 'patch-console';
 import {
-	cursorUp, cursorHide, cursorShow, eraseLine,
+	cursorUp, cursorShow, eraseLine,
 } from 'ansi-escapes';
 import {
 	green, red, yellow, gray, dim,
@@ -249,13 +249,6 @@ export const createRenderer = (
 				lastOutput = output;
 			}
 			return;
-		}
-
-		// Hide cursor only when rendering loading/pending tasks (spinner states)
-		// Don't hide for completed tasks or empty lines
-		if (!cursorHidden && isTTY && output !== '' && output !== '\n' && !allDone) {
-			stdout.write(cursorHide);
-			cursorHidden = true;
 		}
 
 		// Clear previous output (same logic as handleConsoleOutput)
