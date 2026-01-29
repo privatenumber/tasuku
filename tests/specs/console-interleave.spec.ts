@@ -1,9 +1,9 @@
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
+import stripAnsi from 'strip-ansi';
 import { node } from '../utils/node.js';
 import { tempDir } from '../utils/temp-dir.js';
 import { assertInOrder } from '../utils/assert-order.js';
-import stripAnsi from 'strip-ansi';
 
 export default testSuite(({ describe }) => {
 	describe('console interleaving', ({ test }) => {

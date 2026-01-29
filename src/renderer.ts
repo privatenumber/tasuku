@@ -87,6 +87,7 @@ const areAllTasksDone = (tasks: TaskList): boolean => {
 
 export type Renderer = {
 	triggerRender: () => void;
+	flushRender: () => void;
 	renderFinal: () => void;
 	destroy: () => void;
 };
@@ -284,6 +285,21 @@ export const createRenderer = (
 		}, 33);
 	};
 
+	const flushRender = () => {
+		// Clear any pending throttled render and render immediately
+		// Used when task reaches terminal state to prevent overwriting
+		// subsequent stdout writes
+		// Only needed in interactive mode (TTY with ANSI clearing)
+		if (!isInteractive) {
+			return;
+		}
+		if (renderTimeout) {
+			clearTimeout(renderTimeout);
+			renderTimeout = undefined;
+		}
+		render();
+	};
+
 	const destroy = () => {
 		// Remove exit handler to prevent memory leaks
 		if (isInteractive) {
@@ -335,6 +351,7 @@ export const createRenderer = (
 
 	return {
 		triggerRender: scheduleRender,
+		flushRender,
 		renderFinal: () => render(true),
 		destroy,
 	};

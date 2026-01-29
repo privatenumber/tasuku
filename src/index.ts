@@ -85,12 +85,17 @@ const registerTask = <T>(
 				taskResult = await taskFunction(api);
 			} catch (error) {
 				api.setError(error as Error);
+				// Flush render before throwing to prevent overwriting subsequent output
+				renderer?.flushRender();
 				throw error;
 			}
 
 			if (task.state === 'loading') {
 				task.state = 'success';
 			}
+
+			// Flush render before returning to prevent overwriting subsequent output
+			renderer?.flushRender();
 
 			return taskResult;
 		},

@@ -138,6 +138,37 @@ export default testSuite(({ describe }) => {
 				expect(result.stdout.indexOf('test message')).toBeLessThan(result.stdout.lastIndexOf(successString));
 			});
 
+			test('stdout.write after task completion is not overwritten', async ({ onTestFail }) => {
+				await using fixture = await createFixture({
+					'test.mjs': `
+					process.stdout.isTTY = true;
+
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task('Task', () => setTimeout(100));
+					process.stdout.write('Should not get overwritten');
+					`,
+				}, { tempDir });
+
+				const result = await node(fixture.getPath('test.mjs'));
+				onTestFail(() => { console.log(result); });
+				expect(result.stderr).toBe('');
+
+				// The stdout.write output should appear in final output
+				expect(result.stdout).toContain('Should not get overwritten');
+
+				// The stdout.write output should appear AFTER the final task render
+				// (no ANSI clear codes should appear after it)
+				const userOutput = 'Should not get overwritten';
+				const userOutputIndex = result.stdout.lastIndexOf(userOutput);
+				const afterUserOutput = result.stdout.slice(userOutputIndex + userOutput.length);
+
+				// There should be no ANSI clear codes after the user's output
+				// If there are, it means the renderer overwrote the user's output
+				expect(afterUserOutput).not.toContain(ansiEscapes.eraseLine);
+			});
+
 			test('console output interspersed with task clearing', async () => {
 				await using fixture = await createFixture({
 					'test.mjs': `
