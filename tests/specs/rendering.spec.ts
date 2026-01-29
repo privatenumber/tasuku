@@ -3,6 +3,7 @@ import { createFixture } from 'fs-fixture';
 import ansiEscapes from 'ansi-escapes';
 import yoctocolors from 'yoctocolors';
 import { node } from '../utils/node.js';
+import { nodePty } from '../utils/pty.js';
 import { tempDir } from '../utils/temp-dir.js';
 
 export default testSuite(({ describe }) => {
@@ -194,6 +195,52 @@ export default testSuite(({ describe }) => {
 				+ `${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorLeft}${yoctocolors.yellow('❯')} Parent\n`
 				+ `  ${yoctocolors.green('✔')} Child`,
 			);
+		});
+
+		test('PTY sanity check: basic output works', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': String.raw`
+				process.stdout.write('HELLO FROM PTY\n');
+				`,
+			}, { tempDir });
+
+			const result = await nodePty(fixture.getPath('test.mjs'), { cols: 80 });
+
+			expect(result.exitCode).toBe(0);
+			expect(result.output).toContain('HELLO FROM PTY');
+		});
+
+		test('line wrapping: clears correct number of lines in narrow terminal', async () => {
+			const title = 'This is a long task title for testing';
+			const cols = 20;
+			const visualWidth = title.length + 2; // +2 for spinner and space
+			const visualLines = Math.ceil(visualWidth / cols);
+
+			await using fixture = await createFixture({
+				'test.mjs': String.raw`
+				import task from '#tasuku';
+				import { setTimeout } from 'node:timers/promises';
+
+				// Debug: check environment
+				process.stderr.write('[SCRIPT] isTTY=' + process.stdout.isTTY + ' columns=' + process.stdout.columns + '\n');
+
+				await task('${title}', () => setTimeout(100));
+
+				process.stderr.write('[SCRIPT] task completed\n');
+				`,
+			}, { tempDir });
+
+			const result = await nodePty(fixture.getPath('test.mjs'), { cols });
+
+			expect(result.exitCode).toBe(0);
+
+			// Count cursor-up sequences using ansiEscapes constant
+			const cursorUpSequence = ansiEscapes.cursorUp();
+			const cursorUpCount = result.output.split(cursorUpSequence).length - 1;
+
+			// With the fix: cursor-ups should match visual lines (accounting for wrapping)
+			// Without the fix: would only have 1 cursor-up (counting only newlines)
+			expect(cursorUpCount).toBeGreaterThanOrEqual(visualLines - 1);
 		});
 	});
 });

@@ -1,3 +1,4 @@
+import stringWidth from 'string-width';
 import patchConsole from 'patch-console';
 import {
 	cursorUp, cursorHide, cursorShow, eraseLine,
@@ -6,6 +7,28 @@ import {
 	green, red, yellow, gray, dim,
 } from 'yoctocolors';
 import type { TaskList } from './types.js';
+
+/**
+ * Calculate visual line count accounting for terminal width and line wrapping.
+ * Uses string-width to handle fullwidth Unicode and strip ANSI codes.
+ */
+const getVisualLineCount = (output: string, columns: number | undefined): number => {
+	const lines = output.split('\n');
+	// Exclude trailing empty string from split
+	const lineCount = lines.length - 1;
+
+	if (!columns) {
+		return lineCount;
+	}
+
+	let count = 0;
+	for (let i = 0; i < lineCount; i += 1) {
+		const lineWidth = stringWidth(lines[i]);
+		// Each line takes at least 1 row, plus extra rows for wrapping
+		count += Math.max(1, Math.ceil(lineWidth / columns));
+	}
+	return count;
+};
 
 const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 
@@ -249,7 +272,7 @@ export const createRenderer = (
 		// Write new output
 		stdout.write(output);
 		lastOutput = output;
-		lastLineCount = output.split('\n').length - 1;
+		lastLineCount = getVisualLineCount(output, stdout.columns);
 	};
 
 	const scheduleRender = () => {
