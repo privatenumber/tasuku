@@ -2,6 +2,8 @@ import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
 import { node } from '../utils/node.js';
 import { tempDir } from '../utils/temp-dir.js';
+import { assertInOrder } from '../utils/assert-order.js';
+import stripAnsi from 'strip-ansi';
 
 export default testSuite(({ describe }) => {
 	describe('console interleaving', ({ test }) => {
@@ -72,6 +74,37 @@ export default testSuite(({ describe }) => {
 				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[G\u001B[32m✔\u001B[39m First task\n'
 				+ '\u001B[32m✔\u001B[39m Second task',
 			);
+		});
+
+		test('console.logs between tasks persist', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+				import tasuku from '#tasuku';
+
+				console.log(1111);
+
+				await tasuku('A', ({ setStatus }) => {
+					setStatus('Status A');
+				});
+
+				console.log(2222);
+
+				await tasuku('B', ({ setStatus }) => {
+					setStatus('Status B');
+				});
+
+				console.log(3333);
+				`,
+			}, { tempDir });
+
+			const result = await node(fixture.getPath('test.mjs'));
+			expect(result.stderr).toBe('');
+
+			assertInOrder(stripAnsi(result.stdout), [
+				'1111\n',
+				'2222\n',
+				'3333\n',
+			]);
 		});
 
 		test('console.logs with nested tasks', async () => {
