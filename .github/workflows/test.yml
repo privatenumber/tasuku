@@ -33,10 +33,7 @@ jobs:
         run: pnpm build
 
       - name: Test
-        run: pnpm test
-
-      - name: Test Node.js v12
-        run: pnpm --use-node-version=12.22.12 node ./tests/node12-compat.cjs
+        run: pnpm concurrently --names 'test,node12' 'pnpm test' 'pnpm --use-node-version=12.22.12 node ./tests/node12-compat.cjs'
 
       - name: Lint
         run: pnpm lint

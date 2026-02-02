@@ -53,6 +53,7 @@
 		"ansi-escapes": "^7.2.0",
 		"ansi-regex": "^6.2.2",
 		"clean-pkg-json": "^1.3.0",
+		"concurrently": "^9.2.1",
 		"expect-type": "^1.3.0",
 		"fs-fixture": "^2.11.0",
 		"lintroll": "^1.26.1",
