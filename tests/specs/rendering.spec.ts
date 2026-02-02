@@ -210,6 +210,144 @@ export default testSuite(({ describe }) => {
 			expect(result.output).toContain('HELLO FROM PTY');
 		});
 
+		test('spinner restarts after all tasks complete and new tasks start', async () => {
+			// Regression test: spinner interval was stopped when first group completed
+			// and not restarted when second group started.
+			// Must use PTY because spinner only runs when isTTY=true.
+			await using fixture = await createFixture({
+				'test.mjs': `
+				import task from '#tasuku';
+				import { setTimeout } from 'node:timers/promises';
+
+				// First group - completes, which stops the spinner interval
+				await task.group(task => [
+					task('first-1', async () => { await setTimeout(100); }),
+				], { concurrency: 1 });
+
+				// Second group - spinner interval should restart
+				// Use 500ms delay to ensure multiple animation frames render
+				await task.group(task => [
+					task('second-1', async () => { await setTimeout(500); }),
+				], { concurrency: 1 });
+				`,
+			}, { tempDir });
+
+			const result = await nodePty(fixture.getPath('test.mjs'), { cols: 80 });
+			expect(result.exitCode).toBe(0);
+
+			// Find output after first group completes (after first checkmark)
+			const firstCheckmark = result.output.indexOf(`${yoctocolors.green('✔')} first-1`);
+			expect(firstCheckmark).toBeGreaterThan(-1);
+			// eslint-disable-next-line unicorn/prefer-set-has -- multi-char ANSI
+			const afterFirstGroup = result.output.slice(firstCheckmark);
+
+			// Count unique spinner frames in second group output
+			// Without the fix, spinner interval doesn't restart, so only ONE frame appears
+			// (the stale frame value from when the first group completed).
+			// With the fix, the spinner animates through MULTIPLE frames.
+			const spinnerFrames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+			const framesInSecondGroup = spinnerFrames.filter(
+				frame => afterFirstGroup.includes(yoctocolors.yellow(frame)),
+			);
+
+			// With 500ms delay and 80ms per frame, should see at least 4-5 unique frames
+			expect(framesInSecondGroup.length).toBeGreaterThanOrEqual(4);
+		});
+
+		test('spinner restarts for sequential single task() calls', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+				import task from '#tasuku';
+				import { setTimeout } from 'node:timers/promises';
+
+				// First task completes, stopping the spinner
+				await task('first', async () => { await setTimeout(100); });
+
+				// Second task starts - spinner should restart
+				await task('second', async () => { await setTimeout(500); });
+				`,
+			}, { tempDir });
+
+			const result = await nodePty(fixture.getPath('test.mjs'), { cols: 80 });
+			expect(result.exitCode).toBe(0);
+
+			// Find output after first task completes
+			const firstCheckmark = result.output.indexOf(`${yoctocolors.green('✔')} first`);
+			expect(firstCheckmark).toBeGreaterThan(-1);
+			// eslint-disable-next-line unicorn/prefer-set-has -- multi-char ANSI
+			const afterFirstTask = result.output.slice(firstCheckmark);
+
+			// Count unique spinner frames for second task
+			const spinnerFrames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+			const framesInSecondTask = spinnerFrames.filter(
+				frame => afterFirstTask.includes(yoctocolors.yellow(frame)),
+			);
+
+			expect(framesInSecondTask.length).toBeGreaterThanOrEqual(4);
+		});
+
+		test('spinner restarts after error in first task', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+				import task from '#tasuku';
+				import { setTimeout } from 'node:timers/promises';
+
+				// First task errors, stopping the spinner
+				await task('fails', async () => {
+					await setTimeout(100);
+					throw new Error('intentional');
+				}).catch(() => {});
+
+				// Second task starts - spinner should restart despite previous error
+				await task('second', async () => { await setTimeout(500); });
+				`,
+			}, { tempDir });
+
+			const result = await nodePty(fixture.getPath('test.mjs'), { cols: 80 });
+			expect(result.exitCode).toBe(0);
+
+			// Find output after first task errors
+			const errorMark = result.output.indexOf(`${yoctocolors.red('✖')} fails`);
+			expect(errorMark).toBeGreaterThan(-1);
+			// eslint-disable-next-line unicorn/prefer-set-has -- multi-char ANSI
+			const afterError = result.output.slice(errorMark);
+
+			// Count unique spinner frames for second task
+			const spinnerFrames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+			const framesInSecondTask = spinnerFrames.filter(
+				frame => afterError.includes(yoctocolors.yellow(frame)),
+			);
+
+			expect(framesInSecondTask.length).toBeGreaterThanOrEqual(4);
+		});
+
+		test('spinner works after clear() destroys and recreates renderer', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+				import task from '#tasuku';
+				import { setTimeout } from 'node:timers/promises';
+
+				// First task completes and is cleared - renderer destroyed
+				const t = await task('first', async () => { await setTimeout(100); });
+				t.clear();
+
+				// Second task creates fresh renderer - spinner should work
+				await task('second', async () => { await setTimeout(500); });
+				`,
+			}, { tempDir });
+
+			const result = await nodePty(fixture.getPath('test.mjs'), { cols: 80 });
+			expect(result.exitCode).toBe(0);
+
+			// Count unique spinner frames for second task
+			const spinnerFrames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+			const framesInOutput = spinnerFrames.filter(
+				frame => result.output.includes(yoctocolors.yellow(frame)),
+			);
+
+			expect(framesInOutput.length).toBeGreaterThanOrEqual(4);
+		});
+
 		test('line wrapping: clears correct number of lines in narrow terminal', async () => {
 			const title = 'This is a long task title for testing';
 			const cols = 20;

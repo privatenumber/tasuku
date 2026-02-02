@@ -231,6 +231,17 @@ export const createRenderer = (
 		}
 	};
 
+	const startSpinner = () => {
+		if (spinnerInterval || !isTTY || isCI) {
+			return;
+		}
+		spinnerInterval = setInterval(() => {
+			spinnerFrame = (spinnerFrame + 1) % SPINNER_FRAMES.length;
+			scheduleRender();
+		}, 80);
+		spinnerInterval.unref();
+	};
+
 	const render = (final = false) => {
 		const output = renderTaskList(taskList);
 
@@ -240,6 +251,9 @@ export const createRenderer = (
 			// Stop spinner when everything is done
 			clearInterval(spinnerInterval);
 			spinnerInterval = undefined;
+		} else if (!allDone && !spinnerInterval) {
+			// Restart spinner if new loading tasks appeared
+			startSpinner();
 		}
 
 		if (isCI && !final) {
@@ -335,15 +349,8 @@ export const createRenderer = (
 		// Patch console to intercept output (even in non-TTY mode for testing/piping)
 		restoreConsole = patchConsole(handleConsoleOutput);
 
-		if (isTTY) {
-			// Start spinner animation (80ms interval like Ink)
-			spinnerInterval = setInterval(() => {
-				spinnerFrame = (spinnerFrame + 1) % SPINNER_FRAMES.length;
-				scheduleRender();
-			}, 80);
-			// Don't keep process alive just for spinner animation
-			spinnerInterval.unref();
-		}
+		// Start spinner animation
+		startSpinner();
 	}
 
 	// Don't do initial render - wait for first state change or console output
