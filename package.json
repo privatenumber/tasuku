@@ -46,7 +46,8 @@
 		"test": "tsx -C development tests",
 		"type-check": "tsc",
 		"build": "pkgroll --target=node12 --minify --clean-dist",
-		"prepack": "clean-pkg-json"
+		"prepack": "clean-pkg-json",
+		"generate-media": "concurrently \"vhs .github/media/basic.tape\" \"vhs .github/media/collapse.tape\" \"vhs .github/media/grouped.tape\" \"vhs .github/media/nested.tape\" \"vhs .github/media/parallel.tape\" \"vhs .github/media/set-error.tape\" \"vhs .github/media/set-title.tape\" \"vhs .github/media/task-list.tape\" \"vhs .github/media/task-output.tape\" \"vhs .github/media/task-states.tape\""
 	},
 	"devDependencies": {
 		"@types/node": "^24.10.9",

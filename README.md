@@ -37,7 +37,7 @@ task('Copying file from path A to B', async ({ setTitle }) => {
 
 Running the script will look like this in the terminal:
 
-<img src=".github/example-0.gif">
+<img src=".github/media/basic.gif">
 
 ## Usage
 ### Task list
@@ -59,7 +59,7 @@ task('Task 3', async () => {
 })
 ```
 
-<img src=".github/example-1.gif">
+<img src=".github/media/task-list.gif">
 
 #### Task states
 - **◽️ Pending** The task is queued and has not started
@@ -68,7 +68,7 @@ task('Task 3', async () => {
 - **❌ Error** The task exited with an error
 - **✅ Success** The task completed without error
 
-<img src=".github/task-states.png">
+<img src=".github/media/task-states.png">
 
 ### Unopinionated
 You can call `task()` from anywhere. There are no requirements. It is designed to be as unopinionated as possible not to interfere with your code.
@@ -96,7 +96,7 @@ task('Task 2', async ({ setTitle }) => {
 })
 ```
 
-<img src=".github/example-2.gif">
+<img src=".github/media/set-title.gif">
 
 ### Task return values
 The return value of a task will be stored in the output `.result` property.
@@ -129,7 +129,7 @@ await task('Do task', async ({ task }) => {
 })
 ```
 
-<img src=".github/example-3.gif">
+<img src=".github/media/nested.gif">
 
 ### Collapsing nested tasks
 Call `.clear()` on the returned task API to collapse the nested task.
@@ -145,7 +145,7 @@ await task('Do task', async ({ task }) => {
 })
 ```
 
-<img src=".github/example-4.gif">
+<img src=".github/media/collapse.gif">
 
 ### Grouped tasks
 Tasks can be grouped with `task.group()`. Pass in a function that returns an array of tasks to run them sequentially.
@@ -176,7 +176,7 @@ const groupedTasks = await task.group(task => [
 console.log(groupedTasks) // [{ result: 'one' }, { result: 'two' }]
 ```
 
-<img src=".github/example-5.gif">
+<img src=".github/media/grouped.gif">
 
 ### Running tasks in parallel
 You can run tasks in parallel by passing in `{ concurrency: n }` as the second argument in `task.group()`.
@@ -201,7 +201,7 @@ const api = await task.group(task => [
 api.clear() // Clear output
 ```
 
-<img src=".github/example-6.gif">
+<img src=".github/media/parallel.gif">
 
 Alternatively, you can also use the native `Promise.all()` if you prefer. The advantage of using `task.group()` is that you can limit concurrency, displays queued tasks as pending, and it returns an API to easily clear the results.
 
@@ -272,10 +272,12 @@ A task function to use for nesting.
 Call with a string to change the task title.
 
 #### setStatus()
-Call with a string to set the status of the task. See image below.
+Call with a string to set the status of the task.
 
 #### setOutput()
-Call with a string to set the output of the task. See image below.
+Call with a string to set the output of the task.
+
+<img src=".github/media/task-output.png">
 
 #### setWarning()
 Call with a string or Error instance to put the task in a warning state.
@@ -283,7 +285,7 @@ Call with a string or Error instance to put the task in a warning state.
 #### setError()
 Call with a string or Error instance to put the task in an error state. Tasks automatically go into an error state when it catches an error in the task.
 
-<img src=".github/task-title-status-output.png">
+<img src=".github/media/set-error.png">
 
 
 ### task.group(createTaskFunctions, options)
