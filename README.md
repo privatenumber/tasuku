@@ -224,7 +224,7 @@ await Promise.all([
 
 ## API
 
-### task(taskTitle, taskFunction)
+### task(taskTitle, taskFunction, options?)
 
 Returns a Promise that resolves with object:
 ```ts
@@ -257,6 +257,8 @@ type TaskFunction = (taskInnerApi: {
     setOutput(output: string | { message: string }): void
     setWarning(warning: Error | string): void
     setError(error: Error | string): void
+    startTime(): void
+    stopTime(): number
 }) => Promise<unknown>
 ```
 
@@ -286,6 +288,49 @@ Call with a string or Error instance to put the task in a warning state.
 Call with a string or Error instance to put the task in an error state. Tasks automatically go into an error state when it catches an error in the task.
 
 <img src=".github/media/set-error.png">
+
+#### startTime()
+Start or restart the elapsed time counter. Calling again resets to 0. Time is displayed after the status: `⠋ Task [status] (3s)`
+
+#### stopTime()
+Stop the elapsed time counter and return the elapsed milliseconds. The displayed time freezes at the stopped value. Useful for profiling task phases.
+
+```ts
+await task('Multi-phase', async ({ startTime, stopTime, setStatus }) => {
+    startTime()
+    await phase1()
+    const phase1Time = stopTime()
+
+    setStatus('phase 2')
+    startTime()
+    await phase2()
+    const phase2Time = stopTime()
+
+    console.log(`Phase 1: ${phase1Time}ms, Phase 2: ${phase2Time}ms`)
+})
+```
+
+#### options
+Type: `{ showTime?: boolean }`
+
+Optional task options.
+
+##### showTime
+When `true`, automatically starts the elapsed time counter when the task begins. Equivalent to calling `startTime()` at the start of the task function.
+
+```ts
+await task('Building', async () => {
+    await build()
+}, { showTime: true })
+// Output: ✔ Building (3s)
+```
+
+<img src=".github/media/elapsed-time.gif">
+
+Time display:
+- Format: `(Xs)` for under a minute, `(Xm Ys)` for under an hour, `(Xh Ym)` for longer
+- Not shown if elapsed < 1 second
+- Freezes at final value when task completes
 
 
 ### task.group(createTaskFunctions, options)

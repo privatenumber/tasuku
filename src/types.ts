@@ -35,6 +35,12 @@ export type TaskObject = {
 	children: TaskObject[];
 	status?: string;
 	output?: string;
+	startedAt?: number;
+	elapsedMs?: number;
+};
+
+export type TaskOptions = {
+	showTime?: boolean;
 };
 
 export type TaskList = TaskObject[] & {
@@ -48,6 +54,8 @@ export type TaskInnerAPI = {
 	setWarning(warning?: Error | string): void;
 	setError(error?: Error | string): void;
 	setOutput(output: string | { message: string }): void;
+	startTime(): void;
+	stopTime(): number;
 };
 
 export type TaskFunction<T> = (innerApi: TaskInnerAPI) => Promise<T>;
@@ -78,6 +86,11 @@ export type Task = (
 		 * The task function
 		 */
 		taskFunction: TaskFunction<TaskReturnType>,
+
+		/**
+		 * Task options
+		 */
+		options?: TaskOptions,
 	) => Promise<TaskAPI<TaskReturnType>>
 ) & { group: TaskGroup };
 

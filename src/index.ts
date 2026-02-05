@@ -11,6 +11,7 @@ import {
 	type TaskGroupResults,
 	type TaskFunction,
 	type TaskGroup,
+	type TaskOptions,
 	type RegisteredTask,
 	runSymbol,
 } from './types.js';
@@ -49,6 +50,18 @@ const createTaskInnerApi = (taskState: TaskObject) => {
 				api.setOutput(error);
 			}
 		},
+		startTime: () => {
+			taskState.startedAt = Date.now();
+			taskState.elapsedMs = undefined;
+		},
+		stopTime: () => {
+			if (taskState.startedAt === undefined) {
+				return 0;
+			}
+			taskState.elapsedMs = Date.now() - taskState.startedAt;
+			taskState.startedAt = undefined;
+			return taskState.elapsedMs;
+		},
 	};
 	return api;
 };
@@ -59,6 +72,7 @@ const registerTask = <T>(
 	taskList: TaskList,
 	taskTitle: string,
 	taskFunction: TaskFunction<T>,
+	options?: TaskOptions,
 ): RegisteredTask<T> => {
 	if (!renderer) {
 		renderer = createRenderer(taskList);
@@ -80,15 +94,25 @@ const registerTask = <T>(
 
 			task.state = 'loading';
 
+			// Auto-start timer if showTime option is set
+			if (options?.showTime) {
+				api.startTime();
+			}
+
 			let taskResult;
 			try {
 				taskResult = await taskFunction(api);
 			} catch (error) {
+				// Auto-stop timer on error
+				api.stopTime();
 				api.setError(error as Error);
 				// Flush render before throwing to prevent overwriting subsequent output
 				renderer?.flushRender();
 				throw error;
 			}
+
+			// Auto-stop timer on completion
+			api.stopTime();
 
 			if (task.state === 'loading') {
 				task.state = 'success';
@@ -126,8 +150,9 @@ function createTaskFunction(
 	const task: Task = async (
 		title,
 		taskFunction,
+		options,
 	) => {
-		const registeredTask = registerTask(taskList, title, taskFunction);
+		const registeredTask = registerTask(taskList, title, taskFunction, options);
 		const result = await registeredTask[runSymbol]();
 
 		return {
@@ -199,4 +224,5 @@ export type {
 	TaskInnerAPI,
 	TaskFunction,
 	TaskGroupAPI,
+	TaskOptions,
 };

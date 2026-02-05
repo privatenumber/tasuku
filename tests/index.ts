@@ -10,6 +10,7 @@ await describe('tasuku', ({ runTestSuite }) => {
 	// Task functionality
 	runTestSuite(import('./specs/task-states.spec.js'));
 	runTestSuite(import('./specs/task-methods.spec.js'));
+	runTestSuite(import('./specs/elapsed-time.spec.js'));
 
 	// Visual rendering
 	runTestSuite(import('./specs/rendering.spec.js'));

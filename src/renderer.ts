@@ -73,6 +73,21 @@ const colorize = (
 		: text
 );
 
+const formatElapsed = (ms: number): string => {
+	const seconds = Math.floor(ms / 1000);
+	if (seconds < 60) {
+		return `(${seconds}s)`;
+	}
+	const minutes = Math.floor(seconds / 60);
+	if (minutes < 60) {
+		const remainingSeconds = seconds % 60;
+		return `(${minutes}m ${remainingSeconds}s)`;
+	}
+	const hours = Math.floor(minutes / 60);
+	const remainingMinutes = minutes % 60;
+	return `(${hours}h ${remainingMinutes}m)`;
+};
+
 const areAllTasksDone = (tasks: TaskList): boolean => {
 	for (const task of tasks) {
 		if (task.state === 'loading' || task.state === 'pending') {
@@ -169,6 +184,19 @@ export const createRenderer = (
 				? dim(`[${task.status}]`)
 				: `[${task.status}]`;
 			line += ` ${styledStatus}`;
+		}
+
+		// Add elapsed time if timer is active or frozen
+		const elapsedMs = task.elapsedMs ?? (
+			task.startedAt === undefined
+				? undefined
+				: Date.now() - task.startedAt
+		);
+		if (elapsedMs !== undefined && elapsedMs >= 1000) {
+			const styledTime = useColors
+				? dim(formatElapsed(elapsedMs))
+				: formatElapsed(elapsedMs);
+			line += ` ${styledTime}`;
 		}
 
 		line += '\n';
