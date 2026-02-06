@@ -115,9 +115,6 @@ export default testSuite(({ describe }) => {
 				// Parallel execution should take at least 100ms (longest task)
 				expect(elapsed).toBeGreaterThanOrEqual(taskDuration);
 
-				// ink seems too slow on CI
-				// expect(elapsed).toBeLessThan(taskDuration * 3);
-
 				expect(groupTasks[0]).toMatchObject({
 					state: 'success',
 					result: 1,

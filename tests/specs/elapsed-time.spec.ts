@@ -13,7 +13,7 @@ export default testSuite(({ describe }) => {
 				import { setTimeout } from 'node:timers/promises';
 
 				await task('Task', async () => {
-					await setTimeout(1500);
+					await setTimeout(1100);
 				}, { showTime: true });
 				`,
 			}, { tempDir });
@@ -52,7 +52,7 @@ export default testSuite(({ describe }) => {
 
 				await task('Task', async ({ startTime, stopTime }) => {
 					startTime();
-					await setTimeout(1500);
+					await setTimeout(1100);
 					const elapsed = stopTime();
 					if (elapsed < 1000) {
 						throw new Error('Expected elapsed >= 1000ms, got ' + elapsed);
@@ -127,7 +127,7 @@ export default testSuite(({ describe }) => {
 				import { setTimeout } from 'node:timers/promises';
 
 				await task('Task', async () => {
-					await setTimeout(1500);
+					await setTimeout(1100);
 				}, { showTime: true });
 
 				// After task completes, the final output should have frozen time
@@ -150,7 +150,7 @@ export default testSuite(({ describe }) => {
 
 				await task('Task', async ({ setStatus }) => {
 					setStatus('working');
-					await setTimeout(1500);
+					await setTimeout(1100);
 				}, { showTime: true });
 				`,
 			}, { tempDir });
@@ -187,7 +187,7 @@ export default testSuite(({ describe }) => {
 
 				try {
 					await task('Task', async () => {
-						await setTimeout(1500);
+						await setTimeout(1100);
 						throw new Error('intentional');
 					}, { showTime: true });
 				} catch {

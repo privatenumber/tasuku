@@ -1,12 +1,16 @@
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
 import stripAnsi from 'strip-ansi';
+import ansiEscapes from 'ansi-escapes';
+import yoctocolors from 'yoctocolors';
 import { node } from '../utils/node.js';
 import { tempDir } from '../utils/temp-dir.js';
 import { assertInOrder } from '../utils/assert-order.js';
 
 export default testSuite(({ describe }) => {
-	describe('console interleaving', ({ test }) => {
+	describe('console interleaving', ({ test, describe }) => {
+		const clearLine = `${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorLeft}`;
+
 		test('console.log after task completion preserves all output', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
@@ -27,7 +31,7 @@ export default testSuite(({ describe }) => {
 			expect(result.stderr).toBe('');
 
 			// Both task and console.log should be visible
-			expect(result.stdout).toContain('\u001B[32m✔\u001B[39m Test task');
+			expect(result.stdout).toContain(`${yoctocolors.green('✔')} Test task`);
 			expect(result.stdout).toContain('After task');
 
 			// Critical: task must be RE-RENDERED after console.log (not overwritten)
@@ -65,14 +69,14 @@ export default testSuite(({ describe }) => {
 				'Before any tasks\n'
 				+ 'Inside first task\n'
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[GBetween tasks\n'
+				+ `${clearLine}Between tasks\n`
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[GInside second task\n'
+				+ `${clearLine}Inside second task\n`
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[GAfter all tasks\n'
+				+ `${clearLine}After all tasks\n`
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[G\u001B[32m✔\u001B[39m First task\n'
-				+ '\u001B[32m✔\u001B[39m Second task',
+				+ `${clearLine}${yoctocolors.green('✔')} First task\n`
+				+ `${yoctocolors.green('✔')} Second task`,
 			);
 		});
 
@@ -141,19 +145,19 @@ export default testSuite(({ describe }) => {
 				'1: Start\n'
 				+ '2: Inside parent\n'
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[G3: Inside child 1\n'
+				+ `${clearLine}3: Inside child 1\n`
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[G4: Between children\n'
+				+ `${clearLine}4: Between children\n`
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[G5: Inside child 2\n'
+				+ `${clearLine}5: Inside child 2\n`
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[G6: After children\n'
+				+ `${clearLine}6: After children\n`
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[G7: End\n'
+				+ `${clearLine}7: End\n`
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[G\u001B[33m❯\u001B[39m Parent task\n'
-				+ '  \u001B[32m✔\u001B[39m Child task 1\n'
-				+ '  \u001B[32m✔\u001B[39m Child task 2',
+				+ `${clearLine}${yoctocolors.yellow('❯')} Parent task\n`
+				+ `  ${yoctocolors.green('✔')} Child task 1\n`
+				+ `  ${yoctocolors.green('✔')} Child task 2`,
 			);
 		});
 
@@ -190,21 +194,21 @@ export default testSuite(({ describe }) => {
 				'Before group\n'
 				+ 'A: Start\n'
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[GA: End\n'
+				+ `${clearLine}A: End\n`
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[GB: Start\n'
+				+ `${clearLine}B: Start\n`
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[GB: End\n'
+				+ `${clearLine}B: End\n`
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[GC: Start\n'
+				+ `${clearLine}C: Start\n`
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[GC: End\n'
+				+ `${clearLine}C: End\n`
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[GAfter group\n'
+				+ `${clearLine}After group\n`
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[G\u001B[32m✔\u001B[39m Task A\n'
-				+ '\u001B[32m✔\u001B[39m Task B\n'
-				+ '\u001B[32m✔\u001B[39m Task C',
+				+ `${clearLine}${yoctocolors.green('✔')} Task A\n`
+				+ `${yoctocolors.green('✔')} Task B\n`
+				+ `${yoctocolors.green('✔')} Task C`,
 			);
 		});
 
@@ -249,23 +253,23 @@ export default testSuite(({ describe }) => {
 				'1: Starting tests\n'
 				+ '2: Will succeed\n'
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[G3: First task done\n'
+				+ `${clearLine}3: First task done\n`
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[G4: Will warn\n'
+				+ `${clearLine}4: Will warn\n`
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[G5: Warning task done\n'
+				+ `${clearLine}5: Warning task done\n`
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[G6: Will error\n'
+				+ `${clearLine}6: Will error\n`
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[G7: Error caught\n'
+				+ `${clearLine}7: Error caught\n`
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[G8: All done\n'
+				+ `${clearLine}8: All done\n`
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[G\u001B[32m✔\u001B[39m Success task\n'
-				+ '\u001B[33m⚠\u001B[39m Warning task\n'
-				+ '  \u001B[90m→ This is a warning\u001B[39m\n'
-				+ '\u001B[31m✖\u001B[39m Error task\n'
-				+ '  \u001B[90m→ Task failed\u001B[39m',
+				+ `${clearLine}${yoctocolors.green('✔')} Success task\n`
+				+ `${yoctocolors.yellow('⚠')} Warning task\n`
+				+ `  ${yoctocolors.gray('→ This is a warning')}\n`
+				+ `${yoctocolors.red('✖')} Error task\n`
+				+ `  ${yoctocolors.gray('→ Task failed')}`,
 			);
 		});
 
@@ -289,16 +293,147 @@ export default testSuite(({ describe }) => {
 			expect(result.stdout).toBe(
 				'Log 1\n'
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[GLog 2\n'
+				+ `${clearLine}Log 2\n`
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[GLog 3\n'
+				+ `${clearLine}Log 3\n`
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[GLog 4\n'
+				+ `${clearLine}Log 4\n`
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[GLog 5\n'
+				+ `${clearLine}Log 5\n`
 				+ '\n'
-				+ '\u001B[2K\u001B[1A\u001B[2K\u001B[G\u001B[32m✔\u001B[39m Task with many logs \u001B[2m[Step 5/5]\u001B[22m',
+				+ `${clearLine}${yoctocolors.green('✔')} Task with many logs ${yoctocolors.dim('[Step 5/5]')}`,
 			);
+		});
+
+		test('console output interspersed with task clearing', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+				import task from '#tasuku';
+				import { setTimeout } from 'node:timers/promises';
+
+				let counter = 0;
+				console.log(counter++);
+
+				const interval = setInterval(() => {
+					console.log(counter++);
+				}, 100);
+
+				const taskApi = await task('Some task', async ({ task }) => {
+					await setTimeout(500);
+					await task('Nested task', async () => {
+						await setTimeout(500);
+					});
+				});
+
+				clearInterval(interval);
+				taskApi.clear();
+				`,
+			}, { tempDir });
+
+			const result = await node(fixture.getPath('test.mjs'));
+			expect(result.stderr).toBe('');
+
+			// Check that ANSI clear codes are present
+			expect(result.stdout).toContain(ansiEscapes.cursorUp());
+			expect(result.stdout).toContain(ansiEscapes.eraseLine);
+
+			// Console output should have happened during execution
+			expect(result.stdout).toContain('0');
+		});
+
+		describe('console routing', ({ test }) => {
+			test('console.error during task execution', async ({ onTestFail }) => {
+				await using fixture = await createFixture({
+					'test.mjs': `
+					import task from '#tasuku';
+
+					await task('Task with error', async () => {
+						console.error('error message');
+					});
+					`,
+				}, { tempDir });
+
+				const result = await node(fixture.getPath('test.mjs'));
+				onTestFail(() => { console.log(result); });
+
+				// Bug: console.error output goes to stdout via patch-console
+				expect(result.output).toContain('error message');
+			});
+
+			test('console.warn during task execution', async ({ onTestFail }) => {
+				await using fixture = await createFixture({
+					'test.mjs': `
+					import task from '#tasuku';
+
+					await task('Task with warning', async () => {
+						console.warn('warning message');
+					});
+					`,
+				}, { tempDir });
+
+				const result = await node(fixture.getPath('test.mjs'));
+				onTestFail(() => { console.log(result); });
+
+				// Bug: console.warn output goes to stdout via patch-console
+				expect(result.output).toContain('warning message');
+			});
+
+			test('console restored after cleanup', async ({ onTestFail }) => {
+				await using fixture = await createFixture({
+					'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task('Task', async () => {
+						await setTimeout(50);
+					});
+
+					// After task completion, console should work normally
+					console.log('test message');
+					`,
+				}, { tempDir });
+
+				const result = await node(fixture.getPath('test.mjs'));
+				onTestFail(() => { console.log(result); });
+				expect(result.stderr).toBe('');
+
+				// Verify console.log still works after cleanup
+				const successString = `${yoctocolors.green('✔')} Task`;
+				expect(result.stdout).toContain('test message');
+				expect(result.stdout).toContain(successString);
+				expect(result.stdout.indexOf('test message')).toBeLessThan(result.stdout.lastIndexOf(successString));
+			});
+
+			test('stdout.write after task completion is not overwritten', async ({ onTestFail }) => {
+				await using fixture = await createFixture({
+					'test.mjs': `
+					process.stdout.isTTY = true;
+
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task('Task', () => setTimeout(100));
+					process.stdout.write('Should not get overwritten');
+					`,
+				}, { tempDir });
+
+				const result = await node(fixture.getPath('test.mjs'));
+				onTestFail(() => { console.log(result); });
+				expect(result.stderr).toBe('');
+
+				// The stdout.write output should appear in final output
+				expect(result.stdout).toContain('Should not get overwritten');
+
+				// The stdout.write output should appear AFTER the final task render
+				// (no ANSI clear codes should appear after it)
+				const userOutput = 'Should not get overwritten';
+				const userOutputIndex = result.stdout.lastIndexOf(userOutput);
+				const afterUserOutput = result.stdout.slice(userOutputIndex + userOutput.length);
+
+				// There should be no ANSI clear codes after the user's output
+				// If there are, it means the renderer overwrote the user's output
+				expect(afterUserOutput).not.toContain(ansiEscapes.eraseLine);
+			});
 		});
 	});
 });

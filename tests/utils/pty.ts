@@ -43,8 +43,9 @@ export const nodePty = (
 		},
 	);
 
-	// Debug logging for CI
-	const debug = (message: string) => process.stderr.write(`[PTY DEBUG] ${message}\n`);
+	const debug = process.env.DEBUG_PTY
+		? (message: string) => process.stderr.write(`[PTY DEBUG] ${message}\n`)
+		: () => {};
 	debug(`Spawning: ${process.execPath} ${[...process.execArgv, scriptPath].join(' ')}`);
 	debug(`cols=${cols}, rows=${rows}`);
 

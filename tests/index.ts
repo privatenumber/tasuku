@@ -3,27 +3,23 @@ import { describe } from 'manten';
 await describe('tasuku', ({ runTestSuite }) => {
 	// Core API
 	runTestSuite(import('./specs/api.spec.js'));
-
-	// Type inference
 	runTestSuite(import('./specs/types.spec.js'));
 
-	// Task functionality
+	// Task behavior
 	runTestSuite(import('./specs/task-states.spec.js'));
-	runTestSuite(import('./specs/task-methods.spec.js'));
 	runTestSuite(import('./specs/elapsed-time.spec.js'));
 
-	// Visual rendering
+	// Rendering
 	runTestSuite(import('./specs/rendering.spec.js'));
-	runTestSuite(import('./specs/ansi.spec.js'));
+	runTestSuite(import('./specs/spinner-restart.spec.js'));
+	runTestSuite(import('./specs/max-visible.spec.js'));
 
 	// Environment
 	runTestSuite(import('./specs/environment.spec.js'));
 
-	// Lifecycle
-	runTestSuite(import('./specs/lifecycle.spec.js'));
-
-	// Console interleaving
+	// Console & Lifecycle
 	runTestSuite(import('./specs/console-interleave.spec.js'));
+	runTestSuite(import('./specs/lifecycle.spec.js'));
 
 	// Unit tests
 	runTestSuite(import('./specs/format-elapsed.spec.js'));
