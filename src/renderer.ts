@@ -1,4 +1,3 @@
-import stringWidth from 'string-width';
 import patchConsole from 'patch-console';
 import {
 	cursorUp, cursorShow, eraseLine,
@@ -7,28 +6,9 @@ import {
 	green, red, yellow, gray, dim,
 } from 'yoctocolors';
 import type { TaskList } from './types.js';
-
-/**
- * Calculate visual line count accounting for terminal width and line wrapping.
- * Uses string-width to handle fullwidth Unicode and strip ANSI codes.
- */
-const getVisualLineCount = (output: string, columns: number | undefined): number => {
-	const lines = output.split('\n');
-	// Exclude trailing empty string from split
-	const lineCount = lines.length - 1;
-
-	if (!columns) {
-		return lineCount;
-	}
-
-	let count = 0;
-	for (let i = 0; i < lineCount; i += 1) {
-		const lineWidth = stringWidth(lines[i]);
-		// Each line takes at least 1 row, plus extra rows for wrapping
-		count += Math.max(1, Math.ceil(lineWidth / columns));
-	}
-	return count;
-};
+import { getVisualLineCount } from './utils/visual-line-count.js';
+import { formatElapsed } from './utils/format-elapsed.js';
+import { areAllTasksDone } from './utils/task-list.js';
 
 const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 
@@ -72,33 +52,6 @@ const colorize = (
 		? colorFunction(text)
 		: text
 );
-
-const formatElapsed = (ms: number): string => {
-	const seconds = Math.floor(ms / 1000);
-	if (seconds < 60) {
-		return `(${seconds}s)`;
-	}
-	const minutes = Math.floor(seconds / 60);
-	if (minutes < 60) {
-		const remainingSeconds = seconds % 60;
-		return `(${minutes}m ${remainingSeconds}s)`;
-	}
-	const hours = Math.floor(minutes / 60);
-	const remainingMinutes = minutes % 60;
-	return `(${hours}h ${remainingMinutes}m)`;
-};
-
-const areAllTasksDone = (tasks: TaskList): boolean => {
-	for (const task of tasks) {
-		if (task.state === 'loading' || task.state === 'pending') {
-			return false;
-		}
-		if (task.children && task.children.length > 0 && !areAllTasksDone(task.children)) {
-			return false;
-		}
-	}
-	return true;
-};
 
 export type Renderer = {
 	triggerRender: () => void;

@@ -24,4 +24,9 @@ await describe('tasuku', ({ runTestSuite }) => {
 
 	// Console interleaving
 	runTestSuite(import('./specs/console-interleave.spec.js'));
+
+	// Unit tests
+	runTestSuite(import('./specs/format-elapsed.spec.js'));
+	runTestSuite(import('./specs/visual-line-count.spec.js'));
+	runTestSuite(import('./specs/task-list.spec.js'));
 });
