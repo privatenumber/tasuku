@@ -27,6 +27,17 @@ export type TaskGroupOptions = {
 	 * Abort signal to cancel pending tasks.
 	 */
 	signal?: PMapOptions['signal'];
+
+	/**
+	 * Maximum number of lines to display in the task list.
+	 *
+	 * Can be a number or a function that returns a number (called on each render).
+	 * When there are more task lines than this limit, remaining tasks
+	 * are hidden with a state breakdown summary.
+	 *
+	 * @default Responsive to terminal height (rows - 2, minimum 5)
+	 */
+	maxVisible?: number | ((terminalHeight: number) => number);
 };
 
 export type TaskObject = {

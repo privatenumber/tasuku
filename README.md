@@ -378,6 +378,34 @@ Default: `true`
 
 When set to `false`, instead of stopping when a task fails, it will wait for all the tasks to finish and then reject with an aggregated error containing all the errors from the rejected promises.
 
+##### maxVisible
+
+<p align="center"><img src=".github/media/max-visible.gif" width="600"></p>
+
+Type: `number | ((terminalHeight: number) => number)`
+
+Default: Responsive to terminal height (rows - 2, minimum 5)
+
+Maximum number of lines to display in the task list. When there are more task lines than this limit, remaining tasks are hidden with a state breakdown (e.g., "(+ 3 loading, 5 queued, 4 completed)"). Active tasks are always prioritized over pending and completed ones. This accounts for nested subtasks which add extra lines.
+
+Can be a fixed number or a function called on each render for responsive limits.
+
+By default, the limit is automatically lifted when all tasks complete and `.clear()` is called, revealing the full list.
+
+```ts
+// Fixed limit
+await task.group(task => [...tasks], {
+    concurrency: 5,
+    maxVisible: 10
+})
+
+// Responsive limit (terminal height passed as parameter)
+await task.group(task => [...tasks], {
+    concurrency: 5,
+    maxVisible: height => height - 5
+})
+```
+
 ## FAQ
 
 ### What does "Tasuku" mean?

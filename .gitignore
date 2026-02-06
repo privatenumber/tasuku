@@ -22,5 +22,8 @@ node_modules/
 # Cache
 .eslintcache
 
+# Local scripts/files
+.local/
+
 # Distribution
 dist

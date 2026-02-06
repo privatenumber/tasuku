@@ -105,6 +105,7 @@ export type Renderer = {
 	flushRender: () => void;
 	renderFinal: () => void;
 	destroy: () => void;
+	setMaxVisible: (limit?: number | ((terminalHeight: number) => number)) => void;
 };
 
 export const createRenderer = (
@@ -122,6 +123,24 @@ export const createRenderer = (
 	const isTTY = stdout.isTTY === true;
 	const useColors = detectColors(stdout);
 	const isInteractive = isTTY && !isCI;
+
+	let maxVisibleOverride: number | ((terminalHeight: number) => number) | undefined;
+
+	// Cache terminal height to avoid reading stdout.rows on every render.
+	// Updated on resize events. Falls back to 24 (VT100 default) in
+	// non-TTY environments where stdout.rows is undefined.
+	let terminalHeight = stdout.rows || 24;
+
+	// Get the visible lines limit (user override or terminal height - 2, minimum 1)
+	const getVisibleLinesLimit = (): number => {
+		if (maxVisibleOverride !== undefined) {
+			const limit = typeof maxVisibleOverride === 'function'
+				? maxVisibleOverride(terminalHeight)
+				: maxVisibleOverride;
+			return Math.max(1, limit);
+		}
+		return Math.max(5, terminalHeight - 2);
+	};
 
 	// Restore cursor - used by exit handlers and destroy()
 	const restoreCursor = () => {
@@ -221,7 +240,85 @@ export const createRenderer = (
 		return line;
 	};
 
-	const renderTaskList = (tasks: TaskList, depth = 0) => tasks.map(task => renderTask(task, depth)).join('');
+	// Sort tasks by state priority: loading > pending > completed
+	const getStatePriority = (state: TaskList[number]['state']): number => {
+		if (state === 'loading') { return 0; }
+		if (state === 'pending') { return 1; }
+		return 2; // success, error, warning
+	};
+
+	let isFinalRender = false;
+
+	const renderTaskList = (tasks: TaskList, depth = 0): string => {
+		// Only apply visible lines limit and sorting at root level
+		if (depth === 0) {
+			// Sort by state: loading first, then pending, then completed
+			const sortedTasks = [...tasks].sort(
+				(a, b) => getStatePriority(a.state) - getStatePriority(b.state),
+			);
+
+			// Only skip the limit on the final render (clear/destroy) when
+			// no explicit maxVisible was set. During normal renders, we must
+			// keep the limit because ANSI cursor movement can't reach lines
+			// that scrolled off screen, which would break the next redraw.
+			const skipLimit = isFinalRender && maxVisibleOverride === undefined;
+
+			if (!skipLimit) {
+				const maxLines = getVisibleLinesLimit();
+				let output = '';
+				let lineCount = 0;
+				let renderedTaskCount = 0;
+
+				for (let i = 0; i < sortedTasks.length; i += 1) {
+					const taskOutput = renderTask(sortedTasks[i], depth);
+					const taskLines = taskOutput.split('\n').length - 1; // -1 because split creates extra empty element
+					const hasMoreTasks = i < sortedTasks.length - 1;
+
+					// Reserve 1 line for the "(X more tasks)" summary if there are more
+					const reservedLines = hasMoreTasks ? 1 : 0;
+
+					// Check if adding this task would exceed the limit
+					// Always show at least one task
+					if (lineCount + taskLines + reservedLines > maxLines && renderedTaskCount > 0) {
+						break;
+					}
+
+					output += taskOutput;
+					lineCount += taskLines;
+					renderedTaskCount += 1;
+				}
+
+				const hiddenTasks = sortedTasks.slice(renderedTaskCount);
+				if (hiddenTasks.length > 0) {
+					const parts: string[] = [];
+					let loading = 0;
+					let pending = 0;
+					let completed = 0;
+					for (const task of hiddenTasks) {
+						if (task.state === 'loading') {
+							loading += 1;
+						} else if (task.state === 'pending') {
+							pending += 1;
+						} else {
+							completed += 1;
+						}
+					}
+					if (loading > 0) { parts.push(`${loading} loading`); }
+					if (pending > 0) { parts.push(`${pending} queued`); }
+					if (completed > 0) { parts.push(`${completed} completed`); }
+					const hiddenText = `(+ ${parts.join(', ')})`;
+					const styledHiddenText = useColors ? dim(hiddenText) : hiddenText;
+					output += `${styledHiddenText}\n`;
+				}
+
+				return output;
+			}
+
+			return sortedTasks.map(task => renderTask(task, depth)).join('');
+		}
+
+		return tasks.map(task => renderTask(task, depth)).join('');
+	};
 
 	const handleConsoleOutput = (_stream: 'stdout' | 'stderr', data: string) => {
 		// Clear our task UI output
@@ -342,10 +439,21 @@ export const createRenderer = (
 		render();
 	};
 
+	// Handle terminal resize: update cached height and re-render
+	const handleResize = () => {
+		terminalHeight = stdout.rows || 24;
+		scheduleRender();
+	};
+
 	const destroy = () => {
 		// Remove exit handler to prevent memory leaks
 		if (isInteractive) {
 			process.off('exit', restoreCursor);
+		}
+
+		// Remove resize handler
+		if (isTTY) {
+			stdout.off('resize', handleResize);
 		}
 
 		if (spinnerInterval) {
@@ -372,6 +480,11 @@ export const createRenderer = (
 		restoreCursor();
 	};
 
+	// Register resize handler
+	if (isTTY) {
+		stdout.on('resize', handleResize);
+	}
+
 	// Initialize
 	if (!isCI) {
 		// Patch console to intercept output (even in non-TTY mode for testing/piping)
@@ -387,7 +500,14 @@ export const createRenderer = (
 	return {
 		triggerRender: scheduleRender,
 		flushRender,
-		renderFinal: () => render(true),
+		renderFinal: () => {
+			isFinalRender = true;
+			render(true);
+			isFinalRender = false;
+		},
 		destroy,
+		setMaxVisible: (limit?: number | ((terminalHeight: number) => number)) => {
+			maxVisibleOverride = limit;
+		},
 	};
 };

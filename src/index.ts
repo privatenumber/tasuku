@@ -177,6 +177,10 @@ function createTaskFunction(
 			taskFunction,
 		));
 
+		if (options?.maxVisible !== undefined && renderer) {
+			renderer.setMaxVisible(options.maxVisible);
+		}
+
 		// pMap doesn't preserve tuple types, so we need to cast the result
 		// The cast is safe because:
 		// 1. pMap preserves array order and length
@@ -207,6 +211,11 @@ function createTaskFunction(
 			clear: () => {
 				for (const taskApi of tasksQueue) {
 					taskApi.clear();
+				}
+
+				// Reset maxVisible after clear so subsequent groups use the default
+				if (options?.maxVisible !== undefined && renderer) {
+					renderer.setMaxVisible(undefined);
 				}
 			},
 		}) as unknown as TaskGroupAPI<typeof results>;
