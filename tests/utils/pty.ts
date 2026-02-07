@@ -1,13 +1,20 @@
-import { spawn } from 'node-pty';
+import { nanoPty, type PtyProcess } from './nano-pty.js';
 
-type PtyResult = {
-	output: string;
-	exitCode: number;
-};
+export type { PtyResult, PtyProcess } from './nano-pty.js';
 
 /**
- * Spawns a Node.js process in a pseudo-TTY with controlled dimensions.
- * This allows testing terminal-specific behavior like line wrapping.
+ * Spawns a Node.js process in a pseudo-TTY.
+ *
+ * Simple:
+ *   const { output, exitCode } = await nodePty(script);
+ *
+ * Interactive:
+ *   const pty = nodePty(script, { cols: 80, rows: 10 });
+ *   for await (const _ of pty) {
+ *     if (pty.output.includes('DONE')) break;
+ *   }
+ *   pty.resize(80, 40);
+ *   const { output, exitCode } = await pty;
  */
 export const nodePty = (
 	scriptPath: string,
@@ -16,57 +23,24 @@ export const nodePty = (
 		rows?: number;
 		env?: Record<string, string>;
 	},
-): Promise<PtyResult> => new Promise((resolve, reject) => {
-	const { cols = 80, rows = 24, env = {} } = options ?? {};
-
-	let output = '';
-
-	const ptyProcess = spawn(
-		process.execPath,
-		[...process.execArgv, scriptPath],
-		{
-			name: 'xterm-256color',
-			cols,
-			rows,
-			cwd: process.cwd(),
-			env: {
-				...process.env,
-				FORCE_COLOR: '1',
-				COLORTERM: 'truecolor',
-				TERM: 'xterm-256color',
-				CI: '',
-				GITHUB_ACTIONS: '',
-				CONTINUOUS_INTEGRATION: '',
-				BUILD_NUMBER: '',
-				...env,
-			},
+): PtyProcess => nanoPty(
+	process.execPath,
+	[...process.execArgv, scriptPath],
+	{
+		name: 'xterm-256color',
+		cols: options?.cols ?? 80,
+		rows: options?.rows ?? 24,
+		cwd: process.cwd(),
+		env: {
+			...process.env,
+			FORCE_COLOR: '1',
+			COLORTERM: 'truecolor',
+			TERM: 'xterm-256color',
+			CI: '',
+			GITHUB_ACTIONS: '',
+			CONTINUOUS_INTEGRATION: '',
+			BUILD_NUMBER: '',
+			...options?.env,
 		},
-	);
-
-	const debug = process.env.DEBUG_PTY
-		? (message: string) => process.stderr.write(`[PTY DEBUG] ${message}\n`)
-		: () => {};
-	debug(`Spawning: ${process.execPath} ${[...process.execArgv, scriptPath].join(' ')}`);
-	debug(`cols=${cols}, rows=${rows}`);
-
-	// tsx loader can take 10+ seconds to start on Linux CI
-	const timeout = setTimeout(() => {
-		debug(`TIMEOUT - output so far (${output.length} chars): ${output.slice(0, 500)}`);
-		ptyProcess.kill();
-		reject(new Error('PTY process timed out'));
-	}, 30_000);
-
-	ptyProcess.onData((data) => {
-		debug(`onData: ${data.length} chars: ${JSON.stringify(data.slice(0, 100))}`);
-		output += data;
-	});
-
-	ptyProcess.onExit(({ exitCode }) => {
-		debug(`onExit: exitCode=${exitCode}`);
-		clearTimeout(timeout);
-		resolve({
-			output,
-			exitCode,
-		});
-	});
-});
+	},
+);
