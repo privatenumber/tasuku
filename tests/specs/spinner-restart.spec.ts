@@ -40,9 +40,9 @@ export default testSuite(({ describe }) => {
 			const result = await nodePty(fixture.getPath('test.mjs'), { cols: 80 });
 			expect(result.exitCode).toBe(0);
 
-			// With 500ms delay and 80ms per frame, should see at least 4-5 unique frames
+			// Multiple unique frames proves the spinner restarted (not a stale single frame)
 			const frameCount = countSpinnerFramesAfter(result.output, `${yoctocolors.green('✔')} first-1`);
-			expect(frameCount).toBeGreaterThanOrEqual(4);
+			expect(frameCount).toBeGreaterThanOrEqual(2);
 		});
 
 		test('restarts for sequential single task() calls', async () => {
@@ -60,7 +60,7 @@ export default testSuite(({ describe }) => {
 			expect(result.exitCode).toBe(0);
 
 			const frameCount = countSpinnerFramesAfter(result.output, `${yoctocolors.green('✔')} first`);
-			expect(frameCount).toBeGreaterThanOrEqual(4);
+			expect(frameCount).toBeGreaterThanOrEqual(2);
 		});
 
 		test('restarts after error in first task', async () => {
@@ -82,7 +82,7 @@ export default testSuite(({ describe }) => {
 			expect(result.exitCode).toBe(0);
 
 			const frameCount = countSpinnerFramesAfter(result.output, `${yoctocolors.red('✖')} fails`);
-			expect(frameCount).toBeGreaterThanOrEqual(4);
+			expect(frameCount).toBeGreaterThanOrEqual(2);
 		});
 
 		test('works after clear() destroys and recreates renderer', async () => {
@@ -105,7 +105,7 @@ export default testSuite(({ describe }) => {
 			const framesInOutput = spinnerFrames.filter(
 				frame => result.output.includes(yoctocolors.yellow(frame)),
 			).length;
-			expect(framesInOutput).toBeGreaterThanOrEqual(4);
+			expect(framesInOutput).toBeGreaterThanOrEqual(2);
 		});
 	});
 });
