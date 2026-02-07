@@ -1,3 +1,4 @@
+import type { Writable } from 'node:stream';
 import type { Options as PMapOptions } from 'p-map';
 
 type State = 'pending' | 'loading' | 'error' | 'warning' | 'success';
@@ -46,12 +47,15 @@ export type TaskObject = {
 	children: TaskObject[];
 	status?: string;
 	output?: string;
+	streamOutput?: string;
+	streamTruncatedLines?: number;
 	startedAt?: number;
 	elapsedMs?: number;
 };
 
 export type TaskOptions = {
 	showTime?: boolean;
+	previewLines?: number;
 };
 
 export type TaskList = TaskObject[] & {
@@ -65,6 +69,7 @@ export type TaskInnerAPI = {
 	setWarning(warning?: Error | string): void;
 	setError(error?: Error | string): void;
 	setOutput(output: string | { message: string }): void;
+	streamPreview: Writable;
 	startTime(): void;
 	stopTime(): number;
 };

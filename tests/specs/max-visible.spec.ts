@@ -275,7 +275,7 @@ export default testSuite(({ describe }) => {
 					);
 
 					console.log('TASKS_DONE');
-					await setTimeout(200);
+					await setTimeout(2000);
 					`,
 				}, { tempDir });
 
@@ -322,7 +322,7 @@ export default testSuite(({ describe }) => {
 					);
 
 					console.log('ALL_DONE');
-					await setTimeout(200);
+					await setTimeout(2000);
 					`,
 				}, { tempDir });
 
@@ -379,7 +379,7 @@ export default testSuite(({ describe }) => {
 					);
 
 					console.log('TASKS_DONE');
-					await setTimeout(200);
+					await setTimeout(2000);
 					`,
 				}, { tempDir });
 

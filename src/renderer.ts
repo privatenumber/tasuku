@@ -170,16 +170,33 @@ export const createRenderer = (
 
 		line += '\n';
 
-		if (task.output) {
-			const outputIndent = `${indent}  `;
-			const styleText = (text: string) => (useColors
-				? gray(text)
-				: text);
+		const outputIndent = `${indent}  `;
+		const styleText = (text: string) => (useColors
+			? gray(text)
+			: text);
 
+		// Static output: → prefix
+		if (task.output) {
 			line += `${task.output
 				.split('\n')
 				.map((outputLine, index) => `${outputIndent}${styleText(index === 0 ? `→ ${outputLine}` : outputLine)}`)
 				.join('\n')}\n`;
+		}
+
+		// Stream preview: ⎿ prefix with aligned continuation
+		if (task.streamOutput) {
+			const continuationIndent = `${outputIndent}   `;
+			line += `${task.streamOutput
+				.split('\n')
+				.map((outputLine, index) => (index === 0
+					? `${outputIndent}⎿  ${styleText(outputLine)}`
+					: `${continuationIndent}${styleText(outputLine)}`))
+				.join('\n')}\n`;
+
+			if (task.streamTruncatedLines) {
+				const truncatedText = `(+ ${task.streamTruncatedLines} lines)`;
+				line += `${continuationIndent}${styleText(truncatedText)}\n`;
+			}
 		}
 
 		// Render children recursively

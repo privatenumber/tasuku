@@ -1,4 +1,6 @@
+import { Writable } from 'node:stream';
 import pMap from 'p-map';
+import stripAnsi from 'strip-ansi';
 import { createRenderer, type Renderer } from './renderer.js';
 import { reactive, setRenderCallback } from './reactive.js';
 import {
@@ -16,7 +18,95 @@ import {
 	runSymbol,
 } from './types.js';
 
-const createTaskInnerApi = (taskState: TaskObject) => {
+const defaultPreviewLines = 5;
+
+const createStreamPreview = (
+	taskState: TaskObject,
+	maxLines: number,
+): Writable => {
+	const lines: string[] = [];
+	let totalLines = 0;
+	let partialLine = '';
+
+	// Resolve \r within a string: keep content after the last \r.
+	// For trailing \r (nothing after), keep the last non-empty segment.
+	const resolveCarriageReturn = (text: string) => {
+		const segments = text.split('\r');
+		return segments.reverse().find(Boolean) ?? '';
+	};
+
+	const flush = () => {
+		const displayPartial = partialLine.includes('\r')
+			? resolveCarriageReturn(partialLine)
+			: partialLine;
+		const output = displayPartial
+			? [...lines, displayPartial].join('\n')
+			: lines.join('\n');
+		taskState.streamOutput = output;
+		taskState.streamTruncatedLines = Math.max(0, totalLines - maxLines);
+	};
+
+	return new Writable({
+		write(chunk: Buffer, _encoding, callback) {
+			const text = stripAnsi(partialLine + chunk.toString());
+			const parts = text.split(/\r?\n/);
+
+			// Last element is either empty (if chunk ended with \n) or a partial line
+			partialLine = parts.pop()!;
+
+			for (const rawLine of parts) {
+				// Handle \r (carriage return) — keep content after last \r
+				const line = rawLine.includes('\r')
+					? resolveCarriageReturn(rawLine)
+					: rawLine;
+				lines.push(line);
+				totalLines += 1;
+				if (lines.length > maxLines) {
+					lines.shift();
+				}
+			}
+
+			// Trim accumulated \r segments to prevent unbounded growth
+			if (partialLine.includes('\r')) {
+				const resolved = resolveCarriageReturn(partialLine);
+				// Keep trailing \r as boundary marker for next chunk
+				partialLine = partialLine.endsWith('\r')
+					? `${resolved}\r`
+					: resolved;
+			}
+
+			if (parts.length > 0 || partialLine) {
+				flush();
+			}
+
+			callback();
+		},
+
+		final(callback) {
+			// Flush any remaining partial line
+			if (partialLine) {
+				const line = partialLine.includes('\r')
+					? resolveCarriageReturn(partialLine)
+					: partialLine;
+				lines.push(line);
+				totalLines += 1;
+				if (lines.length > maxLines) {
+					lines.shift();
+				}
+				partialLine = '';
+				flush();
+			}
+			callback();
+		},
+	});
+};
+
+const createTaskInnerApi = (
+	taskState: TaskObject,
+	options?: TaskOptions,
+) => {
+	let stream: Writable | undefined;
+
 	const api: TaskInnerAPI = {
 		task: createTaskFunction(taskState.children),
 		setTitle(title) {
@@ -35,6 +125,15 @@ const createTaskInnerApi = (taskState: TaskObject) => {
 							: ''
 					)
 			);
+		},
+		get streamPreview() {
+			if (!stream) {
+				stream = createStreamPreview(
+					taskState,
+					Math.max(1, Math.trunc(options?.previewLines ?? defaultPreviewLines)),
+				);
+			}
+			return stream;
 		},
 		setWarning(warning) {
 			taskState.state = 'warning';
@@ -63,7 +162,10 @@ const createTaskInnerApi = (taskState: TaskObject) => {
 			return taskState.elapsedMs;
 		},
 	};
-	return api;
+	return {
+		api,
+		destroyStream: () => stream?.destroy(),
+	};
 };
 
 let renderer: Renderer | undefined;
@@ -90,7 +192,7 @@ const registerTask = <T>(
 	return {
 		task,
 		[runSymbol]: async () => {
-			const api = createTaskInnerApi(task);
+			const { api, destroyStream } = createTaskInnerApi(task, options);
 
 			task.state = 'loading';
 
@@ -106,6 +208,7 @@ const registerTask = <T>(
 				// Auto-stop timer on error
 				api.stopTime();
 				api.setError(error as Error);
+				destroyStream();
 				// Flush render before throwing to prevent overwriting subsequent output
 				renderer?.flushRender();
 				throw error;
@@ -113,6 +216,7 @@ const registerTask = <T>(
 
 			// Auto-stop timer on completion
 			api.stopTime();
+			destroyStream();
 
 			if (task.state === 'loading') {
 				task.state = 'success';

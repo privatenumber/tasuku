@@ -257,6 +257,7 @@ type TaskFunction = (taskInnerApi: {
     setOutput(output: string | { message: string }): void
     setWarning(warning: Error | string): void
     setError(error: Error | string): void
+    streamPreview: Writable
     startTime(): void
     stopTime(): number
 }) => Promise<unknown>
@@ -280,6 +281,28 @@ Call with a string to set the status of the task.
 Call with a string to set the output of the task.
 
 <img src=".github/media/task-output.png">
+
+#### streamPreview
+A `Writable` stream for displaying live output below the task. Pipe a child process or any readable stream into it to show a scrolling preview of the output.
+
+Handles both `\n` (newline) and `\r` (carriage return) — programs like `curl` that use `\r` for in-place progress bars work out of the box.
+
+```ts
+import { spawn } from 'node:child_process'
+import { pipeline } from 'node:stream/promises'
+
+await task('Download', async ({ streamPreview }) => {
+    const child = spawn('curl', ['-o', '/dev/null', 'https://example.com/file'])
+    await pipeline(child.stderr, streamPreview)
+})
+```
+
+<img src=".github/media/stream-preview.gif">
+
+By default, shows the last 5 lines. Use the `previewLines` option to change this. When there are more lines than the limit, a `(+ N lines)` indicator is shown.
+
+> [!NOTE]
+> `setOutput()` and `streamPreview` render independently. If both are used, static output appears above the stream preview.
 
 #### setWarning()
 Call with a string or Error instance to put the task in a warning state.
@@ -311,9 +334,16 @@ await task('Multi-phase', async ({ startTime, stopTime, setStatus }) => {
 ```
 
 #### options
-Type: `{ showTime?: boolean }`
+Type: `{ showTime?: boolean, previewLines?: number }`
 
 Optional task options.
+
+##### previewLines
+Type: `number`
+
+Default: `5`
+
+Maximum number of lines to display in the `streamPreview` output (minimum 1). When the stream produces more lines, older lines scroll off and a `(+ N lines)` indicator shows the total.
 
 ##### showTime
 When `true`, automatically starts the elapsed time counter when the task begins. Equivalent to calling `startTime()` at the start of the task function.
