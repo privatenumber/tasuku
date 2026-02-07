@@ -70,6 +70,7 @@ export const createRenderer = (
 	let renderTimeout: NodeJS.Timeout | undefined;
 	let lastOutput = '';
 	let lastLineCount = 0;
+	let hasHiddenTasks = false;
 	let restoreConsole: (() => void) | undefined;
 	let cursorHidden = false;
 
@@ -103,11 +104,7 @@ export const createRenderer = (
 		}
 	};
 
-	// Register exit handlers to restore cursor even if clear() is not called
-	// This prevents cursor from disappearing after process exits
-	if (isInteractive) {
-		process.on('exit', restoreCursor);
-	}
+	// Exit handler registered after render() is defined (see below)
 
 	const getIcon = (state: TaskList[number]['state'], hasChildren: boolean): string => {
 		if (state === 'pending') {
@@ -242,7 +239,8 @@ export const createRenderer = (
 				}
 
 				const hiddenTasks = sortedTasks.slice(renderedTaskCount);
-				if (hiddenTasks.length > 0) {
+				hasHiddenTasks = hiddenTasks.length > 0;
+				if (hasHiddenTasks) {
 					const parts: string[] = [];
 					let loading = 0;
 					let pending = 0;
@@ -267,6 +265,7 @@ export const createRenderer = (
 				return output;
 			}
 
+			hasHiddenTasks = false;
 			return sortedTasks.map(task => renderTask(task, depth)).join('');
 		}
 
@@ -390,6 +389,13 @@ export const createRenderer = (
 			renderTimeout = undefined;
 		}
 		render();
+
+		// After all tasks complete with hidden (truncated) tasks,
+		// prevent handleConsoleOutput from re-rendering the truncated list
+		// (the exit handler will do the final unlimited render instead).
+		if (areAllTasksDone(taskList) && hasHiddenTasks) {
+			lastOutput = '\n';
+		}
 	};
 
 	// Handle terminal resize: update cached height and re-render
@@ -401,7 +407,7 @@ export const createRenderer = (
 	const destroy = () => {
 		// Remove exit handler to prevent memory leaks
 		if (isInteractive) {
-			process.off('exit', restoreCursor);
+			process.off('exit', handleExit);
 		}
 
 		// Remove resize handler
@@ -433,9 +439,29 @@ export const createRenderer = (
 		restoreCursor();
 	};
 
+	// On process exit: do a final unlimited render so the complete
+	// task list is visible in scrollback, then restore cursor.
+	// Only fires when the current output has hidden (truncated) tasks.
+	// If all tasks fit (no truncation), the handler does nothing.
+	const handleExit = () => {
+		if (hasHiddenTasks && areAllTasksDone(taskList)) {
+			// Clear maxVisible override so skipLimit works unconditionally
+			maxVisibleOverride = undefined;
+			isFinalRender = true;
+			render();
+			isFinalRender = false;
+		}
+		restoreCursor();
+	};
+
 	// Register resize handler
 	if (isTTY) {
 		stdout.on('resize', handleResize);
+	}
+
+	// Register exit handler
+	if (isInteractive) {
+		process.on('exit', handleExit);
 	}
 
 	// Initialize

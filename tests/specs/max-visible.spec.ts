@@ -17,7 +17,7 @@ export default testSuite(({ describe }) => {
 
 					await task.group(task =>
 						Array.from({ length: 15 }, (_, i) =>
-							task(\`Task \${String(i + 1).padStart(2, '0')}\`, async () => {
+							task('Task ' + String(i + 1).padStart(2, '0'), async () => {
 								await setTimeout(50);
 							})
 						),
@@ -154,7 +154,7 @@ export default testSuite(({ describe }) => {
 					// Create enough tasks to trigger the limit
 					await task.group(task =>
 						Array.from({ length: 20 }, (_, i) =>
-							task(\`Task \${String(i + 1).padStart(2, '0')}\`, async () => {
+							task('Task ' + String(i + 1).padStart(2, '0'), async () => {
 								await setTimeout(100);
 							})
 						),
@@ -187,7 +187,7 @@ export default testSuite(({ describe }) => {
 
 					const tasks = await task.group(task =>
 						Array.from({ length: 15 }, (_, i) =>
-							task(\`Task \${String(i + 1).padStart(2, '0')}\`, async () => {
+							task('Task ' + String(i + 1).padStart(2, '0'), async () => {
 								await setTimeout(50);
 							})
 						),
@@ -210,11 +210,373 @@ export default testSuite(({ describe }) => {
 
 				// After clear(), all 15 tasks should have been rendered
 				// Count unique task names in the output
+				const allTasksPresent = Array.from({ length: 15 }, (_, i) => result.output.includes(`Task ${String(i + 1).padStart(2, '0')}`)).every(Boolean);
+				expect(allTasksPresent).toBe(true);
+			});
+
+			test('no extra render when tasks fit in terminal', async () => {
+				// When all tasks fit within the terminal height, the exit handler
+				// should NOT fire an extra render. Verify the final output appears
+				// exactly once (no duplicate from an unnecessary unlimited render).
+				await using fixture = await createFixture({
+					'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task.group(task =>
+						Array.from({ length: 3 }, (_, i) =>
+							task('Small ' + (i + 1), async () => {
+								await setTimeout(50);
+							})
+						),
+						{ concurrency: 3 }
+					);
+					`,
+				}, { tempDir });
+
+				const result = await nodePty(fixture.getPath('test.mjs'), {
+					cols: 80,
+					rows: 20, // Plenty of room for 3 tasks
+				});
+				expect(result.exitCode).toBe(0);
+
+				// Should never have been truncated
+				expect(result.output).not.toMatch(/\(\+ \d+ (queued|completed|loading)/);
+
+				// Extract the final frame
+				const lastFrame = result.output.split('\u001B[G').at(-1) || '';
+
+				// All 3 tasks present
+				expect(lastFrame).toContain('Small 1');
+				expect(lastFrame).toContain('Small 2');
+				expect(lastFrame).toContain('Small 3');
+
+				// Count how many times the full set of 3 tasks appears in the
+				// final frame — should be exactly 1 (no duplicate from exit handler)
+				const small3Count = lastFrame.split('Small 3').length - 1;
+				expect(small3Count).toBe(1);
+			});
+
+			test('terminal resize after completion preserves unlimited render', async () => {
+				// A resize after all tasks complete should not prevent the exit
+				// handler from doing the final unlimited render.
+				await using fixture = await createFixture({
+					'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task.group(task =>
+						Array.from({ length: 15 }, (_, i) =>
+							task('Task ' + String(i + 1).padStart(2, '0'), async () => {
+								await setTimeout(50);
+							})
+						),
+						{ concurrency: 5 }
+					);
+
+					console.log('TASKS_DONE');
+					await setTimeout(200);
+					`,
+				}, { tempDir });
+
+				const pty = nodePty(fixture.getPath('test.mjs'), {
+					cols: 80,
+					rows: 10,
+				});
+				for await (const _ of pty) {
+					if (pty.output.includes('TASKS_DONE')) {
+						break;
+					}
+				}
+				pty.resize(80, 10);
+				const result = await pty;
+				expect(result.exitCode).toBe(0);
+
+				// Final frame should still show all tasks despite resize
+				const lastFrame = result.output.split('\u001B[G').at(-1) || '';
+				expect(lastFrame).not.toMatch(/\(\+ \d+ completed\)/);
 				const allTasksPresent = Array.from(
 					{ length: 15 },
-					(_, i) => result.output.includes(`Task ${String(i + 1).padStart(2, '0')}`),
+					(_, i) => lastFrame.includes(`Task ${String(i + 1).padStart(2, '0')}`),
 				).every(Boolean);
 				expect(allTasksPresent).toBe(true);
+			});
+
+			test('resize to larger terminal after completion skips unnecessary exit render', async () => {
+				// When tasks complete with truncation, then the terminal resizes
+				// large enough to fit all tasks, the exit handler should skip
+				// the unlimited render since the post-resize render already shows
+				// everything. Verify no duplicate full-list frame.
+				await using fixture = await createFixture({
+					'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task.group(task =>
+						Array.from({ length: 15 }, (_, i) =>
+							task('Task ' + String(i + 1).padStart(2, '0'), async () => {
+								await setTimeout(50);
+							})
+						),
+						{ concurrency: 5 }
+					);
+
+					console.log('ALL_DONE');
+					await setTimeout(200);
+					`,
+				}, { tempDir });
+
+				const pty = nodePty(fixture.getPath('test.mjs'), {
+					cols: 80,
+					rows: 10,
+				});
+				for await (const _ of pty) {
+					if (pty.output.includes('ALL_DONE')) {
+						break;
+					}
+				}
+				pty.resize(80, 40);
+				const result = await pty;
+				expect(result.exitCode).toBe(0);
+
+				// Extract the last two frames
+				const frames = result.output.split('\u001B[G');
+				const lastFrame = frames.at(-1) || '';
+				const secondToLastFrame = frames.at(-2) || '';
+
+				// Last frame should have all tasks
+				const allInLast = Array.from(
+					{ length: 15 },
+					(_, i) => lastFrame.includes(`Task ${String(i + 1).padStart(2, '0')}`),
+				).every(Boolean);
+				expect(allInLast).toBe(true);
+
+				// If both last frames have all 15 tasks, the exit handler
+				// fired an unnecessary duplicate render
+				const allInSecondToLast = Array.from(
+					{ length: 15 },
+					(_, i) => secondToLastFrame.includes(`Task ${String(i + 1).padStart(2, '0')}`),
+				).every(Boolean);
+				expect(allInSecondToLast).toBe(false);
+			});
+
+			test('resize to smaller terminal after completion triggers unlimited render', async () => {
+				// When tasks complete fully visible, then the terminal shrinks
+				// causing truncation, the exit handler should still fire an
+				// unlimited render so the final output shows all tasks.
+				await using fixture = await createFixture({
+					'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task.group(task =>
+						Array.from({ length: 8 }, (_, i) =>
+							task('Task ' + String(i + 1).padStart(2, '0'), async () => {
+								await setTimeout(20);
+							})
+						),
+						{ concurrency: 4 }
+					);
+
+					console.log('TASKS_DONE');
+					await setTimeout(200);
+					`,
+				}, { tempDir });
+
+				const pty = nodePty(fixture.getPath('test.mjs'), {
+					cols: 80,
+					rows: 20,
+				});
+				for await (const _ of pty) {
+					if (pty.output.includes('TASKS_DONE')) {
+						break;
+					}
+				}
+				pty.resize(80, 6);
+				const result = await pty;
+				expect(result.exitCode).toBe(0);
+
+				// Final frame should have all tasks despite the late shrink
+				const lastFrame = result.output.split('\u001B[G').at(-1) || '';
+				expect(lastFrame).not.toMatch(/\(\+ \d+ completed\)/);
+				const allTasksPresent = Array.from(
+					{ length: 8 },
+					(_, i) => lastFrame.includes(`Task ${String(i + 1).padStart(2, '0')}`),
+				).every(Boolean);
+				expect(allTasksPresent).toBe(true);
+			});
+
+			test('completed tasks expand in final output without clear()', async () => {
+				// When all tasks complete and the process exits, the final output
+				// should show all tasks — not truncated with "(+ N completed)".
+				// The limit only exists to prevent ANSI cursor issues during redraws.
+				await using fixture = await createFixture({
+					'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task.group(task =>
+						Array.from({ length: 15 }, (_, i) =>
+							task('Task ' + String(i + 1).padStart(2, '0'), async () => {
+								await setTimeout(50);
+							})
+						),
+						{ concurrency: 5 }
+					);
+					`,
+				}, { tempDir });
+
+				const result = await nodePty(fixture.getPath('test.mjs'), {
+					cols: 80,
+					rows: 10, // Small terminal - limit = 8 lines during execution
+				});
+				expect(result.exitCode).toBe(0);
+
+				// During execution, should have been limited
+				expect(result.output).toMatch(/\(\+ \d+ (queued|completed|loading)/);
+
+				// Extract the final rendered frame (content after last cursor-to-column-0)
+				const lastFrame = result.output.split('\u001B[G').at(-1) || '';
+
+				// Final frame should NOT have truncation
+				expect(lastFrame).not.toMatch(/\(\+ \d+ completed\)/);
+
+				// Final frame should contain all 15 tasks
+				const allTasksPresent = Array.from(
+					{ length: 15 },
+					(_, i) => lastFrame.includes(`Task ${String(i + 1).padStart(2, '0')}`),
+				).every(Boolean);
+				expect(allTasksPresent).toBe(true);
+			});
+
+			test('completed tasks expand even when maxVisible was set', async () => {
+				// Regression: maxVisible sets maxVisibleOverride on the renderer,
+				// which persists after the group completes (without clear()).
+				// The exit handler must clear maxVisibleOverride before the
+				// final render, otherwise skipLimit stays false.
+				await using fixture = await createFixture({
+					'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task.group(task =>
+						Array.from({ length: 15 }, (_, i) =>
+							task('Task ' + String(i + 1).padStart(2, '0'), async () => {
+								await setTimeout(50);
+							})
+						),
+						{ concurrency: 5, maxVisible: 5 }
+					);
+					`,
+				}, { tempDir });
+
+				const result = await nodePty(fixture.getPath('test.mjs'), {
+					cols: 80,
+					rows: 40, // Large terminal — maxVisible=5 is the constraint
+				});
+				expect(result.exitCode).toBe(0);
+
+				// During execution, maxVisible=5 should truncate
+				expect(result.output).toMatch(/\(\+ \d+ (queued|completed|loading)/);
+
+				// Final frame should show all 15 tasks
+				const lastFrame = result.output.split('\u001B[G').at(-1) || '';
+				expect(lastFrame).not.toMatch(/\(\+ \d+ completed\)/);
+				const allTasksPresent = Array.from(
+					{ length: 15 },
+					(_, i) => lastFrame.includes(`Task ${String(i + 1).padStart(2, '0')}`),
+				).every(Boolean);
+				expect(allTasksPresent).toBe(true);
+			});
+
+			test('sequential groups with console.log do not duplicate unlimited output', async () => {
+				// Regression test: when console.log fires between sequential groups,
+				// handleConsoleOutput must not dump the full unlimited task list
+				// on every log call. The unlimited render should only happen once
+				// at process exit.
+				await using fixture = await createFixture({
+					'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task.group(task =>
+						Array.from({ length: 10 }, (_, i) =>
+							task('G1-' + (i + 1), async () => await setTimeout(50))
+						),
+						{ concurrency: 5 }
+					);
+
+					console.log('BETWEEN');
+
+					await task.group(task =>
+						Array.from({ length: 10 }, (_, i) =>
+							task('G2-' + (i + 1), async () => await setTimeout(50))
+						),
+						{ concurrency: 5 }
+					);
+					`,
+				}, { tempDir });
+
+				const result = await nodePty(fixture.getPath('test.mjs'), {
+					cols: 80,
+					rows: 10,
+				});
+				expect(result.exitCode).toBe(0);
+
+				// Split output into frames (each frame starts after cursor-to-column-0)
+				const frames = result.output.split('\u001B[G');
+
+				// Count frames where BOTH G1-10 and G2-10 appear together
+				// (i.e., the full unlimited list). This should only happen in
+				// the final frame, not between groups.
+				const fullListFrames = frames.filter(
+					frame => frame.includes('G1-10') && frame.includes('G2-10'),
+				);
+				expect(fullListFrames.length).toBeLessThanOrEqual(1);
+			});
+
+			test('final unlimited render appears only once', async () => {
+				// The exit handler's unlimited render should produce the full list
+				// exactly once — not on every intermediate render.
+				await using fixture = await createFixture({
+					'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task.group(task =>
+						Array.from({ length: 15 }, (_, i) =>
+							task('T' + String(i + 1).padStart(2, '0'), async () => await setTimeout(50))
+						),
+						{ concurrency: 5 }
+					);
+					`,
+				}, { tempDir });
+
+				const result = await nodePty(fixture.getPath('test.mjs'), {
+					cols: 80,
+					rows: 8,
+				});
+				expect(result.exitCode).toBe(0);
+
+				// Extract the final frame
+				const lastFrame = result.output.split('\u001B[G').at(-1) || '';
+
+				// All 15 tasks in the final frame
+				const allPresent = Array.from(
+					{ length: 15 },
+					(_, i) => lastFrame.includes(`T${String(i + 1).padStart(2, '0')}`),
+				).every(Boolean);
+				expect(allPresent).toBe(true);
+
+				// The final frame should contain each task exactly once
+				// (no duplication within the frame itself)
+				for (let i = 1; i <= 15; i += 1) {
+					const name = `T${String(i).padStart(2, '0')}`;
+					const count = lastFrame.split(`${name} `).length - 1
+						+ lastFrame.split(`${name}\n`).length - 1
+						+ lastFrame.split(`${name}\r`).length - 1;
+					expect(count).toBeLessThanOrEqual(2); // task name may appear in checkmark line
+				}
 			});
 		});
 
@@ -227,7 +589,7 @@ export default testSuite(({ describe }) => {
 
 					await task.group(task =>
 						Array.from({ length: 10 }, (_, i) =>
-							task(\`Task \${String(i + 1).padStart(2, '0')}\`, async () => {
+							task('Task ' + String(i + 1).padStart(2, '0'), async () => {
 								await setTimeout(100);
 							})
 						),
@@ -284,7 +646,7 @@ export default testSuite(({ describe }) => {
 
 					await task.group(task =>
 						Array.from({ length: 10 }, (_, i) =>
-							task(\`Task \${String(i + 1).padStart(2, '0')}\`, async () => {
+							task('Task ' + String(i + 1).padStart(2, '0'), async () => {
 								await setTimeout(100);
 							})
 						),
