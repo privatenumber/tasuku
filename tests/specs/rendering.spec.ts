@@ -175,6 +175,41 @@ export default testSuite(({ describe }) => {
 			);
 		});
 
+		test('sequential tasks preserve insertion order', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+				import task from '#tasuku';
+				import { setTimeout } from 'node:timers/promises';
+
+				// First task completes, stays visible
+				await task('First task', async () => {
+					await setTimeout(50);
+				});
+				// Second task starts — both visible, different states
+				await task('Second task', async () => {
+					await setTimeout(200);
+				});
+				`,
+			}, { tempDir });
+
+			// Use interactive PTY to observe intermediate render
+			const pty = nodePty(fixture.getPath('test.mjs'));
+			for await (const _chunk of pty) {
+				// Wait until second task is loading (spinner visible)
+				if (pty.output.includes('Second task') && pty.output.includes('First task')) {
+					const { output } = pty;
+					// Find the LAST render frame containing both tasks
+					// The completed "First task" should appear before the loading "Second task"
+					const lastFirst = output.lastIndexOf('First task');
+					const lastSecond = output.lastIndexOf('Second task');
+					expect(lastFirst).toBeLessThan(lastSecond);
+					break;
+				}
+			}
+			const result = await pty;
+			expect(result.exitCode).toBe(0);
+		});
+
 		test('line wrapping: clears correct number of lines in narrow terminal', async () => {
 			const title = 'This is a long task title for testing';
 			const cols = 20;

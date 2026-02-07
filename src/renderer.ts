@@ -202,11 +202,6 @@ export const createRenderer = (
 	const renderTaskList = (tasks: TaskList, depth = 0): string => {
 		// Only apply visible lines limit and sorting at root level
 		if (depth === 0) {
-			// Sort by state: loading first, then pending, then completed
-			const sortedTasks = [...tasks].sort(
-				(a, b) => getStatePriority(a.state) - getStatePriority(b.state),
-			);
-
 			// Only skip the limit on the final render (clear/destroy) when
 			// no explicit maxVisible was set. During normal renders, we must
 			// keep the limit because ANSI cursor movement can't reach lines
@@ -215,6 +210,14 @@ export const createRenderer = (
 
 			if (!skipLimit) {
 				const maxLines = getVisibleLinesLimit();
+
+				// Sort by state only when truncation is needed — preserves
+				// insertion order so active tasks bubble up only when some
+				// tasks must be hidden.
+				const sortedTasks = [...tasks].sort(
+					(a, b) => getStatePriority(a.state) - getStatePriority(b.state),
+				);
+
 				let output = '';
 				let lineCount = 0;
 				let renderedTaskCount = 0;
@@ -240,33 +243,39 @@ export const createRenderer = (
 
 				const hiddenTasks = sortedTasks.slice(renderedTaskCount);
 				hasHiddenTasks = hiddenTasks.length > 0;
-				if (hasHiddenTasks) {
-					const parts: string[] = [];
-					let loading = 0;
-					let pending = 0;
-					let completed = 0;
-					for (const task of hiddenTasks) {
-						if (task.state === 'loading') {
-							loading += 1;
-						} else if (task.state === 'pending') {
-							pending += 1;
-						} else {
-							completed += 1;
-						}
-					}
-					if (loading > 0) { parts.push(`${loading} loading`); }
-					if (pending > 0) { parts.push(`${pending} queued`); }
-					if (completed > 0) { parts.push(`${completed} completed`); }
-					const hiddenText = `(+ ${parts.join(', ')})`;
-					const styledHiddenText = useColors ? dim(hiddenText) : hiddenText;
-					output += `${styledHiddenText}\n`;
+
+				// If nothing was hidden, render in original insertion order.
+				// This re-renders tasks unsorted, but renderTask is a pure
+				// string builder so the cost is negligible.
+				if (!hasHiddenTasks) {
+					return tasks.map(task => renderTask(task, depth)).join('');
 				}
+
+				const parts: string[] = [];
+				let loading = 0;
+				let pending = 0;
+				let completed = 0;
+				for (const task of hiddenTasks) {
+					if (task.state === 'loading') {
+						loading += 1;
+					} else if (task.state === 'pending') {
+						pending += 1;
+					} else {
+						completed += 1;
+					}
+				}
+				if (loading > 0) { parts.push(`${loading} loading`); }
+				if (pending > 0) { parts.push(`${pending} queued`); }
+				if (completed > 0) { parts.push(`${completed} completed`); }
+				const hiddenText = `(+ ${parts.join(', ')})`;
+				const styledHiddenText = useColors ? dim(hiddenText) : hiddenText;
+				output += `${styledHiddenText}\n`;
 
 				return output;
 			}
 
 			hasHiddenTasks = false;
-			return sortedTasks.map(task => renderTask(task, depth)).join('');
+			return tasks.map(task => renderTask(task, depth)).join('');
 		}
 
 		return tasks.map(task => renderTask(task, depth)).join('');
