@@ -17,7 +17,7 @@ export default testSuite(({ describe }) => {
 
 					await task.group(task =>
 						Array.from({ length: 15 }, (_, i) =>
-							task('Task ' + (i + 1), async () => {
+							task(\`Task \${String(i + 1).padStart(2, '0')}\`, async () => {
 								await setTimeout(50);
 							})
 						),
@@ -154,7 +154,7 @@ export default testSuite(({ describe }) => {
 					// Create enough tasks to trigger the limit
 					await task.group(task =>
 						Array.from({ length: 20 }, (_, i) =>
-							task('Task ' + (i + 1), async () => {
+							task(\`Task \${String(i + 1).padStart(2, '0')}\`, async () => {
 								await setTimeout(100);
 							})
 						),
@@ -187,7 +187,7 @@ export default testSuite(({ describe }) => {
 
 					const tasks = await task.group(task =>
 						Array.from({ length: 15 }, (_, i) =>
-							task('Task ' + (i + 1), async () => {
+							task(\`Task \${String(i + 1).padStart(2, '0')}\`, async () => {
 								await setTimeout(50);
 							})
 						),
@@ -210,7 +210,10 @@ export default testSuite(({ describe }) => {
 
 				// After clear(), all 15 tasks should have been rendered
 				// Count unique task names in the output
-				const allTasksPresent = Array.from({ length: 15 }, (_, i) => result.output.includes(`Task ${i + 1}`)).every(Boolean);
+				const allTasksPresent = Array.from(
+					{ length: 15 },
+					(_, i) => result.output.includes(`Task ${String(i + 1).padStart(2, '0')}`),
+				).every(Boolean);
 				expect(allTasksPresent).toBe(true);
 			});
 		});
@@ -224,7 +227,7 @@ export default testSuite(({ describe }) => {
 
 					await task.group(task =>
 						Array.from({ length: 10 }, (_, i) =>
-							task('Task ' + (i + 1), async () => {
+							task(\`Task \${String(i + 1).padStart(2, '0')}\`, async () => {
 								await setTimeout(100);
 							})
 						),
@@ -281,7 +284,7 @@ export default testSuite(({ describe }) => {
 
 					await task.group(task =>
 						Array.from({ length: 10 }, (_, i) =>
-							task('Task ' + (i + 1), async () => {
+							task(\`Task \${String(i + 1).padStart(2, '0')}\`, async () => {
 								await setTimeout(100);
 							})
 						),
