@@ -4,12 +4,14 @@ import stripAnsi from 'strip-ansi';
 import ansiEscapes from 'ansi-escapes';
 import yoctocolors from 'yoctocolors';
 import { node } from '../utils/node.js';
+import { nodePty } from '../utils/pty.js';
 import { tempDir } from '../utils/temp-dir.js';
 import { assertInOrder } from '../utils/assert-order.js';
 
 export default testSuite(({ describe }) => {
 	describe('console interleaving', ({ test, describe }) => {
-		const clearLine = `${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorLeft}`;
+		const clearRender = `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}`;
+		const saveCursor = ansiEscapes.cursorSavePosition;
 
 		test('console.log after task completion preserves all output', async () => {
 			await using fixture = await createFixture({
@@ -68,14 +70,14 @@ export default testSuite(({ describe }) => {
 			expect(result.stdout).toBe(
 				'Before any tasks\n'
 				+ 'Inside first task\n'
-				+ '\n'
-				+ `${clearLine}Between tasks\n`
-				+ '\n'
-				+ `${clearLine}Inside second task\n`
-				+ '\n'
-				+ `${clearLine}After all tasks\n`
-				+ '\n'
-				+ `${clearLine}${yoctocolors.green('✔')} First task\n`
+				+ `${saveCursor}`
+				+ `${clearRender}Between tasks\n`
+				+ `${saveCursor}`
+				+ `${clearRender}Inside second task\n`
+				+ `${saveCursor}`
+				+ `${clearRender}After all tasks\n`
+				+ `${saveCursor}`
+				+ `${clearRender}${yoctocolors.green('✔')} First task\n`
 				+ `${yoctocolors.green('✔')} Second task`,
 			);
 		});
@@ -144,18 +146,18 @@ export default testSuite(({ describe }) => {
 			expect(result.stdout).toBe(
 				'1: Start\n'
 				+ '2: Inside parent\n'
-				+ '\n'
-				+ `${clearLine}3: Inside child 1\n`
-				+ '\n'
-				+ `${clearLine}4: Between children\n`
-				+ '\n'
-				+ `${clearLine}5: Inside child 2\n`
-				+ '\n'
-				+ `${clearLine}6: After children\n`
-				+ '\n'
-				+ `${clearLine}7: End\n`
-				+ '\n'
-				+ `${clearLine}${yoctocolors.yellow('❯')} Parent task\n`
+				+ `${saveCursor}`
+				+ `${clearRender}3: Inside child 1\n`
+				+ `${saveCursor}`
+				+ `${clearRender}4: Between children\n`
+				+ `${saveCursor}`
+				+ `${clearRender}5: Inside child 2\n`
+				+ `${saveCursor}`
+				+ `${clearRender}6: After children\n`
+				+ `${saveCursor}`
+				+ `${clearRender}7: End\n`
+				+ `${saveCursor}`
+				+ `${clearRender}${yoctocolors.yellow('❯')} Parent task\n`
 				+ `  ${yoctocolors.green('✔')} Child task 1\n`
 				+ `  ${yoctocolors.green('✔')} Child task 2`,
 			);
@@ -193,20 +195,20 @@ export default testSuite(({ describe }) => {
 			expect(result.stdout).toBe(
 				'Before group\n'
 				+ 'A: Start\n'
-				+ '\n'
-				+ `${clearLine}A: End\n`
-				+ '\n'
-				+ `${clearLine}B: Start\n`
-				+ '\n'
-				+ `${clearLine}B: End\n`
-				+ '\n'
-				+ `${clearLine}C: Start\n`
-				+ '\n'
-				+ `${clearLine}C: End\n`
-				+ '\n'
-				+ `${clearLine}After group\n`
-				+ '\n'
-				+ `${clearLine}${yoctocolors.green('✔')} Task A\n`
+				+ `${saveCursor}`
+				+ `${clearRender}A: End\n`
+				+ `${saveCursor}`
+				+ `${clearRender}B: Start\n`
+				+ `${saveCursor}`
+				+ `${clearRender}B: End\n`
+				+ `${saveCursor}`
+				+ `${clearRender}C: Start\n`
+				+ `${saveCursor}`
+				+ `${clearRender}C: End\n`
+				+ `${saveCursor}`
+				+ `${clearRender}After group\n`
+				+ `${saveCursor}`
+				+ `${clearRender}${yoctocolors.green('✔')} Task A\n`
 				+ `${yoctocolors.green('✔')} Task B\n`
 				+ `${yoctocolors.green('✔')} Task C`,
 			);
@@ -252,20 +254,20 @@ export default testSuite(({ describe }) => {
 			expect(result.stdout).toBe(
 				'1: Starting tests\n'
 				+ '2: Will succeed\n'
-				+ '\n'
-				+ `${clearLine}3: First task done\n`
-				+ '\n'
-				+ `${clearLine}4: Will warn\n`
-				+ '\n'
-				+ `${clearLine}5: Warning task done\n`
-				+ '\n'
-				+ `${clearLine}6: Will error\n`
-				+ '\n'
-				+ `${clearLine}7: Error caught\n`
-				+ '\n'
-				+ `${clearLine}8: All done\n`
-				+ '\n'
-				+ `${clearLine}${yoctocolors.green('✔')} Success task\n`
+				+ `${saveCursor}`
+				+ `${clearRender}3: First task done\n`
+				+ `${saveCursor}`
+				+ `${clearRender}4: Will warn\n`
+				+ `${saveCursor}`
+				+ `${clearRender}5: Warning task done\n`
+				+ `${saveCursor}`
+				+ `${clearRender}6: Will error\n`
+				+ `${saveCursor}`
+				+ `${clearRender}7: Error caught\n`
+				+ `${saveCursor}`
+				+ `${clearRender}8: All done\n`
+				+ `${saveCursor}`
+				+ `${clearRender}${yoctocolors.green('✔')} Success task\n`
 				+ `${yoctocolors.yellow('⚠')} Warning task\n`
 				+ `  ${yoctocolors.gray('→ This is a warning')}\n`
 				+ `${yoctocolors.red('✖')} Error task\n`
@@ -292,16 +294,16 @@ export default testSuite(({ describe }) => {
 
 			expect(result.stdout).toBe(
 				'Log 1\n'
-				+ '\n'
-				+ `${clearLine}Log 2\n`
-				+ '\n'
-				+ `${clearLine}Log 3\n`
-				+ '\n'
-				+ `${clearLine}Log 4\n`
-				+ '\n'
-				+ `${clearLine}Log 5\n`
-				+ '\n'
-				+ `${clearLine}${yoctocolors.green('✔')} Task with many logs ${yoctocolors.dim('[Step 5/5]')}`,
+				+ `${saveCursor}`
+				+ `${clearRender}Log 2\n`
+				+ `${saveCursor}`
+				+ `${clearRender}Log 3\n`
+				+ `${saveCursor}`
+				+ `${clearRender}Log 4\n`
+				+ `${saveCursor}`
+				+ `${clearRender}Log 5\n`
+				+ `${saveCursor}`
+				+ `${clearRender}${yoctocolors.green('✔')} Task with many logs ${yoctocolors.dim('[Step 5/5]')}`,
 			);
 		});
 
@@ -333,12 +335,43 @@ export default testSuite(({ describe }) => {
 			const result = await node(fixture.getPath('test.mjs'));
 			expect(result.stderr).toBe('');
 
-			// Check that ANSI clear codes are present
-			expect(result.stdout).toContain(ansiEscapes.cursorUp());
-			expect(result.stdout).toContain(ansiEscapes.eraseLine);
+			// Check that ANSI save/restore codes are present
+			expect(result.stdout).toContain(ansiEscapes.cursorRestorePosition);
+			expect(result.stdout).toContain(ansiEscapes.eraseDown);
 
 			// Console output should have happened during execution
 			expect(result.stdout).toContain('0');
+		});
+
+		test('console.logs during task survive terminal scroll', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+				import task from '#tasuku';
+				import { setTimeout } from 'node:timers/promises';
+
+				await task('Scroll test task', async () => {
+					for (let i = 0; i < 20; i++) {
+						console.log('log-' + String(i).padStart(2, '0'));
+						await setTimeout(30);
+					}
+				});
+				`,
+			}, { tempDir });
+
+			// Small terminal forces scrolling — 20 log lines + task UI won't fit in 8 rows.
+			// Before the scroll fix, the saved cursor position (absolute screen coordinate)
+			// became stale after scroll, causing render corruption.
+			const result = await nodePty(fixture.getPath('test.mjs'), { rows: 8 });
+			expect(result.exitCode).toBe(0);
+
+			// Re-anchor sequences must be present: after each render, the renderer
+			// uses relative cursorUp to re-save the position. Without this,
+			// scroll invalidates the absolute saved position.
+			expect(result.output).toContain(ansiEscapes.cursorUp(1));
+
+			// Task completes successfully
+			expect(result.output).toContain('✔');
+			expect(result.output).toContain('Scroll test task');
 		});
 
 		describe('console routing', ({ test }) => {
@@ -432,7 +465,7 @@ export default testSuite(({ describe }) => {
 
 				// There should be no ANSI clear codes after the user's output
 				// If there are, it means the renderer overwrote the user's output
-				expect(afterUserOutput).not.toContain(ansiEscapes.eraseLine);
+				expect(afterUserOutput).not.toContain(ansiEscapes.eraseDown);
 			});
 		});
 	});

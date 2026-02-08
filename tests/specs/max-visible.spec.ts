@@ -244,7 +244,7 @@ export default testSuite(({ describe }) => {
 				expect(result.output).not.toMatch(/\(\+ \d+ (queued|completed|loading)/);
 
 				// Extract the final frame
-				const lastFrame = result.output.split('\u001B[G').at(-1) || '';
+				const lastFrame = result.output.split('\u001B[u\u001B[J').at(-1) || '';
 
 				// All 3 tasks present
 				expect(lastFrame).toContain('Small 1');
@@ -293,7 +293,7 @@ export default testSuite(({ describe }) => {
 				expect(result.exitCode).toBe(0);
 
 				// Final frame should still show all tasks despite resize
-				const lastFrame = result.output.split('\u001B[G').at(-1) || '';
+				const lastFrame = result.output.split('\u001B[u\u001B[J').at(-1) || '';
 				expect(lastFrame).not.toMatch(/\(\+ \d+ completed\)/);
 				const allTasksPresent = Array.from(
 					{ length: 15 },
@@ -340,7 +340,7 @@ export default testSuite(({ describe }) => {
 				expect(result.exitCode).toBe(0);
 
 				// Extract the last two frames
-				const frames = result.output.split('\u001B[G');
+				const frames = result.output.split('\u001B[u\u001B[J');
 				const lastFrame = frames.at(-1) || '';
 				const secondToLastFrame = frames.at(-2) || '';
 
@@ -397,7 +397,7 @@ export default testSuite(({ describe }) => {
 				expect(result.exitCode).toBe(0);
 
 				// Final frame should have all tasks despite the late shrink
-				const lastFrame = result.output.split('\u001B[G').at(-1) || '';
+				const lastFrame = result.output.split('\u001B[u\u001B[J').at(-1) || '';
 				expect(lastFrame).not.toMatch(/\(\+ \d+ completed\)/);
 				const allTasksPresent = Array.from(
 					{ length: 8 },
@@ -436,7 +436,7 @@ export default testSuite(({ describe }) => {
 				expect(result.output).toMatch(/\(\+ \d+ (queued|completed|loading)/);
 
 				// Extract the final rendered frame (content after last cursor-to-column-0)
-				const lastFrame = result.output.split('\u001B[G').at(-1) || '';
+				const lastFrame = result.output.split('\u001B[u\u001B[J').at(-1) || '';
 
 				// Final frame should NOT have truncation
 				expect(lastFrame).not.toMatch(/\(\+ \d+ completed\)/);
@@ -480,7 +480,7 @@ export default testSuite(({ describe }) => {
 				expect(result.output).toMatch(/\(\+ \d+ (queued|completed|loading)/);
 
 				// Final frame should show all 15 tasks
-				const lastFrame = result.output.split('\u001B[G').at(-1) || '';
+				const lastFrame = result.output.split('\u001B[u\u001B[J').at(-1) || '';
 				expect(lastFrame).not.toMatch(/\(\+ \d+ completed\)/);
 				const allTasksPresent = Array.from(
 					{ length: 15 },
@@ -524,7 +524,7 @@ export default testSuite(({ describe }) => {
 				expect(result.exitCode).toBe(0);
 
 				// Split output into frames (each frame starts after cursor-to-column-0)
-				const frames = result.output.split('\u001B[G');
+				const frames = result.output.split('\u001B[u\u001B[J');
 
 				// Count frames where BOTH G1-10 and G2-10 appear together
 				// (i.e., the full unlimited list). This should only happen in
@@ -559,7 +559,7 @@ export default testSuite(({ describe }) => {
 				expect(result.exitCode).toBe(0);
 
 				// Extract the final frame
-				const lastFrame = result.output.split('\u001B[G').at(-1) || '';
+				const lastFrame = result.output.split('\u001B[u\u001B[J').at(-1) || '';
 
 				// All 15 tasks in the final frame
 				const allPresent = Array.from(

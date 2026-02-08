@@ -317,8 +317,8 @@ export default testSuite(({ describe }) => {
 			expect(afterClear).not.toContain('Task');
 			expect(afterClear).not.toContain('line');
 
-			// ANSI clear codes should be present
-			expect(result.stdout).toContain(ansiEscapes.eraseLine + ansiEscapes.cursorUp());
+			// ANSI save/restore codes should be present
+			expect(result.stdout).toContain(ansiEscapes.cursorRestorePosition + ansiEscapes.eraseDown);
 		});
 
 		test('preview lines count toward maxVisible limit', async () => {

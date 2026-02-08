@@ -25,9 +25,9 @@ export default testSuite(({ describe }) => {
 				});
 				expect(result.stderr).toBe('');
 
-				// Should NOT contain ANSI cursor movement codes
-				expect(result.stdout).not.toContain(ansiEscapes.cursorUp());
-				expect(result.stdout).not.toContain(ansiEscapes.eraseLine);
+				// Should NOT contain ANSI save/restore cursor codes
+				expect(result.stdout).not.toContain(ansiEscapes.cursorRestorePosition);
+				expect(result.stdout).not.toContain(ansiEscapes.eraseDown);
 			});
 
 			test('GITHUB_ACTIONS=true does not disable ANSI clearing', async () => {
@@ -48,8 +48,8 @@ export default testSuite(({ describe }) => {
 				expect(result.stderr).toBe('');
 
 				// Only respects CI env var, not GITHUB_ACTIONS
-				expect(result.stdout).toContain(ansiEscapes.cursorUp());
-				expect(result.stdout).toContain(ansiEscapes.eraseLine);
+				expect(result.stdout).toContain(ansiEscapes.cursorRestorePosition);
+				expect(result.stdout).toContain(ansiEscapes.eraseDown);
 			});
 
 			test('CI mode still shows final task states', async () => {
@@ -294,8 +294,8 @@ export default testSuite(({ describe }) => {
 
 					// Verify no ANSI color codes present (only cursor/erase codes allowed)
 					expect(result.stdout).toBe(
-						'⠋ Success task\n'
-						+ `${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorLeft}✔ Success task`,
+						`${ansiEscapes.cursorSavePosition}⠋ Success task\n`
+						+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}✔ Success task`,
 					);
 				}
 			});
@@ -316,8 +316,8 @@ export default testSuite(({ describe }) => {
 				expect(result.stderr).toBe('');
 
 				expect(result.stdout).toBe(
-					`${yoctocolors.yellow('⠋')} Success task\n`
-					+ `${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorLeft}${yoctocolors.green('✔')} Success task`,
+					`${ansiEscapes.cursorSavePosition}${yoctocolors.yellow('⠋')} Success task\n`
+					+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}${yoctocolors.green('✔')} Success task`,
 				);
 			});
 
@@ -338,8 +338,8 @@ export default testSuite(({ describe }) => {
 				expect(result.stderr).toBe('');
 
 				expect(result.stdout).toBe(
-					`${yoctocolors.yellow('⠋')} Error task\n`
-					+ `${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorLeft}${yoctocolors.red('✖')} Error task\n`
+					`${ansiEscapes.cursorSavePosition}${yoctocolors.yellow('⠋')} Error task\n`
+					+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}${yoctocolors.red('✖')} Error task\n`
 					+ `  ${yoctocolors.gray('→ Something failed')}`,
 				);
 			});
@@ -363,8 +363,8 @@ export default testSuite(({ describe }) => {
 				expect(result.stderr).toBe('');
 
 				expect(result.stdout).toBe(
-					'⠋ Warning task\n'
-					+ `${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorLeft}⚠ Warning task\n`
+					`${ansiEscapes.cursorSavePosition}⠋ Warning task\n`
+					+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}⚠ Warning task\n`
 					+ '  → A warning',
 				);
 			});
@@ -388,10 +388,10 @@ export default testSuite(({ describe }) => {
 				expect(result.stderr).toBe('');
 
 				expect(result.stdout).toBe(
-					`${yoctocolors.yellow('⠋')} Parent task\n`
-					+ `${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorLeft}${yoctocolors.yellow('❯')} Parent task\n`
+					`${ansiEscapes.cursorSavePosition}${yoctocolors.yellow('⠋')} Parent task\n`
+					+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}${yoctocolors.yellow('❯')} Parent task\n`
 					+ `  ${yoctocolors.yellow('⠋')} Child task\n`
-					+ `${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorLeft}${yoctocolors.yellow('❯')} Parent task\n`
+					+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}${yoctocolors.yellow('❯')} Parent task\n`
 					+ `  ${yoctocolors.green('✔')} Child task`,
 				);
 			});
@@ -417,10 +417,10 @@ export default testSuite(({ describe }) => {
 				expect(result.stderr).toBe('');
 
 				expect(result.stdout).toBe(
-					'⠋ Parent task\n'
-					+ `${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorLeft}❯ Parent task\n`
+					`${ansiEscapes.cursorSavePosition}⠋ Parent task\n`
+					+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}❯ Parent task\n`
 					+ '  ⠋ Child task\n'
-					+ `${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorLeft}❯ Parent task\n`
+					+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}❯ Parent task\n`
 					+ '  ✔ Child task',
 				);
 			});

@@ -262,7 +262,7 @@ export default testSuite(({ describe }) => {
 			expect(afterClear).not.toContain('Task to clear');
 
 			// Check for ANSI clear codes
-			expect(result.stdout).toContain(ansiEscapes.eraseLine + ansiEscapes.cursorUp());
+			expect(result.stdout).toContain(ansiEscapes.cursorRestorePosition + ansiEscapes.eraseDown);
 		});
 
 		test('group.clear method removes all tasks', async () => {
@@ -301,7 +301,7 @@ export default testSuite(({ describe }) => {
 			expect(result.stdout).toContain(yoctocolors.green('✔'));
 
 			// Check for ANSI clear codes (clear line and move up)
-			expect(result.stdout).toContain(ansiEscapes.eraseLine + ansiEscapes.cursorUp());
+			expect(result.stdout).toContain(ansiEscapes.cursorRestorePosition + ansiEscapes.eraseDown);
 		});
 	});
 });

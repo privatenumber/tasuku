@@ -167,10 +167,10 @@ export default testSuite(({ describe }) => {
 			expect(result.stderr).toBe('');
 
 			expect(result.stdout).toBe(
-				`${yoctocolors.yellow('⠋')} Parent\n`
-				+ `${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorLeft}${yoctocolors.yellow('❯')} Parent\n`
+				`${ansiEscapes.cursorSavePosition}${yoctocolors.yellow('⠋')} Parent\n`
+				+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}${yoctocolors.yellow('❯')} Parent\n`
 				+ `  ${yoctocolors.yellow('⠋')} Child\n`
-				+ `${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorUp()}${ansiEscapes.eraseLine}${ansiEscapes.cursorLeft}${yoctocolors.yellow('❯')} Parent\n`
+				+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}${yoctocolors.yellow('❯')} Parent\n`
 				+ `  ${yoctocolors.green('✔')} Child`,
 			);
 		});
@@ -210,23 +210,16 @@ export default testSuite(({ describe }) => {
 			expect(result.exitCode).toBe(0);
 		});
 
-		test('line wrapping: clears correct number of lines in narrow terminal', async () => {
+		test('line wrapping: save/restore clears correctly in narrow terminal', async () => {
 			const title = 'This is a long task title for testing';
 			const cols = 20;
-			const visualWidth = title.length + 2; // +2 for spinner and space
-			const visualLines = Math.ceil(visualWidth / cols);
 
 			await using fixture = await createFixture({
 				'test.mjs': String.raw`
 				import task from '#tasuku';
 				import { setTimeout } from 'node:timers/promises';
 
-				// Debug: check environment
-				process.stderr.write('[SCRIPT] isTTY=' + process.stdout.isTTY + ' columns=' + process.stdout.columns + '\n');
-
 				await task('${title}', () => setTimeout(100));
-
-				process.stderr.write('[SCRIPT] task completed\n');
 				`,
 			}, { tempDir });
 
@@ -234,13 +227,14 @@ export default testSuite(({ describe }) => {
 
 			expect(result.exitCode).toBe(0);
 
-			// Count cursor-up sequences using ansiEscapes constant
-			const cursorUpSequence = ansiEscapes.cursorUp();
-			const cursorUpCount = result.output.split(cursorUpSequence).length - 1;
+			// Save/restore cursor handles wrapped lines without counting visual lines.
+			// Verify the renderer used save/restore + erase-down to redraw.
+			expect(result.output).toContain(ansiEscapes.cursorRestorePosition);
+			expect(result.output).toContain(ansiEscapes.eraseDown);
 
-			// With the fix: cursor-ups should match visual lines (accounting for wrapping)
-			// Without the fix: would only have 1 cursor-up (counting only newlines)
-			expect(cursorUpCount).toBeGreaterThanOrEqual(visualLines - 1);
+			// Final output should show the completed task (checkmark)
+			expect(result.output).toContain('✔');
+			expect(result.output).toContain(title);
 		});
 	});
 });

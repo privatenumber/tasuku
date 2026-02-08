@@ -1,12 +1,12 @@
 import patchConsole from 'patch-console';
 import {
-	cursorUp, cursorShow, eraseLine,
+	cursorUp, cursorDown, cursorShow,
+	cursorSavePosition, cursorRestorePosition, eraseDown,
 } from 'ansi-escapes';
 import {
 	green, red, yellow, gray, dim,
 } from 'yoctocolors';
 import type { TaskList } from './types.js';
-import { getVisualLineCount } from './utils/visual-line-count.js';
 import { formatElapsed } from './utils/format-elapsed.js';
 import { areAllTasksDone } from './utils/task-list.js';
 
@@ -69,14 +69,33 @@ export const createRenderer = (
 	let spinnerInterval: NodeJS.Timeout | undefined;
 	let renderTimeout: NodeJS.Timeout | undefined;
 	let lastOutput = '';
-	let lastLineCount = 0;
 	let hasHiddenTasks = false;
+	let hasSavedPosition = false;
 	let restoreConsole: (() => void) | undefined;
 	let cursorHidden = false;
 
 	const isTTY = stdout.isTTY === true;
 	const useColors = detectColors(stdout);
 	const isInteractive = isTTY && !isCI;
+
+	// Save cursor position at the top of the render area.
+	// Called on first render and after each console.log insertion.
+	// Runs in all non-CI environments (including non-TTY/piped) to match
+	// the old cursor-up clearing behavior which also ran in non-TTY mode.
+	const savePosition = () => {
+		if (!isCI) {
+			stdout.write(cursorSavePosition);
+			hasSavedPosition = true;
+		}
+	};
+
+	// Restore cursor to saved position and erase everything below.
+	// Handles any extra lines (e.g. stdin echo) that appeared since last render.
+	const clearRenderArea = () => {
+		if (hasSavedPosition) {
+			stdout.write(cursorRestorePosition + eraseDown);
+		}
+	};
 
 	let maxVisibleOverride: number | ((terminalHeight: number) => number) | undefined;
 
@@ -299,37 +318,25 @@ export const createRenderer = (
 	};
 
 	const handleConsoleOutput = (_stream: 'stdout' | 'stderr', data: string) => {
-		// Clear our task UI output
-		if (lastLineCount > 0) {
-			for (let i = 0; i < lastLineCount; i += 1) {
-				stdout.write(eraseLine);
-				stdout.write(cursorUp());
-			}
-			// Erase the final line we're now on and move cursor to column 0
-			stdout.write(eraseLine);
-			stdout.write('\u001B[G'); // Cursor to column 0
-			lastLineCount = 0; // Reset so we don't clear console output next time
-		}
+		// Clear task UI from saved position
+		clearRenderArea();
 
 		// Write console output to stdout (both stdout and stderr)
 		// We write all intercepted console output to the renderer's stdout
 		// to keep it synchronized with the task UI
 		stdout.write(data);
 
-		// After console output, either re-render task UI or write placeholder
+		// Save new position — render area moves below console output
+		savePosition();
+
+		// After console output, either re-render task UI or mark idle.
+		// No placeholder '\n' is needed — save/restore anchors the
+		// render area without line-count tracking.
 		if (taskList.length > 0) {
-			// Only re-render if:
-			// 1. All tasks are done (no more state changes expected)
-			// 2. There's been an actual render (not just a placeholder)
-			// This fixes console.log after task completion overwriting the task,
-			// while preserving existing behavior during/between task execution
 			if (areAllTasksDone(taskList) && lastOutput !== '\n') {
 				render();
 			} else {
-				// During task execution or between tasks, use placeholder
-				stdout.write('\n');
 				lastOutput = '\n';
-				lastLineCount = 1;
 			}
 		}
 	};
@@ -369,21 +376,28 @@ export const createRenderer = (
 			return;
 		}
 
-		// Clear previous output (same logic as handleConsoleOutput)
-		if (lastLineCount > 0) {
-			for (let i = 0; i < lastLineCount; i += 1) {
-				stdout.write(eraseLine);
-				stdout.write(cursorUp());
-			}
-			// Erase the final line we're now on and move cursor to column 0
-			stdout.write(eraseLine);
-			stdout.write('\u001B[G'); // Cursor to column 0
+		clearRenderArea();
+
+		if (!hasSavedPosition) {
+			savePosition();
 		}
 
 		// Write new output
 		stdout.write(output);
 		lastOutput = output;
-		lastLineCount = getVisualLineCount(output, stdout.columns);
+
+		// Re-anchor: the output above may have caused the terminal to
+		// scroll, shifting the saved position off-screen.  Cursor-up is
+		// relative and immune to scroll, so we move back to the start of
+		// the render area, re-save, then return to the end.
+		if (isTTY) {
+			const lineCount = (output.match(/\n/g) || []).length;
+			if (lineCount > 0) {
+				stdout.write(cursorUp(lineCount));
+				savePosition();
+				stdout.write(cursorDown(lineCount));
+			}
+		}
 	};
 
 	const scheduleRender = () => {
@@ -454,12 +468,8 @@ export const createRenderer = (
 		}
 
 		// Clear all task output before destroying
-		if (isInteractive && lastLineCount > 0) {
-			for (let i = 0; i < lastLineCount; i += 1) {
-				stdout.write(eraseLine);
-				stdout.write(cursorUp());
-			}
-		}
+		clearRenderArea();
+		hasSavedPosition = false;
 
 		// Restore cursor
 		restoreCursor();
