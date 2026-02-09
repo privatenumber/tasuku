@@ -252,6 +252,23 @@ const registerTask = <T>(
 	};
 };
 
+const toTaskApi = <T>(
+	registeredTask: RegisteredTask<T>,
+	result: T,
+): TaskAPI<T> => ({
+	result,
+	get state() {
+		return registeredTask.task.state;
+	},
+	get warning() {
+		return registeredTask.task.state === 'warning' ? registeredTask.task.output : undefined;
+	},
+	get error() {
+		return registeredTask.task.state === 'error' ? registeredTask.task.output : undefined;
+	},
+	clear: registeredTask.clear,
+});
+
 function createTaskFunction(
 	taskList: TaskList,
 ): Task {
@@ -262,20 +279,7 @@ function createTaskFunction(
 	) => {
 		const registeredTask = registerTask(taskList, title, taskFunction, options);
 		const result = await registeredTask[runSymbol]();
-
-		return {
-			result,
-			get state() {
-				return registeredTask.task.state;
-			},
-			get warning() {
-				return registeredTask.task.state === 'warning' ? registeredTask.task.output : undefined;
-			},
-			get error() {
-				return registeredTask.task.state === 'error' ? registeredTask.task.output : undefined;
-			},
-			clear: registeredTask.clear,
-		};
+		return toTaskApi(registeredTask, result);
 	};
 
 	task.group = (async (
@@ -306,19 +310,10 @@ function createTaskFunction(
 
 		const results = (await pMap(
 			tasksQueue,
-			async taskApi => ({
-				result: await taskApi[runSymbol](),
-				get state() {
-					return taskApi.task.state;
-				},
-				get warning() {
-					return taskApi.task.state === 'warning' ? taskApi.task.output : undefined;
-				},
-				get error() {
-					return taskApi.task.state === 'error' ? taskApi.task.output : undefined;
-				},
-				clear: taskApi.clear,
-			}),
+			async registeredTask => toTaskApi(
+				registeredTask,
+				await registeredTask[runSymbol](),
+			),
 			{
 				concurrency: 1,
 				...options,
