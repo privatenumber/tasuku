@@ -5,6 +5,7 @@ import ansis from 'ansis';
 import { node } from '../utils/node.js';
 import { nodePty } from '../utils/pty.js';
 import { tempDir } from '../utils/temp-dir.js';
+import { hasSpinner } from '../utils/spinner-frames.js';
 
 export default testSuite(({ describe }) => {
 	describe('task states', ({ test }) => {
@@ -294,13 +295,13 @@ export default testSuite(({ describe }) => {
 
 			// Wait for recovery to loading state
 			for await (const _chunk of pty) {
-				if (pty.output.includes(ansis.yellow('⠋'))) {
+				if (hasSpinner(pty.output)) {
 					break;
 				}
 			}
 
 			// Spinner returned after clearing error
-			expect(pty.output).toContain(ansis.yellow('⠋'));
+			expect(hasSpinner(pty.output)).toBe(true);
 
 			const result = await pty;
 			expect(result.exitCode).toBe(0);
@@ -331,12 +332,12 @@ export default testSuite(({ describe }) => {
 			expect(pty.output).toContain(ansis.red('✖'));
 
 			for await (const _chunk of pty) {
-				if (pty.output.includes(ansis.yellow('⠋'))) {
+				if (hasSpinner(pty.output)) {
 					break;
 				}
 			}
 
-			expect(pty.output).toContain(ansis.yellow('⠋'));
+			expect(hasSpinner(pty.output)).toBe(true);
 
 			const result = await pty;
 			expect(result.exitCode).toBe(0);
@@ -367,12 +368,12 @@ export default testSuite(({ describe }) => {
 			expect(pty.output).toContain(ansis.red('✖'));
 
 			for await (const _chunk of pty) {
-				if (pty.output.includes(ansis.yellow('⠋'))) {
+				if (hasSpinner(pty.output)) {
 					break;
 				}
 			}
 
-			expect(pty.output).toContain(ansis.yellow('⠋'));
+			expect(hasSpinner(pty.output)).toBe(true);
 
 			const result = await pty;
 			expect(result.exitCode).toBe(0);
@@ -406,13 +407,13 @@ export default testSuite(({ describe }) => {
 
 			// Wait for recovery to loading state
 			for await (const _chunk of pty) {
-				if (pty.output.includes(ansis.yellow('⠋'))) {
+				if (hasSpinner(pty.output)) {
 					break;
 				}
 			}
 
 			// Spinner returned after clearing warning
-			expect(pty.output).toContain(ansis.yellow('⠋'));
+			expect(hasSpinner(pty.output)).toBe(true);
 
 			const result = await pty;
 			expect(result.exitCode).toBe(0);

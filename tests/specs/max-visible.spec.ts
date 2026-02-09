@@ -2,6 +2,7 @@ import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
 import { nodePty } from '../utils/pty.js';
 import { tempDir } from '../utils/temp-dir.js';
+import { spinnerFrames } from '../utils/spinner-frames.js';
 
 export default testSuite(({ describe }) => {
 	describe('max visible', ({ describe }) => {
@@ -68,7 +69,6 @@ export default testSuite(({ describe }) => {
 				// After Fast 1 & 2 complete, Slow tasks should be loading/pending
 				// and appear before the completed Fast tasks in the sorted output.
 				// Look for a render where a Slow task appears with a spinner (any frame).
-				const spinnerFrames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 				const lines = result.output.split('\n');
 				const hasSlowLoading = lines.some(
 					line => line.includes('Slow') && spinnerFrames.some(frame => line.includes(frame)),

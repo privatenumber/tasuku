@@ -3,8 +3,7 @@ import { createFixture } from 'fs-fixture';
 import ansis from 'ansis';
 import { nodePty } from '../utils/pty.js';
 import { tempDir } from '../utils/temp-dir.js';
-
-const spinnerFrames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+import { spinnerFrames } from '../utils/spinner-frames.js';
 
 const countSpinnerFramesAfter = (output: string, marker: string) => {
 	const markerIndex = output.indexOf(marker);
