@@ -1,7 +1,7 @@
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
 import ansiEscapes from 'ansi-escapes';
-import yoctocolors from 'yoctocolors';
+import ansis from 'ansis';
 import { node } from '../utils/node.js';
 import { tempDir } from '../utils/temp-dir.js';
 
@@ -69,7 +69,7 @@ export default testSuite(({ describe }) => {
 				});
 				expect(result.stderr).toBe('');
 
-				expect(result.stdout).toContain(yoctocolors.green('✔'));
+				expect(result.stdout).toContain(ansis.green('✔'));
 				expect(result.stdout).toContain('Task');
 			});
 
@@ -98,9 +98,9 @@ export default testSuite(({ describe }) => {
 				expect(result.stderr).toBe('');
 
 				expect(result.stdout).toBe(
-					`${yoctocolors.green('✔')} Simple task\n`
-					+ `${yoctocolors.yellow('❯')} Task with nested\n`
-					+ `  ${yoctocolors.green('✔')} Nested task`,
+					`${ansis.green('✔')} Simple task\n`
+					+ `${ansis.yellow('❯')} Task with nested\n`
+					+ `  ${ansis.green('✔')} Nested task`,
 				);
 			});
 
@@ -123,8 +123,8 @@ export default testSuite(({ describe }) => {
 				expect(result.stderr).toBe('');
 
 				expect(result.stdout).toBe(
-					`${yoctocolors.red('✖')} Error task\n`
-					+ `  ${yoctocolors.gray('→ Something failed')}`,
+					`${ansis.red('✖')} Error task\n`
+					+ `  ${ansis.gray('→ Something failed')}`,
 				);
 			});
 
@@ -147,8 +147,8 @@ export default testSuite(({ describe }) => {
 				expect(result.stderr).toBe('');
 
 				expect(result.stdout).toBe(
-					`${yoctocolors.yellow('⚠')} Warning task\n`
-					+ `  ${yoctocolors.gray('→ Warning message')}`,
+					`${ansis.yellow('⚠')} Warning task\n`
+					+ `  ${ansis.gray('→ Warning message')}`,
 				);
 			});
 
@@ -177,10 +177,10 @@ export default testSuite(({ describe }) => {
 				expect(result.stderr).toBe('');
 
 				expect(result.stdout).toBe(
-					`${yoctocolors.yellow('❯')} Parent task\n`
-					+ `  ${yoctocolors.green('✔')} Child 1\n`
-					+ `  ${yoctocolors.yellow('⚠')} Child 2\n`
-					+ `    ${yoctocolors.gray('→ Child warning')}`,
+					`${ansis.yellow('❯')} Parent task\n`
+					+ `  ${ansis.green('✔')} Child 1\n`
+					+ `  ${ansis.yellow('⚠')} Child 2\n`
+					+ `    ${ansis.gray('→ Child warning')}`,
 				);
 			});
 
@@ -204,7 +204,7 @@ export default testSuite(({ describe }) => {
 				expect(result.stderr).toBe('');
 
 				expect(result.stdout).toBe(
-					`${yoctocolors.green('✔')} Updated title`,
+					`${ansis.green('✔')} Updated title`,
 				);
 			});
 
@@ -229,7 +229,7 @@ export default testSuite(({ describe }) => {
 				expect(result.stderr).toBe('');
 
 				expect(result.stdout).toBe(
-					`${yoctocolors.green('✔')} Task with status ${yoctocolors.dim('[finalizing...]')}`,
+					`${ansis.green('✔')} Task with status ${ansis.dim('[finalizing...]')}`,
 				);
 			});
 
@@ -252,8 +252,8 @@ export default testSuite(({ describe }) => {
 				expect(result.stderr).toBe('');
 
 				expect(result.stdout).toBe(
-					`${yoctocolors.green('✔')} Task with output\n`
-					+ `  ${yoctocolors.gray('→ Some output text')}`,
+					`${ansis.green('✔')} Task with output\n`
+					+ `  ${ansis.gray('→ Some output text')}`,
 				);
 			});
 		});
@@ -263,10 +263,6 @@ export default testSuite(({ describe }) => {
 				const envVariables = [
 					{
 						name: 'NO_COLOR',
-						value: '1',
-					},
-					{
-						name: 'NODE_DISABLE_COLORS',
 						value: '1',
 					},
 					{
@@ -316,8 +312,8 @@ export default testSuite(({ describe }) => {
 				expect(result.stderr).toBe('');
 
 				expect(result.stdout).toBe(
-					`${ansiEscapes.cursorSavePosition}${yoctocolors.yellow('⠋')} Success task\n`
-					+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}${yoctocolors.green('✔')} Success task`,
+					`${ansiEscapes.cursorSavePosition}${ansis.yellow('⠋')} Success task\n`
+					+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}${ansis.green('✔')} Success task`,
 				);
 			});
 
@@ -338,9 +334,9 @@ export default testSuite(({ describe }) => {
 				expect(result.stderr).toBe('');
 
 				expect(result.stdout).toBe(
-					`${ansiEscapes.cursorSavePosition}${yoctocolors.yellow('⠋')} Error task\n`
-					+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}${yoctocolors.red('✖')} Error task\n`
-					+ `  ${yoctocolors.gray('→ Something failed')}`,
+					`${ansiEscapes.cursorSavePosition}${ansis.yellow('⠋')} Error task\n`
+					+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}${ansis.red('✖')} Error task\n`
+					+ `  ${ansis.gray('→ Something failed')}`,
 				);
 			});
 
@@ -388,11 +384,11 @@ export default testSuite(({ describe }) => {
 				expect(result.stderr).toBe('');
 
 				expect(result.stdout).toBe(
-					`${ansiEscapes.cursorSavePosition}${yoctocolors.yellow('⠋')} Parent task\n`
-					+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}${yoctocolors.yellow('❯')} Parent task\n`
-					+ `  ${yoctocolors.yellow('⠋')} Child task\n`
-					+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}${yoctocolors.yellow('❯')} Parent task\n`
-					+ `  ${yoctocolors.green('✔')} Child task`,
+					`${ansiEscapes.cursorSavePosition}${ansis.yellow('⠋')} Parent task\n`
+					+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}${ansis.yellow('❯')} Parent task\n`
+					+ `  ${ansis.yellow('⠋')} Child task\n`
+					+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}${ansis.yellow('❯')} Parent task\n`
+					+ `  ${ansis.green('✔')} Child task`,
 				);
 			});
 

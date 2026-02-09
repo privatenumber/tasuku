@@ -2,7 +2,7 @@ import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
 import stripAnsi from 'strip-ansi';
 import ansiEscapes from 'ansi-escapes';
-import yoctocolors from 'yoctocolors';
+import ansis from 'ansis';
 import { node } from '../utils/node.js';
 import { nodePty } from '../utils/pty.js';
 import { tempDir } from '../utils/temp-dir.js';
@@ -33,7 +33,7 @@ export default testSuite(({ describe }) => {
 			expect(result.stderr).toBe('');
 
 			// Both task and console.log should be visible
-			expect(result.stdout).toContain(`${yoctocolors.green('✔')} Test task`);
+			expect(result.stdout).toContain(`${ansis.green('✔')} Test task`);
 			expect(result.stdout).toContain('After task');
 
 			// Critical: task must be RE-RENDERED after console.log (not overwritten)
@@ -77,8 +77,8 @@ export default testSuite(({ describe }) => {
 				+ `${saveCursor}`
 				+ `${clearRender}After all tasks\n`
 				+ `${saveCursor}`
-				+ `${clearRender}${yoctocolors.green('✔')} First task\n`
-				+ `${yoctocolors.green('✔')} Second task`,
+				+ `${clearRender}${ansis.green('✔')} First task\n`
+				+ `${ansis.green('✔')} Second task`,
 			);
 		});
 
@@ -157,9 +157,9 @@ export default testSuite(({ describe }) => {
 				+ `${saveCursor}`
 				+ `${clearRender}7: End\n`
 				+ `${saveCursor}`
-				+ `${clearRender}${yoctocolors.yellow('❯')} Parent task\n`
-				+ `  ${yoctocolors.green('✔')} Child task 1\n`
-				+ `  ${yoctocolors.green('✔')} Child task 2`,
+				+ `${clearRender}${ansis.yellow('❯')} Parent task\n`
+				+ `  ${ansis.green('✔')} Child task 1\n`
+				+ `  ${ansis.green('✔')} Child task 2`,
 			);
 		});
 
@@ -208,9 +208,9 @@ export default testSuite(({ describe }) => {
 				+ `${saveCursor}`
 				+ `${clearRender}After group\n`
 				+ `${saveCursor}`
-				+ `${clearRender}${yoctocolors.green('✔')} Task A\n`
-				+ `${yoctocolors.green('✔')} Task B\n`
-				+ `${yoctocolors.green('✔')} Task C`,
+				+ `${clearRender}${ansis.green('✔')} Task A\n`
+				+ `${ansis.green('✔')} Task B\n`
+				+ `${ansis.green('✔')} Task C`,
 			);
 		});
 
@@ -267,11 +267,11 @@ export default testSuite(({ describe }) => {
 				+ `${saveCursor}`
 				+ `${clearRender}8: All done\n`
 				+ `${saveCursor}`
-				+ `${clearRender}${yoctocolors.green('✔')} Success task\n`
-				+ `${yoctocolors.yellow('⚠')} Warning task\n`
-				+ `  ${yoctocolors.gray('→ This is a warning')}\n`
-				+ `${yoctocolors.red('✖')} Error task\n`
-				+ `  ${yoctocolors.gray('→ Task failed')}`,
+				+ `${clearRender}${ansis.green('✔')} Success task\n`
+				+ `${ansis.yellow('⚠')} Warning task\n`
+				+ `  ${ansis.gray('→ This is a warning')}\n`
+				+ `${ansis.red('✖')} Error task\n`
+				+ `  ${ansis.gray('→ Task failed')}`,
 			);
 		});
 
@@ -303,7 +303,7 @@ export default testSuite(({ describe }) => {
 				+ `${saveCursor}`
 				+ `${clearRender}Log 5\n`
 				+ `${saveCursor}`
-				+ `${clearRender}${yoctocolors.green('✔')} Task with many logs ${yoctocolors.dim('[Step 5/5]')}`,
+				+ `${clearRender}${ansis.green('✔')} Task with many logs ${ansis.dim('[Step 5/5]')}`,
 			);
 		});
 
@@ -431,7 +431,7 @@ export default testSuite(({ describe }) => {
 				expect(result.stderr).toBe('');
 
 				// Verify console.log still works after cleanup
-				const successString = `${yoctocolors.green('✔')} Task`;
+				const successString = `${ansis.green('✔')} Task`;
 				expect(result.stdout).toContain('test message');
 				expect(result.stdout).toContain(successString);
 				expect(result.stdout.indexOf('test message')).toBeLessThan(result.stdout.lastIndexOf(successString));

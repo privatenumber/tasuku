@@ -14,7 +14,6 @@ export const node = (
 	// If test explicitly sets a color-disabling var, don't also set FORCE_COLOR
 	const hasColorDisable = env && (
 		env.NO_COLOR !== undefined
-		|| env.NODE_DISABLE_COLORS !== undefined
 		|| env.FORCE_COLOR === '0'
 	);
 
@@ -28,7 +27,6 @@ export const node = (
 				// 1. Unset all controlled vars for a clean slate
 				FORCE_COLOR: undefined,
 				NO_COLOR: undefined,
-				NODE_DISABLE_COLORS: undefined,
 				CI: undefined,
 				GITHUB_ACTIONS: undefined,
 				CONTINUOUS_INTEGRATION: undefined,

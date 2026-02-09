@@ -1,7 +1,7 @@
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
 import ansiEscapes from 'ansi-escapes';
-import yoctocolors from 'yoctocolors';
+import ansis from 'ansis';
 import { node } from '../utils/node.js';
 import { nodePty } from '../utils/pty.js';
 import { tempDir } from '../utils/temp-dir.js';
@@ -26,10 +26,10 @@ export default testSuite(({ describe }) => {
 			expect(result.stdout).toContain('Error task');
 
 			// Red error icon (31m = red)
-			expect(result.stdout).toContain(yoctocolors.red('✖'));
+			expect(result.stdout).toContain(ansis.red('✖'));
 
 			// Gray arrow and message (90m = gray/bright black)
-			expect(result.stdout).toContain(yoctocolors.gray('→ Something went wrong'));
+			expect(result.stdout).toContain(ansis.gray('→ Something went wrong'));
 		});
 
 		test('warning state shows yellow warning with gray message', async () => {
@@ -50,10 +50,10 @@ export default testSuite(({ describe }) => {
 			expect(result.stdout).toContain('Warning task');
 
 			// Yellow warning icon (33m = yellow)
-			expect(result.stdout).toContain(yoctocolors.yellow('⚠'));
+			expect(result.stdout).toContain(ansis.yellow('⚠'));
 
 			// Gray arrow and message
-			expect(result.stdout).toContain(yoctocolors.gray('→ Warning message'));
+			expect(result.stdout).toContain(ansis.gray('→ Warning message'));
 		});
 
 		test('pending state shows square symbol', async () => {
@@ -74,10 +74,10 @@ export default testSuite(({ describe }) => {
 
 			expect(result.stdout).toContain('one');
 			expect(result.stdout).toContain('two');
-			expect(result.stdout).toContain(yoctocolors.green('✔'));
+			expect(result.stdout).toContain(ansis.green('✔'));
 
 			// Gray square for pending state (90m = gray/bright black)
-			expect(result.stdout).toContain(yoctocolors.gray('◼'));
+			expect(result.stdout).toContain(ansis.gray('◼'));
 		});
 
 		test('status displays in brackets with dim styling', async () => {
@@ -98,7 +98,7 @@ export default testSuite(({ describe }) => {
 			expect(result.stdout).toContain('My task');
 
 			// Status has dim styling (2m = dim, 22m = reset dim)
-			expect(result.stdout).toContain(yoctocolors.dim('[loading]'));
+			expect(result.stdout).toContain(ansis.dim('[loading]'));
 		});
 
 		test('status can be updated and cleared', async () => {
@@ -124,8 +124,8 @@ export default testSuite(({ describe }) => {
 			// Both status updates appear in output
 
 			// Dim styling for status
-			expect(result.stdout).toContain(yoctocolors.dim('[step 1]'));
-			expect(result.stdout).toContain(yoctocolors.dim('[step 2]'));
+			expect(result.stdout).toContain(ansis.dim('[step 1]'));
+			expect(result.stdout).toContain(ansis.dim('[step 2]'));
 
 			// Final output has no status brackets after clearing
 			const lines = result.stdout.split('\n');
@@ -149,9 +149,9 @@ export default testSuite(({ describe }) => {
 			expect(result.stderr).toBe('');
 
 			// All output lines should be indented at the same level (2 spaces)
-			expect(result.stdout).toContain(`\n  ${yoctocolors.gray('→ line 1')}`);
-			expect(result.stdout).toContain(`\n  ${yoctocolors.gray('line 2')}`);
-			expect(result.stdout).toContain(`\n  ${yoctocolors.gray('line 3')}`);
+			expect(result.stdout).toContain(`\n  ${ansis.gray('→ line 1')}`);
+			expect(result.stdout).toContain(`\n  ${ansis.gray('line 2')}`);
+			expect(result.stdout).toContain(`\n  ${ansis.gray('line 3')}`);
 		});
 
 		test('setTitle updates task title dynamically', async () => {
@@ -181,14 +181,14 @@ export default testSuite(({ describe }) => {
 			expect(initialIndex).toBeLessThan(updatedIndex);
 
 			// Check for spinner
-			expect(result.stdout).toContain(yoctocolors.yellow('⠋'));
+			expect(result.stdout).toContain(ansis.yellow('⠋'));
 
 			// Check that the *final* line is the updated title
-			const finalSuccessLine = `${yoctocolors.green('✔')} Updated title`;
+			const finalSuccessLine = `${ansis.green('✔')} Updated title`;
 			expect(result.stdout).toContain(finalSuccessLine);
 
 			// Initial title should not appear in final success line
-			const initialSuccessLine = `${yoctocolors.green('✔')} Initial title`;
+			const initialSuccessLine = `${ansis.green('✔')} Initial title`;
 			expect(result.stdout).not.toContain(initialSuccessLine);
 		});
 
@@ -209,8 +209,8 @@ export default testSuite(({ describe }) => {
 			expect(result.stdout).toContain('Error object message');
 
 			// Check for red X and gray arrow
-			expect(result.stdout).toContain(yoctocolors.red('✖'));
-			expect(result.stdout).toContain(yoctocolors.gray('→ Error object message'));
+			expect(result.stdout).toContain(ansis.red('✖'));
+			expect(result.stdout).toContain(ansis.gray('→ Error object message'));
 		});
 
 		test('task function throws error', async () => {
@@ -234,8 +234,8 @@ export default testSuite(({ describe }) => {
 			expect(result.stdout).toContain('Caught: Task failed');
 
 			// Check for red X and gray arrow in error output
-			expect(result.stdout).toContain(yoctocolors.red('✖'));
-			expect(result.stdout).toContain(yoctocolors.gray('→ Task failed'));
+			expect(result.stdout).toContain(ansis.red('✖'));
+			expect(result.stdout).toContain(ansis.gray('→ Task failed'));
 		});
 
 		test('clear method removes single task', async () => {
@@ -283,24 +283,24 @@ export default testSuite(({ describe }) => {
 
 			const pty = nodePty(fixture.getPath('test.mjs'));
 			for await (const _chunk of pty) {
-				if (pty.output.includes(yoctocolors.red('✖'))) {
+				if (pty.output.includes(ansis.red('✖'))) {
 					break;
 				}
 			}
 
 			// Error state was shown
-			expect(pty.output).toContain(yoctocolors.red('✖'));
+			expect(pty.output).toContain(ansis.red('✖'));
 			expect(pty.output).toContain('Retry task');
 
 			// Wait for recovery to loading state
 			for await (const _chunk of pty) {
-				if (pty.output.includes(yoctocolors.yellow('⠋'))) {
+				if (pty.output.includes(ansis.yellow('⠋'))) {
 					break;
 				}
 			}
 
 			// Spinner returned after clearing error
-			expect(pty.output).toContain(yoctocolors.yellow('⠋'));
+			expect(pty.output).toContain(ansis.yellow('⠋'));
 
 			const result = await pty;
 			expect(result.exitCode).toBe(0);
@@ -323,20 +323,20 @@ export default testSuite(({ describe }) => {
 
 			const pty = nodePty(fixture.getPath('test.mjs'));
 			for await (const _chunk of pty) {
-				if (pty.output.includes(yoctocolors.red('✖'))) {
+				if (pty.output.includes(ansis.red('✖'))) {
 					break;
 				}
 			}
 
-			expect(pty.output).toContain(yoctocolors.red('✖'));
+			expect(pty.output).toContain(ansis.red('✖'));
 
 			for await (const _chunk of pty) {
-				if (pty.output.includes(yoctocolors.yellow('⠋'))) {
+				if (pty.output.includes(ansis.yellow('⠋'))) {
 					break;
 				}
 			}
 
-			expect(pty.output).toContain(yoctocolors.yellow('⠋'));
+			expect(pty.output).toContain(ansis.yellow('⠋'));
 
 			const result = await pty;
 			expect(result.exitCode).toBe(0);
@@ -359,20 +359,20 @@ export default testSuite(({ describe }) => {
 
 			const pty = nodePty(fixture.getPath('test.mjs'));
 			for await (const _chunk of pty) {
-				if (pty.output.includes(yoctocolors.red('✖'))) {
+				if (pty.output.includes(ansis.red('✖'))) {
 					break;
 				}
 			}
 
-			expect(pty.output).toContain(yoctocolors.red('✖'));
+			expect(pty.output).toContain(ansis.red('✖'));
 
 			for await (const _chunk of pty) {
-				if (pty.output.includes(yoctocolors.yellow('⠋'))) {
+				if (pty.output.includes(ansis.yellow('⠋'))) {
 					break;
 				}
 			}
 
-			expect(pty.output).toContain(yoctocolors.yellow('⠋'));
+			expect(pty.output).toContain(ansis.yellow('⠋'));
 
 			const result = await pty;
 			expect(result.exitCode).toBe(0);
@@ -395,24 +395,24 @@ export default testSuite(({ describe }) => {
 
 			const pty = nodePty(fixture.getPath('test.mjs'));
 			for await (const _chunk of pty) {
-				if (pty.output.includes(yoctocolors.yellow('⚠'))) {
+				if (pty.output.includes(ansis.yellow('⚠'))) {
 					break;
 				}
 			}
 
 			// Warning state was shown
-			expect(pty.output).toContain(yoctocolors.yellow('⚠'));
+			expect(pty.output).toContain(ansis.yellow('⚠'));
 			expect(pty.output).toContain('Warn task');
 
 			// Wait for recovery to loading state
 			for await (const _chunk of pty) {
-				if (pty.output.includes(yoctocolors.yellow('⠋'))) {
+				if (pty.output.includes(ansis.yellow('⠋'))) {
 					break;
 				}
 			}
 
 			// Spinner returned after clearing warning
-			expect(pty.output).toContain(yoctocolors.yellow('⠋'));
+			expect(pty.output).toContain(ansis.yellow('⠋'));
 
 			const result = await pty;
 			expect(result.exitCode).toBe(0);
@@ -451,7 +451,7 @@ export default testSuite(({ describe }) => {
 			expect(afterClear).not.toContain('Task 2');
 
 			// Check for green checkmarks before clearing
-			expect(result.stdout).toContain(yoctocolors.green('✔'));
+			expect(result.stdout).toContain(ansis.green('✔'));
 
 			// Check for ANSI clear codes (clear line and move up)
 			expect(result.stdout).toContain(ansiEscapes.cursorRestorePosition + ansiEscapes.eraseDown);

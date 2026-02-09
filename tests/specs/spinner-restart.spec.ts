@@ -1,6 +1,6 @@
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
-import yoctocolors from 'yoctocolors';
+import ansis from 'ansis';
 import { nodePty } from '../utils/pty.js';
 import { tempDir } from '../utils/temp-dir.js';
 
@@ -12,7 +12,7 @@ const countSpinnerFramesAfter = (output: string, marker: string) => {
 	// eslint-disable-next-line unicorn/prefer-set-has -- multi-char ANSI
 	const afterMarker = output.slice(markerIndex);
 	return spinnerFrames.filter(
-		frame => afterMarker.includes(yoctocolors.yellow(frame)),
+		frame => afterMarker.includes(ansis.yellow(frame)),
 	).length;
 };
 
@@ -41,7 +41,7 @@ export default testSuite(({ describe }) => {
 			expect(result.exitCode).toBe(0);
 
 			// Multiple unique frames proves the spinner restarted (not a stale single frame)
-			const frameCount = countSpinnerFramesAfter(result.output, `${yoctocolors.green('✔')} first-1`);
+			const frameCount = countSpinnerFramesAfter(result.output, `${ansis.green('✔')} first-1`);
 			expect(frameCount).toBeGreaterThanOrEqual(2);
 		});
 
@@ -59,7 +59,7 @@ export default testSuite(({ describe }) => {
 			const result = await nodePty(fixture.getPath('test.mjs'), { cols: 80 });
 			expect(result.exitCode).toBe(0);
 
-			const frameCount = countSpinnerFramesAfter(result.output, `${yoctocolors.green('✔')} first`);
+			const frameCount = countSpinnerFramesAfter(result.output, `${ansis.green('✔')} first`);
 			expect(frameCount).toBeGreaterThanOrEqual(2);
 		});
 
@@ -81,7 +81,7 @@ export default testSuite(({ describe }) => {
 			const result = await nodePty(fixture.getPath('test.mjs'), { cols: 80 });
 			expect(result.exitCode).toBe(0);
 
-			const frameCount = countSpinnerFramesAfter(result.output, `${yoctocolors.red('✖')} fails`);
+			const frameCount = countSpinnerFramesAfter(result.output, `${ansis.red('✖')} fails`);
 			expect(frameCount).toBeGreaterThanOrEqual(2);
 		});
 
@@ -103,7 +103,7 @@ export default testSuite(({ describe }) => {
 
 			// Count frames in entire output since first task was cleared
 			const framesInOutput = spinnerFrames.filter(
-				frame => result.output.includes(yoctocolors.yellow(frame)),
+				frame => result.output.includes(ansis.yellow(frame)),
 			).length;
 			expect(framesInOutput).toBeGreaterThanOrEqual(2);
 		});

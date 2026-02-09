@@ -1,6 +1,6 @@
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
-import yoctocolors from 'yoctocolors';
+import ansis from 'ansis';
 import { node } from '../utils/node.js';
 import { tempDir } from '../utils/temp-dir.js';
 
@@ -138,7 +138,7 @@ export default testSuite(({ describe }) => {
 			expect(result.stderr).toBe('');
 
 			// Final output shows checkmark with frozen time
-			expect(result.stdout).toContain(yoctocolors.green('✔'));
+			expect(result.stdout).toContain(ansis.green('✔'));
 			expect(result.stdout).toMatch(/\(1s\)|\(2s\)/);
 		});
 
@@ -200,7 +200,7 @@ export default testSuite(({ describe }) => {
 			expect(result.stderr).toBe('');
 
 			// Should show error state with frozen time
-			expect(result.stdout).toContain(yoctocolors.red('✖'));
+			expect(result.stdout).toContain(ansis.red('✖'));
 			expect(result.stdout).toMatch(/\(1s\)|\(2s\)/);
 		});
 	});

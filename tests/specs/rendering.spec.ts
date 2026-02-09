@@ -1,7 +1,7 @@
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
 import ansiEscapes from 'ansi-escapes';
-import yoctocolors from 'yoctocolors';
+import ansis from 'ansis';
 import { node } from '../utils/node.js';
 import { nodePty } from '../utils/pty.js';
 import { tempDir } from '../utils/temp-dir.js';
@@ -23,15 +23,15 @@ export default testSuite(({ describe }) => {
 			const result = await node(fixture.getPath('test.mjs'));
 			expect(result.stderr).toBe('');
 
-			expect(result.stdout).toContain(yoctocolors.yellow('⠋'));
+			expect(result.stdout).toContain(ansis.yellow('⠋'));
 
 			// Task completes successfully
-			expect(result.stdout).toContain(yoctocolors.green('✔'));
+			expect(result.stdout).toContain(ansis.green('✔'));
 			expect(result.stdout).toContain('Task');
 
 			// Verify spinner appears before completion
-			const spinnerIndex = result.stdout.indexOf(yoctocolors.yellow('⠋'));
-			const checkmarkIndex = result.stdout.indexOf(yoctocolors.green('✔'));
+			const spinnerIndex = result.stdout.indexOf(ansis.yellow('⠋'));
+			const checkmarkIndex = result.stdout.indexOf(ansis.green('✔'));
 			expect(spinnerIndex).toBeLessThan(checkmarkIndex);
 		});
 
@@ -54,10 +54,10 @@ export default testSuite(({ describe }) => {
 			// Both task names appear
 			expect(result.stdout).toContain('one');
 			expect(result.stdout).toContain('two');
-			expect(result.stdout).toContain(yoctocolors.green('✔'));
+			expect(result.stdout).toContain(ansis.green('✔'));
 
 			// Yellow spinners
-			expect(result.stdout).toContain(yoctocolors.yellow('⠋'));
+			expect(result.stdout).toContain(ansis.yellow('⠋'));
 		});
 
 		test('nested tasks render correctly on success', async () => {
@@ -78,8 +78,8 @@ export default testSuite(({ describe }) => {
 			expect(result.stderr).toBe('');
 
 			// Define the exact final lines we expect
-			const finalParentLine = `${yoctocolors.yellow('❯')} Parent`;
-			const finalChildLine = `  ${yoctocolors.green('✔')} Child`;
+			const finalParentLine = `${ansis.yellow('❯')} Parent`;
+			const finalChildLine = `  ${ansis.green('✔')} Child`;
 
 			// Check that these lines exist in the output
 			expect(result.stdout).toContain(finalParentLine);
@@ -113,10 +113,10 @@ export default testSuite(({ describe }) => {
 			expect(result.stderr).toBe('');
 
 			// Yellow pointer (not red) with foreground-only reset
-			expect(result.stdout).toContain(yoctocolors.yellow('❯'));
+			expect(result.stdout).toContain(ansis.yellow('❯'));
 
 			// Verify spinner appears while child is loading
-			expect(result.stdout).toContain(yoctocolors.yellow('⠋'));
+			expect(result.stdout).toContain(ansis.yellow('⠋'));
 		});
 
 		test('parent task shows red pointer on error', async () => {
@@ -142,10 +142,10 @@ export default testSuite(({ describe }) => {
 			expect(result.stderr).toBe('');
 
 			// Red pointer when child errors with foreground-only reset
-			expect(result.stdout).toContain(yoctocolors.red('❯'));
+			expect(result.stdout).toContain(ansis.red('❯'));
 
 			// Red X for failed child task
-			expect(result.stdout).toContain(yoctocolors.red('✖'));
+			expect(result.stdout).toContain(ansis.red('✖'));
 		});
 
 		test('child task starts with frame 0 spinner', async () => {
@@ -167,11 +167,11 @@ export default testSuite(({ describe }) => {
 			expect(result.stderr).toBe('');
 
 			expect(result.stdout).toBe(
-				`${ansiEscapes.cursorSavePosition}${yoctocolors.yellow('⠋')} Parent\n`
-				+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}${yoctocolors.yellow('❯')} Parent\n`
-				+ `  ${yoctocolors.yellow('⠋')} Child\n`
-				+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}${yoctocolors.yellow('❯')} Parent\n`
-				+ `  ${yoctocolors.green('✔')} Child`,
+				`${ansiEscapes.cursorSavePosition}${ansis.yellow('⠋')} Parent\n`
+				+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}${ansis.yellow('❯')} Parent\n`
+				+ `  ${ansis.yellow('⠋')} Child\n`
+				+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}${ansis.yellow('❯')} Parent\n`
+				+ `  ${ansis.green('✔')} Child`,
 			);
 		});
 

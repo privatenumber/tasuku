@@ -6,7 +6,7 @@ import {
 import stringWidth from 'string-width';
 import {
 	green, red, yellow, gray, dim,
-} from 'yoctocolors';
+} from 'ansis';
 import type { TaskList } from './types.js';
 import { formatElapsed } from './utils/format-elapsed.js';
 import { areAllTasksDone } from './utils/task-list.js';
@@ -19,39 +19,6 @@ const isCI = Boolean(
 	process.env.CI
 	|| process.env.CONTINUOUS_INTEGRATION
 	|| process.env.BUILD_NUMBER,
-);
-
-// Color detection with proper precedence:
-// 1. NO_COLOR and NODE_DISABLE_COLORS always disable (highest priority)
-// 2. Use Node's built-in hasColors() if available
-// 3. Check FORCE_COLOR explicitly
-// 4. Default to TTY status
-const detectColors = (stdout: NodeJS.WriteStream): boolean => {
-	if (process.env.NO_COLOR || process.env.NODE_DISABLE_COLORS) {
-		return false;
-	}
-
-	if (stdout.hasColors) {
-		return stdout.hasColors();
-	}
-
-	if (process.env.FORCE_COLOR !== undefined) {
-		// FORCE_COLOR=0 disables, any other value enables
-		return process.env.FORCE_COLOR !== '0';
-	}
-
-	// Default: use colors only if explicitly TTY
-	return stdout.isTTY === true;
-};
-
-const colorize = (
-	useColors: boolean,
-	colorFunction: (text: string) => string,
-	text: string,
-): string => (
-	useColors
-		? colorFunction(text)
-		: text
 );
 
 export type Renderer = {
@@ -76,7 +43,6 @@ export const createRenderer = (
 	let cursorHidden = false;
 
 	const isTTY = stdout.isTTY === true;
-	const useColors = detectColors(stdout);
 	const isInteractive = isTTY && !isCI;
 
 	// Save cursor position at the top of the render area.
@@ -128,38 +94,35 @@ export const createRenderer = (
 
 	const getIcon = (state: TaskList[number]['state'], hasChildren: boolean): string => {
 		if (state === 'pending') {
-			return colorize(useColors, gray, '◼');
+			return gray('◼');
 		}
 
 		if (state === 'loading') {
-			// Parent tasks with children show yellow pointer while loading
 			if (hasChildren) {
-				return colorize(useColors, yellow, '❯');
+				return yellow('❯');
 			}
-			return colorize(useColors, yellow, SPINNER_FRAMES[spinnerFrame]);
+			return yellow(SPINNER_FRAMES[spinnerFrame]);
 		}
 
 		if (state === 'success') {
-			// Parent tasks with children show yellow pointer
 			if (hasChildren) {
-				return colorize(useColors, yellow, '❯');
+				return yellow('❯');
 			}
-			return colorize(useColors, green, '✔');
+			return green('✔');
 		}
 
 		if (state === 'error') {
-			// Parent tasks with children show red pointer
 			if (hasChildren) {
-				return colorize(useColors, red, '❯');
+				return red('❯');
 			}
-			return colorize(useColors, red, '✖');
+			return red('✖');
 		}
 
 		if (state === 'warning') {
-			return colorize(useColors, yellow, '⚠');
+			return yellow('⚠');
 		}
 
-		return colorize(useColors, gray, '◼');
+		return gray('◼');
 	};
 
 	const renderTask = (task: TaskList[number], depth: number): string => {
@@ -169,10 +132,7 @@ export const createRenderer = (
 
 		let line = `${indent}${icon} ${task.title}`;
 		if (task.status) {
-			const styledStatus = useColors
-				? dim(`[${task.status}]`)
-				: `[${task.status}]`;
-			line += ` ${styledStatus}`;
+			line += ` ${dim(`[${task.status}]`)}`;
 		}
 
 		// Add elapsed time if timer is active or frozen
@@ -182,24 +142,18 @@ export const createRenderer = (
 				: Date.now() - task.startedAt
 		);
 		if (elapsedMs !== undefined && elapsedMs >= 1000) {
-			const styledTime = useColors
-				? dim(formatElapsed(elapsedMs))
-				: formatElapsed(elapsedMs);
-			line += ` ${styledTime}`;
+			line += ` ${dim(formatElapsed(elapsedMs))}`;
 		}
 
 		line += '\n';
 
 		const outputIndent = `${indent}  `;
-		const styleText = (text: string) => (useColors
-			? gray(text)
-			: text);
 
 		// Static output: → prefix
 		if (task.output) {
 			line += `${task.output
 				.split('\n')
-				.map((outputLine, index) => `${outputIndent}${styleText(index === 0 ? `→ ${outputLine}` : outputLine)}`)
+				.map((outputLine, index) => `${outputIndent}${gray(index === 0 ? `→ ${outputLine}` : outputLine)}`)
 				.join('\n')}\n`;
 		}
 
@@ -209,13 +163,13 @@ export const createRenderer = (
 			line += `${task.streamOutput
 				.split('\n')
 				.map((outputLine, index) => (index === 0
-					? `${outputIndent}⎿  ${styleText(outputLine)}`
-					: `${continuationIndent}${styleText(outputLine)}`))
+					? `${outputIndent}⎿  ${gray(outputLine)}`
+					: `${continuationIndent}${gray(outputLine)}`))
 				.join('\n')}\n`;
 
 			if (task.streamTruncatedLines) {
 				const truncatedText = `(+ ${task.streamTruncatedLines} lines)`;
-				line += `${continuationIndent}${styleText(truncatedText)}\n`;
+				line += `${continuationIndent}${gray(truncatedText)}\n`;
 			}
 		}
 
@@ -305,7 +259,7 @@ export const createRenderer = (
 				if (pending > 0) { parts.push(`${pending} queued`); }
 				if (completed > 0) { parts.push(`${completed} completed`); }
 				const hiddenText = `(+ ${parts.join(', ')})`;
-				const styledHiddenText = useColors ? dim(hiddenText) : hiddenText;
+				const styledHiddenText = dim(hiddenText);
 				output += `${styledHiddenText}\n`;
 
 				return output;

@@ -1,7 +1,7 @@
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
 import ansiEscapes from 'ansi-escapes';
-import yoctocolors from 'yoctocolors';
+import ansis from 'ansis';
 import { node } from '../utils/node.js';
 import { tempDir } from '../utils/temp-dir.js';
 
@@ -48,7 +48,7 @@ export default testSuite(({ describe }) => {
 				expect(result.stderr).toBe('');
 
 				// Verify task completed successfully
-				expect(result.stdout).toContain(yoctocolors.green('✔'));
+				expect(result.stdout).toContain(ansis.green('✔'));
 				expect(result.stdout).toContain('Task');
 			});
 
