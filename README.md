@@ -255,8 +255,8 @@ type TaskFunction = (taskInnerApi: {
     setTitle(title: string): void
     setStatus(status?: string): void
     setOutput(output: string | { message: string }): void
-    setWarning(warning: Error | string): void
-    setError(error: Error | string): void
+    setWarning(warning?: Error | string | false | null): void
+    setError(error?: Error | string | false | null): void
     streamPreview: Writable
     startTime(): void
     stopTime(): number
@@ -305,10 +305,10 @@ By default, shows the last 5 lines. Use the `previewLines` option to change this
 > `setOutput()` and `streamPreview` render independently. If both are used, static output appears above the stream preview.
 
 #### setWarning()
-Call with a string or Error instance to put the task in a warning state.
+Call with a string or Error instance to put the task in a warning state. Call with no argument (or a falsy value) to revert to loading state.
 
 #### setError()
-Call with a string or Error instance to put the task in an error state. Tasks automatically go into an error state when it catches an error in the task.
+Call with a string or Error instance to put the task in an error state. Call with no argument (or a falsy value) to revert to loading state. Tasks automatically go into an error state when it catches an error in the task.
 
 <img src=".github/media/set-error.png">
 

@@ -136,17 +136,21 @@ const createTaskInnerApi = (
 			return stream;
 		},
 		setWarning(warning) {
-			taskState.state = 'warning';
-
-			if (warning !== undefined) {
+			if (warning) {
+				taskState.state = 'warning';
 				api.setOutput(warning);
+			} else {
+				taskState.state = 'loading';
+				taskState.output = undefined;
 			}
 		},
 		setError(error) {
-			taskState.state = 'error';
-
-			if (error !== undefined) {
+			if (error) {
+				taskState.state = 'error';
 				api.setOutput(error);
+			} else {
+				taskState.state = 'loading';
+				taskState.output = undefined;
 			}
 		},
 		startTime: () => {

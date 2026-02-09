@@ -3,6 +3,7 @@ import { createFixture } from 'fs-fixture';
 import ansiEscapes from 'ansi-escapes';
 import yoctocolors from 'yoctocolors';
 import { node } from '../utils/node.js';
+import { nodePty } from '../utils/pty.js';
 import { tempDir } from '../utils/temp-dir.js';
 
 export default testSuite(({ describe }) => {
@@ -263,6 +264,158 @@ export default testSuite(({ describe }) => {
 
 			// Check for ANSI clear codes
 			expect(result.stdout).toContain(ansiEscapes.cursorRestorePosition + ansiEscapes.eraseDown);
+		});
+
+		test('setError() with no arg reverts to loading state', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task('Retry task', async ({ setError }) => {
+						setError('temporary failure');
+						await setTimeout(100);
+						setError();
+						await setTimeout(100);
+					});
+				`,
+			}, { tempDir });
+
+			const pty = nodePty(fixture.getPath('test.mjs'));
+			for await (const _chunk of pty) {
+				if (pty.output.includes(yoctocolors.red('✖'))) {
+					break;
+				}
+			}
+
+			// Error state was shown
+			expect(pty.output).toContain(yoctocolors.red('✖'));
+			expect(pty.output).toContain('Retry task');
+
+			// Wait for recovery to loading state
+			for await (const _chunk of pty) {
+				if (pty.output.includes(yoctocolors.yellow('⠋'))) {
+					break;
+				}
+			}
+
+			// Spinner returned after clearing error
+			expect(pty.output).toContain(yoctocolors.yellow('⠋'));
+
+			const result = await pty;
+			expect(result.exitCode).toBe(0);
+		});
+
+		test('setError(false) reverts to loading state', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task('Retry task', async ({ setError }) => {
+						setError('temporary failure');
+						await setTimeout(100);
+						setError(false);
+						await setTimeout(100);
+					});
+				`,
+			}, { tempDir });
+
+			const pty = nodePty(fixture.getPath('test.mjs'));
+			for await (const _chunk of pty) {
+				if (pty.output.includes(yoctocolors.red('✖'))) {
+					break;
+				}
+			}
+
+			expect(pty.output).toContain(yoctocolors.red('✖'));
+
+			for await (const _chunk of pty) {
+				if (pty.output.includes(yoctocolors.yellow('⠋'))) {
+					break;
+				}
+			}
+
+			expect(pty.output).toContain(yoctocolors.yellow('⠋'));
+
+			const result = await pty;
+			expect(result.exitCode).toBe(0);
+		});
+
+		test('setError(null) reverts to loading state', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task('Retry task', async ({ setError }) => {
+						setError('temporary failure');
+						await setTimeout(100);
+						setError(null);
+						await setTimeout(100);
+					});
+				`,
+			}, { tempDir });
+
+			const pty = nodePty(fixture.getPath('test.mjs'));
+			for await (const _chunk of pty) {
+				if (pty.output.includes(yoctocolors.red('✖'))) {
+					break;
+				}
+			}
+
+			expect(pty.output).toContain(yoctocolors.red('✖'));
+
+			for await (const _chunk of pty) {
+				if (pty.output.includes(yoctocolors.yellow('⠋'))) {
+					break;
+				}
+			}
+
+			expect(pty.output).toContain(yoctocolors.yellow('⠋'));
+
+			const result = await pty;
+			expect(result.exitCode).toBe(0);
+		});
+
+		test('setWarning() with no arg reverts to loading state', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+					import task from '#tasuku';
+					import { setTimeout } from 'node:timers/promises';
+
+					await task('Warn task', async ({ setWarning }) => {
+						setWarning('temporary warning');
+						await setTimeout(100);
+						setWarning();
+						await setTimeout(100);
+					});
+				`,
+			}, { tempDir });
+
+			const pty = nodePty(fixture.getPath('test.mjs'));
+			for await (const _chunk of pty) {
+				if (pty.output.includes(yoctocolors.yellow('⚠'))) {
+					break;
+				}
+			}
+
+			// Warning state was shown
+			expect(pty.output).toContain(yoctocolors.yellow('⚠'));
+			expect(pty.output).toContain('Warn task');
+
+			// Wait for recovery to loading state
+			for await (const _chunk of pty) {
+				if (pty.output.includes(yoctocolors.yellow('⠋'))) {
+					break;
+				}
+			}
+
+			// Spinner returned after clearing warning
+			expect(pty.output).toContain(yoctocolors.yellow('⠋'));
+
+			const result = await pty;
+			expect(result.exitCode).toBe(0);
 		});
 
 		test('group.clear method removes all tasks', async () => {
