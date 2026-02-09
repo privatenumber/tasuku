@@ -99,8 +99,8 @@ type TaskInnerAPI = {
     task: Task;
     setTitle(title: string): void;
     setStatus(status?: string): void;
-    setWarning(warning?: Error | string): void;
-    setError(error?: Error | string): void;
+    setWarning(warning?: Error | string | false | null): void;
+    setError(error?: Error | string | false | null): void;
     setOutput(output: string | {
         message: string;
     }): void;
