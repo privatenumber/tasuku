@@ -87,6 +87,8 @@ export type RegisteredTask<T = unknown> = {
 export type TaskAPI<Result = unknown> = {
 	result: Result;
 	state: State;
+	warning: string | undefined;
+	error: string | undefined;
 	clear: () => void;
 };
 

@@ -235,6 +235,12 @@ type TaskAPI = {
     // State of the task
     state: 'error' | 'warning' | 'success'
 
+    // Warning message if state is 'warning', otherwise undefined
+    warning: string | undefined
+
+    // Error message if state is 'error', otherwise undefined
+    error: string | undefined
+
     // Invoke to clear the results from the terminal
     clear: () => void
 }

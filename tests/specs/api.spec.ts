@@ -22,6 +22,34 @@ export default testSuite(({ describe }) => {
 			expect(result).toBe(123);
 		});
 
+		test('warning property returns message when state is warning', async () => {
+			const taskApi = await task('Warn task', async ({ setWarning }) => {
+				setWarning('something is off');
+			});
+
+			expect(taskApi.state).toBe('warning');
+			expect(taskApi.warning).toBe('something is off');
+			expect(taskApi.error).toBeUndefined();
+		});
+
+		test('error property returns message when state is error', async () => {
+			const taskApi = await task('Error task', async ({ setError }) => {
+				setError('something broke');
+			});
+
+			expect(taskApi.state).toBe('error');
+			expect(taskApi.error).toBe('something broke');
+			expect(taskApi.warning).toBeUndefined();
+		});
+
+		test('warning and error are undefined on success', async () => {
+			const taskApi = await task('OK task', async () => 'done');
+
+			expect(taskApi.state).toBe('success');
+			expect(taskApi.warning).toBeUndefined();
+			expect(taskApi.error).toBeUndefined();
+		});
+
 		test('nested tasks', async () => {
 			const someTask = await task('Some task', async ({ task }) => {
 				const nestedTask = await task('nested task', async () => 'nested works');

@@ -268,6 +268,12 @@ function createTaskFunction(
 			get state() {
 				return registeredTask.task.state;
 			},
+			get warning() {
+				return registeredTask.task.state === 'warning' ? registeredTask.task.output : undefined;
+			},
+			get error() {
+				return registeredTask.task.state === 'error' ? registeredTask.task.output : undefined;
+			},
 			clear: registeredTask.clear,
 		};
 	};
@@ -304,6 +310,12 @@ function createTaskFunction(
 				result: await taskApi[runSymbol](),
 				get state() {
 					return taskApi.task.state;
+				},
+				get warning() {
+					return taskApi.task.state === 'warning' ? taskApi.task.output : undefined;
+				},
+				get error() {
+					return taskApi.task.state === 'error' ? taskApi.task.output : undefined;
 				},
 				clear: taskApi.clear,
 			}),
