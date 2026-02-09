@@ -3,6 +3,7 @@ import {
 	cursorUp, cursorDown, cursorShow,
 	cursorSavePosition, cursorRestorePosition, eraseDown,
 } from 'ansi-escapes';
+import stringWidth from 'string-width';
 import {
 	green, red, yellow, gray, dim,
 } from 'yoctocolors';
@@ -390,12 +391,25 @@ export const createRenderer = (
 		// scroll, shifting the saved position off-screen.  Cursor-up is
 		// relative and immune to scroll, so we move back to the start of
 		// the render area, re-save, then return to the end.
+		//
+		// Must count VISUAL lines (accounting for line wraps) not just \n
+		// characters — a logical line wider than the terminal wraps to
+		// multiple rows, and cursorUp must cover all of them.
 		if (isTTY) {
-			const lineCount = (output.match(/\n/g) || []).length;
-			if (lineCount > 0) {
-				stdout.write(cursorUp(lineCount));
+			const columns = stdout.columns || 80;
+			let visualLineCount = 0;
+			// Split on \n; the trailing \n produces an empty last element — skip it
+			const lines = output.split('\n');
+			for (let i = 0; i < lines.length - 1; i += 1) {
+				const width = stringWidth(lines[i]);
+				visualLineCount += width <= columns
+					? 1
+					: Math.ceil(width / columns);
+			}
+			if (visualLineCount > 0) {
+				stdout.write(cursorUp(visualLineCount));
 				savePosition();
-				stdout.write(cursorDown(lineCount));
+				stdout.write(cursorDown(visualLineCount));
 			}
 		}
 	};

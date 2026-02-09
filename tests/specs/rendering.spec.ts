@@ -236,5 +236,48 @@ export default testSuite(({ describe }) => {
 			expect(result.output).toContain('✔');
 			expect(result.output).toContain(title);
 		});
+
+		test('re-anchor accounts for visual line wraps from multiline status', async () => {
+			const cols = 40;
+			const title = 'Installing dependencies and building project';
+			const statusLine1 = 'step 1';
+			const statusLine2 = 'processing...';
+
+			await using fixture = await createFixture({
+				'test.mjs': String.raw`
+				import task from '#tasuku';
+				import { setTimeout } from 'node:timers/promises';
+
+				await task('${title}', async ({ setStatus }) => {
+					for (let i = 0; i < 3; i++) {
+						setStatus('${statusLine1}\n${statusLine2}');
+						await setTimeout(100);
+					}
+				});
+				`,
+			}, { tempDir });
+
+			const result = await nodePty(fixture.getPath('test.mjs'), { cols });
+			expect(result.exitCode).toBe(0);
+
+			// Rendered format: "{icon} {title} [{statusLine1}\n{statusLine2}]\n"
+			// icon is 1 visual column (spinner char or checkmark)
+			const firstLineWidth = `X ${title} [${statusLine1}`.length;
+			const secondLineWidth = `${statusLine2}]`.length;
+			const expectedVisualLines = Math.ceil(firstLineWidth / cols)
+				+ Math.ceil(secondLineWidth / cols);
+
+			// Sanity: first line must actually wrap for this test to be meaningful
+			expect(firstLineWidth).toBeGreaterThan(cols);
+
+			// eslint-disable-next-line no-control-regex -- matching ANSI cursorUp sequences
+			const cursorUpValues = [...result.output.matchAll(/\u001B\[(\d+)A/g)]
+				.map(match => Number(match[1]));
+
+			expect(cursorUpValues.length).toBeGreaterThan(0);
+			for (const value of cursorUpValues) {
+				expect(value).toBeGreaterThanOrEqual(expectedVisualLines);
+			}
+		});
 	});
 });
