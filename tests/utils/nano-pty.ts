@@ -10,6 +10,7 @@
  * - AsyncDisposable for `await using`
  */
 import { EventEmitter, on } from 'node:events';
+import timers from 'node:timers/promises';
 import { spawn, type IPtyForkOptions } from 'node-pty';
 
 export type PtyResult = {
@@ -94,9 +95,14 @@ export const nanoPty = (
 		emitter.emit('data', data);
 	});
 
-	ptyProcess.onExit(({ exitCode }) => {
+	ptyProcess.onExit(async ({ exitCode }) => {
 		cleanup();
 		emitter.emit('exit', exitCode);
+
+		// Delay resolution to allow remaining onData events to arrive.
+		// node-pty issue #72: onExit can fire before all data is delivered,
+		// especially under high CPU load (e.g. CI with many parallel PTY tests).
+		await timers.setTimeout(100);
 
 		if (signal?.aborted) {
 			reject(signal.reason ?? new Error('PTY aborted'));

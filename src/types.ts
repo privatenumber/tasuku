@@ -143,3 +143,27 @@ export type TaskGroup = <
 	createTasks: (taskCreator: CreateTask) => readonly [...RegisteredTasks],
 	options?: TaskGroupOptions,
 ) => TaskGroupPromise<TaskGroupResults<RegisteredTasks>>;
+
+export type ColorFunction = (text: string) => string;
+
+export type TasukuIcons = {
+	pending: string;
+	success: string;
+	error: string;
+	warning: string;
+	parent: string;
+	parentError: string;
+};
+
+export type TasukuColors = {
+	title?: (text: string, state: State, frame: number) => string;
+	dim: ColorFunction;
+	secondary: ColorFunction;
+};
+
+export type TasukuTheme = {
+	spinner: string[];
+	spinnerInterval?: number;
+	icons: TasukuIcons;
+	colors: TasukuColors;
+};

@@ -7,6 +7,7 @@
 ### Features
 - Task list with dynamic states
 - Parallel & nestable tasks
+- Customizable themes (icons, colors, spinners)
 - Unopinionated
 - Type-safe
 
@@ -447,6 +448,99 @@ await task.group(task => [...tasks], {
     maxVisible: height => height - 5
 })
 ```
+
+## Themes
+
+### Default
+
+The built-in theme with braille spinner and standard terminal colors.
+
+```ts
+import task from 'tasuku'
+```
+
+<img src=".github/media/theme-default.gif">
+
+### Claude
+
+Claude Code-inspired theme with truecolor palette, dingbat star spinner, and shimmer title animation.
+
+```ts
+import task from 'tasuku/claude'
+```
+
+<img src=".github/media/theme-claude.gif">
+
+### Blink
+
+Reduced-motion theme inspired by Claude Code's accessibility mode. The `⏺` indicator pulses between bright and dim on a 2-second cycle.
+
+```ts
+import task from 'tasuku/blink'
+```
+
+<img src=".github/media/theme-blink.gif">
+
+### Codex
+
+OpenAI Codex CLI-inspired theme with cosine-based shimmer gradient and monochrome palette.
+
+```ts
+import task from 'tasuku/codex'
+```
+
+<img src=".github/media/theme-codex.gif">
+
+### Custom themes
+
+Create your own theme with `createTasuku()`. Each call returns an independent task runner with its own renderer.
+
+Every theme entry point exports `createTasuku` and `theme`, so you can use any built-in theme as a base:
+
+```ts
+import { rgb } from 'ansis'
+import { createTasuku, theme } from 'tasuku'
+
+const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+const rainbow = frames.map((frame, i) => {
+    const hue = (i / frames.length) * 360
+    const [r, g, b] = hslToRgb(hue, 100, 50)
+    return rgb(r, g, b)(frame)
+})
+
+const task = createTasuku({
+    ...theme,
+    spinner: rainbow
+})
+
+await task('Custom task', async () => {
+    await someAsyncTask()
+})
+```
+
+#### Theme object
+
+```ts
+type TasukuTheme = {
+    spinner: string[] // Pre-colored spinner frames
+    spinnerInterval?: number // ms between frames (default: 80)
+    icons: {
+        pending: string // Pre-colored icon strings
+        success: string
+        error: string
+        warning: string
+        parent: string // Parent task with children
+        parentError: string // Parent task in error state
+    }
+    colors: {
+        title?: (text: string, state: State, frame: number) => string
+        dim: (text: string) => string // Status, elapsed time
+        secondary: (text: string) => string // Output text, stream preview
+    }
+}
+```
+
+The `title` color function receives the task state and animation frame counter, enabling per-frame effects like shimmer animations. A simple `(text: string) => string` function also works — extra arguments are ignored.
 
 ## FAQ
 

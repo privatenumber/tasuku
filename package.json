@@ -22,14 +22,43 @@
 	"type": "module",
 	"types": "./dist/index.d.mts",
 	"exports": {
-		"types": "./dist/index.d.mts",
-		"default": "./dist/index.mjs"
+		".": {
+			"types": "./dist/index.d.mts",
+			"default": "./dist/index.mjs"
+		},
+		"./claude": {
+			"types": "./dist/claude.d.mts",
+			"default": "./dist/claude.mjs"
+		},
+		"./blink": {
+			"types": "./dist/blink.d.mts",
+			"default": "./dist/blink.mjs"
+		},
+		"./codex": {
+			"types": "./dist/codex.d.mts",
+			"default": "./dist/codex.mjs"
+		}
 	},
 	"imports": {
 		"#tasuku": {
 			"types": "./src/index.ts",
 			"development": "./src/index.ts",
 			"default": "./dist/index.mjs"
+		},
+		"#tasuku/claude": {
+			"types": "./src/claude.ts",
+			"development": "./src/claude.ts",
+			"default": "./dist/claude.mjs"
+		},
+		"#tasuku/blink": {
+			"types": "./src/blink.ts",
+			"development": "./src/blink.ts",
+			"default": "./dist/blink.mjs"
+		},
+		"#tasuku/codex": {
+			"types": "./src/codex.ts",
+			"development": "./src/codex.ts",
+			"default": "./dist/codex.mjs"
 		}
 	},
 	"packageManager": "pnpm@10.19.0",

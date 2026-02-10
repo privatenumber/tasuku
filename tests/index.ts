@@ -25,4 +25,10 @@ await describe('tasuku', ({ runTestSuite }) => {
 	// Unit tests
 	runTestSuite(import('./specs/format-elapsed.spec.js'));
 	runTestSuite(import('./specs/task-list.spec.js'));
+
+	// Factory
+	runTestSuite(import('./specs/create-tasuku.spec.js'));
+	runTestSuite(import('./specs/claude-theme.spec.js'));
+	runTestSuite(import('./specs/blink-theme.spec.js'));
+	runTestSuite(import('./specs/codex-theme.spec.js'));
 });

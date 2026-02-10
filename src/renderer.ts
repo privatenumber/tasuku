@@ -4,14 +4,9 @@ import {
 	cursorSavePosition, cursorRestorePosition, eraseDown,
 } from 'ansi-escapes';
 import stringWidth from 'string-width';
-import {
-	green, red, yellow, gray, dim,
-} from 'ansis';
-import type { TaskList } from './types.js';
+import type { TaskList, TasukuTheme } from './types.js';
 import { formatElapsed } from './utils/format-elapsed.js';
 import { areAllTasksDone } from './utils/task-list.js';
-
-const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 
 // Simple CI detection (inline instead of is-in-ci dependency)
 // Only enable CI mode if explicitly in CI environment, not just !isTTY
@@ -31,8 +26,10 @@ export type Renderer = {
 
 export const createRenderer = (
 	taskList: TaskList,
-	stdout: NodeJS.WriteStream = process.stdout,
+	stdout: NodeJS.WriteStream,
+	theme: TasukuTheme,
 ): Renderer => {
+	let animationFrame = 0;
 	let spinnerFrame = 0;
 	let spinnerInterval: NodeJS.Timeout | undefined;
 	let renderTimeout: NodeJS.Timeout | undefined;
@@ -94,35 +91,35 @@ export const createRenderer = (
 
 	const getIcon = (state: TaskList[number]['state'], hasChildren: boolean): string => {
 		if (state === 'pending') {
-			return gray('◼');
+			return theme.icons.pending;
 		}
 
 		if (state === 'loading') {
 			if (hasChildren) {
-				return yellow('❯');
+				return theme.icons.parent;
 			}
-			return yellow(SPINNER_FRAMES[spinnerFrame]);
+			return theme.spinner[spinnerFrame];
 		}
 
 		if (state === 'success') {
 			if (hasChildren) {
-				return yellow('❯');
+				return theme.icons.parent;
 			}
-			return green('✔');
+			return theme.icons.success;
 		}
 
 		if (state === 'error') {
 			if (hasChildren) {
-				return red('❯');
+				return theme.icons.parentError;
 			}
-			return red('✖');
+			return theme.icons.error;
 		}
 
 		if (state === 'warning') {
-			return yellow('⚠');
+			return theme.icons.warning;
 		}
 
-		return gray('◼');
+		return theme.icons.pending;
 	};
 
 	const renderTask = (task: TaskList[number], depth: number): string => {
@@ -130,9 +127,12 @@ export const createRenderer = (
 		const hasChildren = task.children && task.children.length > 0;
 		const icon = getIcon(task.state, hasChildren);
 
-		let line = `${indent}${icon} ${task.title}`;
+		const styledTitle = theme.colors.title
+			? theme.colors.title(task.title, task.state, animationFrame)
+			: task.title;
+		let line = `${indent}${icon} ${styledTitle}`;
 		if (task.status) {
-			line += ` ${dim(`[${task.status}]`)}`;
+			line += ` ${theme.colors.dim(`[${task.status}]`)}`;
 		}
 
 		// Add elapsed time if timer is active or frozen
@@ -142,7 +142,7 @@ export const createRenderer = (
 				: Date.now() - task.startedAt
 		);
 		if (elapsedMs !== undefined && elapsedMs >= 1000) {
-			line += ` ${dim(formatElapsed(elapsedMs))}`;
+			line += ` ${theme.colors.dim(formatElapsed(elapsedMs))}`;
 		}
 
 		line += '\n';
@@ -153,7 +153,7 @@ export const createRenderer = (
 		if (task.output) {
 			line += `${task.output
 				.split('\n')
-				.map((outputLine, index) => `${outputIndent}${gray(index === 0 ? `→ ${outputLine}` : outputLine)}`)
+				.map((outputLine, index) => `${outputIndent}${theme.colors.secondary(index === 0 ? `→ ${outputLine}` : outputLine)}`)
 				.join('\n')}\n`;
 		}
 
@@ -163,13 +163,13 @@ export const createRenderer = (
 			line += `${task.streamOutput
 				.split('\n')
 				.map((outputLine, index) => (index === 0
-					? `${outputIndent}⎿  ${gray(outputLine)}`
-					: `${continuationIndent}${gray(outputLine)}`))
+					? `${outputIndent}⎿  ${theme.colors.secondary(outputLine)}`
+					: `${continuationIndent}${theme.colors.secondary(outputLine)}`))
 				.join('\n')}\n`;
 
 			if (task.streamTruncatedLines) {
 				const truncatedText = `(+ ${task.streamTruncatedLines} lines)`;
-				line += `${continuationIndent}${gray(truncatedText)}\n`;
+				line += `${continuationIndent}${theme.colors.secondary(truncatedText)}\n`;
 			}
 		}
 
@@ -259,8 +259,7 @@ export const createRenderer = (
 				if (pending > 0) { parts.push(`${pending} queued`); }
 				if (completed > 0) { parts.push(`${completed} completed`); }
 				const hiddenText = `(+ ${parts.join(', ')})`;
-				const styledHiddenText = dim(hiddenText);
-				output += `${styledHiddenText}\n`;
+				output += `${theme.colors.dim(hiddenText)}\n`;
 
 				return output;
 			}
@@ -301,9 +300,10 @@ export const createRenderer = (
 			return;
 		}
 		spinnerInterval = setInterval(() => {
-			spinnerFrame = (spinnerFrame + 1) % SPINNER_FRAMES.length;
+			animationFrame += 1;
+			spinnerFrame = animationFrame % theme.spinner.length;
 			scheduleRender();
-		}, 80);
+		}, theme.spinnerInterval ?? 80);
 		spinnerInterval.unref();
 	};
 
