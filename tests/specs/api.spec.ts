@@ -145,7 +145,7 @@ export default testSuite(({ describe }) => {
 			});
 
 			test('chained on nested task', async () => {
-				const result = await task('Parent', async ({ task }) => {
+				const result = await task('Parent', async () => {
 					const nested = await task('Child', async () => {
 						await setTimeout(50);
 						return 'nested result';
@@ -160,7 +160,7 @@ export default testSuite(({ describe }) => {
 		});
 
 		test('nested tasks', async () => {
-			const result = await task('Some task', async ({ task }) => {
+			const result = await task('Some task', async () => {
 				const nestedResult = await task('nested task', async () => 'nested works');
 				expect(nestedResult).toBe('nested works');
 

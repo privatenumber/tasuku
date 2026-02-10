@@ -114,12 +114,12 @@ console.log(result) // 'Success'
 ```
 
 ### Nesting tasks
-Tasks can be nested indefinitely. Nested tasks will be stacked hierarchically in the task list.
+Tasks can be nested indefinitely. Any `task()` call inside a task function automatically becomes a child task via async context tracking.
 ```ts
-await task('Do task', async ({ task }) => {
+await task('Do task', async () => {
     await someAsyncTask()
 
-    await task('Do another task', async ({ task }) => {
+    await task('Do another task', async () => {
         await someAsyncTask()
 
         await task('And another', async () => {
@@ -131,13 +131,37 @@ await task('Do task', async ({ task }) => {
 
 <img src=".github/media/nested.gif">
 
+Since nesting is based on async context, task functions are composable across modules:
+```ts
+// db.ts
+import task from 'tasuku'
+
+export const migrate = () => task('Running migrations', async () => {
+    await runMigrations()
+})
+
+export const seed = () => task('Seeding data', async () => {
+    await seedDatabase()
+})
+```
+```ts
+// deploy.ts
+import { migrate, seed } from './db.js'
+import task from 'tasuku'
+
+await task('Deploy', async () => {
+    await migrate() // automatically nested under "Deploy"
+    await seed()
+})
+```
+
 ### Collapsing nested tasks
 Call `.clear()` on the task promise to collapse the nested task. `.clear()` returns the promise, so you can chain it:
 ```ts
-await task('Do task', async ({ task }) => {
+await task('Do task', async () => {
     await someAsyncTask()
 
-    await task('Do another task', async ({ task }) => {
+    await task('Do another task', async () => {
         await someAsyncTask()
     }).clear()
 })
@@ -254,7 +278,6 @@ The name of the task displayed.
 Type:
 ```ts
 type TaskFunction = (taskInnerApi: {
-    task: createTask
     setTitle(title: string): void
     setStatus(status?: string): void
     setOutput(output: string | { message: string }): void
@@ -270,9 +293,6 @@ Required: true
 
 The task function. The return value is the resolved value of the promise.
 
-
-#### task
-A task function to use for nesting.
 
 #### setTitle()
 Call with a string to change the task title.

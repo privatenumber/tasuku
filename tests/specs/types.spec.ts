@@ -32,7 +32,7 @@ export default testSuite(({ describe }) => {
 		});
 
 		test('nested task return type', async () => {
-			const result = await task('title', async ({ task }) => {
+			const result = await task('title', async () => {
 				const nestedResult = await task('nested', async () => 'nested value');
 				expectTypeOf(nestedResult).toBeString();
 				return 42;

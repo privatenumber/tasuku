@@ -120,7 +120,7 @@ export default testSuite(({ describe }) => {
 
 				console.log('1: Start');
 
-				await task('Parent task', async ({ task }) => {
+				await task('Parent task', async () => {
 					console.log('2: Inside parent');
 
 					await task('Child task 1', async () => {
@@ -320,7 +320,7 @@ export default testSuite(({ describe }) => {
 					console.log(counter++);
 				}, 100);
 
-				const p = task('Some task', async ({ task }) => {
+				const p = task('Some task', async () => {
 					await setTimeout(500);
 					await task('Nested task', async () => {
 						await setTimeout(500);

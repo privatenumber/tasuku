@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { Writable } from 'node:stream';
 import pMap from 'p-map';
 import stripAnsi from 'strip-ansi';
@@ -18,6 +19,8 @@ import {
 	type RegisteredTask,
 	runSymbol,
 } from './types.js';
+
+const taskContext = new AsyncLocalStorage<TaskList>();
 
 const defaultPreviewLines = 5;
 
@@ -109,7 +112,6 @@ const createTaskInnerApi = (
 	let stream: Writable | undefined;
 
 	const api: TaskInnerAPI = {
-		task: createTaskFunction(taskState.children),
 		setTitle(title) {
 			taskState.title = title;
 		},
@@ -208,7 +210,7 @@ const registerTask = <T>(
 
 			let taskResult;
 			try {
-				taskResult = await taskFunction(api);
+				taskResult = await taskContext.run(task.children, () => taskFunction(api));
 			} catch (error) {
 				// Auto-stop timer on error
 				api.stopTime();
@@ -295,22 +297,28 @@ const createTaskPromise = <T>(
 	return taskPromise;
 };
 
-function createTaskFunction(
-	taskList: TaskList,
-): Task {
+const createTaskFunction = (
+	rootTaskList: TaskList,
+): Task => {
 	const task: Task = (
 		title,
 		taskFunction,
 		options,
 	) => {
+		const taskList = taskContext.getStore() ?? rootTaskList;
 		const registeredTask = registerTask(taskList, title, taskFunction, options);
 		return createTaskPromise(registeredTask);
 	};
 
+	// group() uses an explicit task creator callback instead of AsyncLocalStorage
+	// because it needs to register tasks without executing them — pMap controls
+	// execution order and concurrency. Using the global task() here would start
+	// tasks immediately, bypassing concurrency control.
 	task.group = ((
 		createTasks,
 		options,
 	) => {
+		const taskList = taskContext.getStore() ?? rootTaskList;
 		const tasksQueue = createTasks((
 			title,
 			taskFunction,
@@ -373,7 +381,7 @@ function createTaskFunction(
 	}) as TaskGroup;
 
 	return task;
-}
+};
 
 const rootTaskList: TaskList = [];
 

@@ -66,7 +66,7 @@ export default testSuite(({ describe }) => {
 				import task from '#tasuku';
 				import { setTimeout } from 'node:timers/promises';
 
-				await task('Parent', async ({ task }) => {
+				await task('Parent', async () => {
 					await task('Child', async () => {
 						await setTimeout(50);
 					});
@@ -101,7 +101,7 @@ export default testSuite(({ describe }) => {
 				import task from '#tasuku';
 				import { setTimeout } from 'node:timers/promises';
 
-				await task('Parent', async ({ task }) => {
+				await task('Parent', async () => {
 					await task('Child', async () => {
 						await setTimeout(150);
 					});
@@ -126,7 +126,7 @@ export default testSuite(({ describe }) => {
 				import { setTimeout } from 'node:timers/promises';
 
 				try {
-					await task('Parent', async ({ task }) => {
+					await task('Parent', async () => {
 						await task('Child', async () => {
 							await setTimeout(50);
 							throw new Error('Test error');
@@ -154,7 +154,7 @@ export default testSuite(({ describe }) => {
 				import task from '#tasuku';
 				import { setTimeout } from 'node:timers/promises';
 
-				await task('Parent', async ({ task }) => {
+				await task('Parent', async () => {
 					await setTimeout(50);
 					await task('Child', async () => {
 						await setTimeout(50);

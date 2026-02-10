@@ -83,7 +83,7 @@ export default testSuite(({ describe }) => {
 						await setTimeout(100);
 					});
 
-					await task('Task with nested', async ({ task }) => {
+					await task('Task with nested', async () => {
 						await setTimeout(50);
 						await task('Nested task', async () => {
 							await setTimeout(50);
@@ -158,7 +158,7 @@ export default testSuite(({ describe }) => {
 					import task from '#tasuku';
 					import { setTimeout } from 'node:timers/promises';
 
-					await task('Parent task', async ({ task }) => {
+					await task('Parent task', async () => {
 						await setTimeout(50);
 						await task('Child 1', async () => {
 							await setTimeout(50);
@@ -371,7 +371,7 @@ export default testSuite(({ describe }) => {
 					import task from '#tasuku';
 					import { setTimeout } from 'node:timers/promises';
 
-					await task('Parent task', async ({ task }) => {
+					await task('Parent task', async () => {
 						await setTimeout(50);
 						await task('Child task', async () => {
 							await setTimeout(50);
@@ -398,7 +398,7 @@ export default testSuite(({ describe }) => {
 					import task from '#tasuku';
 					import { setTimeout } from 'node:timers/promises';
 
-					await task('Parent task', async ({ task }) => {
+					await task('Parent task', async () => {
 						await setTimeout(50);
 						await task('Child task', async () => {
 							await setTimeout(50);

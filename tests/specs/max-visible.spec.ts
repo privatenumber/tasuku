@@ -86,7 +86,7 @@ export default testSuite(({ describe }) => {
 
 					await task.group(task =>
 						Array.from({ length: 15 }, (_, i) =>
-							task('Parent ' + (i + 1), async ({ task }) => {
+							task('Parent ' + (i + 1), async () => {
 								await task('Child A', async () => await setTimeout(80));
 								await task('Child B', async () => await setTimeout(80));
 							})
@@ -615,7 +615,7 @@ export default testSuite(({ describe }) => {
 
 					await task.group(task =>
 						Array.from({ length: 8 }, (_, i) =>
-							task('Parent ' + (i + 1), async ({ task }) => {
+							task('Parent ' + (i + 1), async () => {
 								await task('Child', async () => await setTimeout(80));
 							})
 						),
