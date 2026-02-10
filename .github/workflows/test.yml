@@ -33,7 +33,7 @@ jobs:
         run: pnpm build
 
       - name: Test
-        run: pnpm concurrently --names 'test,node20' 'pnpm test' 'pnpm --use-node-version=20.20.0 node ./tests/node20-compat.cjs'
+        run: pnpm concurrently --names 'test,node20' 'pnpm test' 'pnpm --use-node-version=20.20.0 node ./tests/node20-compat.js'
 
       - name: Lint
         run: pnpm lint
