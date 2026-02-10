@@ -50,7 +50,7 @@
 		"generate-media": "ls .github/media/*.tape | xargs -P 10 -I{} vhs {}"
 	},
 	"devDependencies": {
-		"@types/node": "^24.10.9",
+		"@types/node": "^24.10.13",
 		"ansi-escapes": "^7.2.0",
 		"ansi-regex": "^6.2.2",
 		"ansis": "^4.2.0",
@@ -61,7 +61,7 @@
 		"lintroll": "^1.26.1",
 		"manten": "^1.10.0",
 		"nano-spawn": "^2.0.0",
-		"node-pty": "1.2.0-beta.10",
+		"node-pty": "1.2.0-beta.11",
 		"p-map": "^5.5.0",
 		"patch-console": "^2.0.0",
 		"pkgroll": "^2.21.5",
