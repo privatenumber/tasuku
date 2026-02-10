@@ -58,15 +58,17 @@ export default testSuite(({ describe }) => {
 					import task from '#tasuku';
 					import { setTimeout } from 'node:timers/promises';
 
-					const task1 = await task('Task 1', async () => {
+					const p1 = task('Task 1', async () => {
 						await setTimeout(50);
 					});
+					await p1;
 
-					const task2 = await task('Task 2', async () => {
+					const p2 = task('Task 2', async () => {
 						await setTimeout(50);
 					});
+					await p2;
 
-					task1.clear();
+					p1.clear();
 
 					console.log('FINAL_OUTPUT');
 					`,
@@ -93,16 +95,18 @@ export default testSuite(({ describe }) => {
 					import task from '#tasuku';
 					import { setTimeout } from 'node:timers/promises';
 
-					const task1 = await task('Task 1', async () => {
+					const p1 = task('Task 1', async () => {
 						await setTimeout(50);
 					});
+					await p1;
 
-					const task2 = await task('Task 2', async () => {
+					const p2 = task('Task 2', async () => {
 						await setTimeout(50);
 					});
+					await p2;
 
-					task1.clear();
-					task2.clear();
+					p1.clear();
+					p2.clear();
 
 					console.log('After all cleared');
 					`,
@@ -228,11 +232,9 @@ export default testSuite(({ describe }) => {
 					import task from '#tasuku';
 					import { setTimeout } from 'node:timers/promises';
 
-					const taskApi = await task('Task with clear', async () => {
+					await task('Task with clear', async () => {
 						await setTimeout(50);
-					});
-
-					taskApi.clear();
+					}).clear();
 
 					// .clear() was called - cursor should remain visible
 					`,

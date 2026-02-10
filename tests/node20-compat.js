@@ -3,7 +3,7 @@ import task from '../dist/index.mjs';
 
 const result = await task('Node v20 compatibility test', async () => 'success');
 
-if (result.result !== 'success') {
+if (result !== 'success') {
 	throw new Error('Test failed: expected result to be "success"');
 }
 

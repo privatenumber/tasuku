@@ -296,14 +296,12 @@ export default testSuite(({ describe }) => {
 				'test.mjs': String.raw`
 				import task from '#tasuku';
 
-				const taskApi = await task('Task', async ({ streamPreview }) => {
+				await task('Task', async ({ streamPreview }) => {
 					for (let i = 1; i <= 8; i++) {
 						streamPreview.write('line ' + i + '\n');
 					}
 					await new Promise(resolve => setTimeout(resolve, 50));
-				});
-
-				taskApi.clear();
+				}).clear();
 				console.log('AFTER_CLEAR');
 				`,
 			}, { tempDir });

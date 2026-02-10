@@ -1,7 +1,7 @@
 import type { Writable } from 'node:stream';
 import type { Options as PMapOptions } from 'p-map';
 
-type State = 'pending' | 'loading' | 'error' | 'warning' | 'success';
+export type State = 'pending' | 'loading' | 'error' | 'warning' | 'success';
 
 export type TaskGroupOptions = {
 
@@ -84,12 +84,11 @@ export type RegisteredTask<T = unknown> = {
 	clear: () => void;
 };
 
-export type TaskAPI<Result = unknown> = {
-	result: Result;
+export type TaskPromise<T = unknown> = Promise<T> & {
 	state: State;
 	warning: string | undefined;
 	error: string | undefined;
-	clear: () => void;
+	clear: () => TaskPromise<T>;
 };
 
 export type Task = (
@@ -109,7 +108,7 @@ export type Task = (
 		 * Task options
 		 */
 		options?: TaskOptions,
-	) => Promise<TaskAPI<TaskReturnType>>
+	) => TaskPromise<TaskReturnType>
 ) & { group: TaskGroup };
 
 export type TaskGroupResults<
@@ -117,13 +116,13 @@ export type TaskGroupResults<
 > = {
 	[Key in keyof RegisteredTasks]: (
 		RegisteredTasks[Key] extends RegisteredTask<infer ReturnType>
-			? TaskAPI<ReturnType>
+			? ReturnType
 			: unknown
 	);
 };
 
-export type TaskGroupAPI<Results = unknown[]> = Results & {
-	clear(): void;
+export type TaskGroupPromise<Results = unknown[]> = Promise<Results> & {
+	clear(): TaskGroupPromise<Results>;
 };
 
 export type CreateTask = <ReturnType>(
@@ -144,4 +143,4 @@ export type TaskGroup = <
 >(
 	createTasks: (taskCreator: CreateTask) => readonly [...RegisteredTasks],
 	options?: TaskGroupOptions,
-) => Promise<TaskGroupAPI<TaskGroupResults<RegisteredTasks>>>;
+) => TaskGroupPromise<TaskGroupResults<RegisteredTasks>>;

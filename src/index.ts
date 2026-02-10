@@ -4,12 +4,13 @@ import stripAnsi from 'strip-ansi';
 import { createRenderer, type Renderer } from './renderer.js';
 import { reactive, setRenderCallback } from './reactive.js';
 import {
+	type State,
 	type TaskList,
 	type TaskObject,
 	type Task,
-	type TaskAPI,
+	type TaskPromise,
 	type TaskInnerAPI,
-	type TaskGroupAPI,
+	type TaskGroupPromise,
 	type TaskGroupResults,
 	type TaskFunction,
 	type TaskGroup,
@@ -252,37 +253,61 @@ const registerTask = <T>(
 	};
 };
 
-const toTaskApi = <T>(
+const createTaskPromise = <T>(
 	registeredTask: RegisteredTask<T>,
-	result: T,
-): TaskAPI<T> => ({
-	result,
-	get state() {
-		return registeredTask.task.state;
-	},
-	get warning() {
-		return registeredTask.task.state === 'warning' ? registeredTask.task.output : undefined;
-	},
-	get error() {
-		return registeredTask.task.state === 'error' ? registeredTask.task.output : undefined;
-	},
-	clear: registeredTask.clear,
-});
+): TaskPromise<T> => {
+	const promise = registeredTask[runSymbol]();
+
+	const taskPromise = promise as TaskPromise<T>;
+
+	// Object.assign evaluates getters — must use defineProperties for live getters
+	Object.defineProperties(taskPromise, {
+		state: {
+			get: () => registeredTask.task.state,
+			enumerable: true,
+			configurable: true,
+		},
+		warning: {
+			get: () => (registeredTask.task.state === 'warning' ? registeredTask.task.output : undefined),
+			enumerable: true,
+			configurable: true,
+		},
+		error: {
+			get: () => (registeredTask.task.state === 'error' ? registeredTask.task.output : undefined),
+			enumerable: true,
+			configurable: true,
+		},
+		clear: {
+			value: () => {
+				const { state } = registeredTask.task;
+				if (state === 'success' || state === 'warning' || state === 'error') {
+					registeredTask.clear();
+				} else {
+					taskPromise.finally(() => registeredTask.clear()).catch(() => {});
+				}
+				return taskPromise;
+			},
+			enumerable: true,
+			configurable: true,
+		},
+	});
+
+	return taskPromise;
+};
 
 function createTaskFunction(
 	taskList: TaskList,
 ): Task {
-	const task: Task = async (
+	const task: Task = (
 		title,
 		taskFunction,
 		options,
 	) => {
 		const registeredTask = registerTask(taskList, title, taskFunction, options);
-		const result = await registeredTask[runSymbol]();
-		return toTaskApi(registeredTask, result);
+		return createTaskPromise(registeredTask);
 	};
 
-	task.group = (async (
+	task.group = ((
 		createTasks,
 		options,
 	) => {
@@ -299,41 +324,52 @@ function createTaskFunction(
 			renderer.setMaxVisible(options.maxVisible);
 		}
 
-		// pMap doesn't preserve tuple types, so we need to cast the result
-		// The cast is safe because:
-		// 1. pMap preserves array order and length
-		// 2. We're mapping RegisteredTask<T> → TaskAPI<T>
-		// 3. TaskGroupResults preserves the tuple structure
 		type TasksQueueType = typeof tasksQueue extends readonly [...infer T extends RegisteredTask[]]
 			? T
 			: never;
 
-		const results = (await pMap(
+		// pMap doesn't preserve tuple types, so we cast the result.
+		// Safe because pMap preserves array order/length and each
+		// [runSymbol]() returns the corresponding T from RegisteredTask<T>.
+		const promise = pMap(
 			tasksQueue,
-			async registeredTask => toTaskApi(
-				registeredTask,
-				await registeredTask[runSymbol](),
-			),
+			async registeredTask => registeredTask[runSymbol](),
 			{
 				concurrency: 1,
 				...options,
 			},
-		)) as unknown as TaskGroupResults<TasksQueueType>;
+		) as Promise<unknown> as Promise<TaskGroupResults<TasksQueueType>>;
 
-		// TypeScript can't prove TasksQueueType matches the generic RegisteredTasks
-		// so we need to assert the return type
-		return Object.assign(results, {
+		const groupPromise = promise as unknown as TaskGroupPromise<TaskGroupResults<TasksQueueType>>;
+
+		const clearAll = () => {
+			for (const registeredTask of tasksQueue) {
+				registeredTask.clear();
+			}
+
+			// Reset maxVisible after clear so subsequent groups use the default
+			if (options?.maxVisible !== undefined && renderer) {
+				renderer.setMaxVisible(undefined);
+			}
+		};
+
+		Object.assign(groupPromise, {
 			clear: () => {
-				for (const taskApi of tasksQueue) {
-					taskApi.clear();
-				}
+				const allDone = tasksQueue.every(({ task }) => {
+					const { state } = task;
+					return state === 'success' || state === 'warning' || state === 'error';
+				});
 
-				// Reset maxVisible after clear so subsequent groups use the default
-				if (options?.maxVisible !== undefined && renderer) {
-					renderer.setMaxVisible(undefined);
+				if (allDone) {
+					clearAll();
+				} else {
+					groupPromise.finally(() => clearAll()).catch(() => {});
 				}
+				return groupPromise;
 			},
-		}) as unknown as TaskGroupAPI<typeof results>;
+		});
+
+		return groupPromise;
 	}) as TaskGroup;
 
 	return task;
@@ -343,10 +379,11 @@ const rootTaskList: TaskList = [];
 
 export default createTaskFunction(rootTaskList);
 export type {
+	State,
 	Task,
-	TaskAPI,
+	TaskPromise,
 	TaskInnerAPI,
 	TaskFunction,
-	TaskGroupAPI,
+	TaskGroupPromise,
 	TaskOptions,
 };

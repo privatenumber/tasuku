@@ -245,11 +245,9 @@ export default testSuite(({ describe }) => {
 					import task from '#tasuku';
 					import { setTimeout } from 'node:timers/promises';
 
-					const taskApi = await task('Task to clear', async () => {
+					await task('Task to clear', async () => {
 						await setTimeout(50);
-					});
-
-					taskApi.clear();
+					}).clear();
 
 					console.log('AFTER_CLEAR');
 				`,
@@ -425,7 +423,7 @@ export default testSuite(({ describe }) => {
 					import task from '#tasuku';
 					import { setTimeout } from 'node:timers/promises';
 
-					const group = await task.group(task => [
+					await task.group(task => [
 						task('Task 1', async () => {
 							await setTimeout(50);
 							return 1;
@@ -434,9 +432,7 @@ export default testSuite(({ describe }) => {
 							await setTimeout(50);
 							return 2;
 						}),
-					]);
-
-					group.clear();
+					]).clear();
 
 					console.log('AFTER_CLEAR');
 				`,

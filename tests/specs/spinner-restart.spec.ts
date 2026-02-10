@@ -90,8 +90,7 @@ export default testSuite(({ describe }) => {
 				import task from '#tasuku';
 				import { setTimeout } from 'node:timers/promises';
 
-				const t = await task('first', async () => { await setTimeout(100); });
-				t.clear();
+				await task('first', async () => { await setTimeout(100); }).clear();
 
 				await task('second', async () => { await setTimeout(500); });
 				`,

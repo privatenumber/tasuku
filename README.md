@@ -99,18 +99,18 @@ task('Task 2', async ({ setTitle }) => {
 <img src=".github/media/set-title.gif">
 
 ### Task return values
-The return value of a task will be stored in the output `.result` property.
+The return value of a task is the resolved value of the promise.
 
-If using TypeScript, the type of `.result` will be inferred from the task function.
+If using TypeScript, the type is inferred from the task function.
 
 ```ts
-const myTask = await task('Task 2', async () => {
+const result = await task('Task 2', async () => {
     await someAsyncTask()
 
     return 'Success'
 })
 
-console.log(myTask.result) // 'Success'
+console.log(result) // 'Success'
 ```
 
 ### Nesting tasks
@@ -132,16 +132,14 @@ await task('Do task', async ({ task }) => {
 <img src=".github/media/nested.gif">
 
 ### Collapsing nested tasks
-Call `.clear()` on the returned task API to collapse the nested task.
+Call `.clear()` on the task promise to collapse the nested task. `.clear()` returns the promise, so you can chain it:
 ```ts
 await task('Do task', async ({ task }) => {
     await someAsyncTask()
 
-    const nestedTask = await task('Do another task', async ({ task }) => {
+    await task('Do another task', async ({ task }) => {
         await someAsyncTask()
-    })
-
-    nestedTask.clear()
+    }).clear()
 })
 ```
 
@@ -173,7 +171,7 @@ const groupedTasks = await task.group(task => [
     // ...
 ])
 
-console.log(groupedTasks) // [{ result: 'one' }, { result: 'two' }]
+console.log(groupedTasks) // ['one', 'two']
 ```
 
 <img src=".github/media/grouped.gif">
@@ -182,7 +180,7 @@ console.log(groupedTasks) // [{ result: 'one' }, { result: 'two' }]
 You can run tasks in parallel by passing in `{ concurrency: n }` as the second argument in `task.group()`.
 
 ```ts
-const api = await task.group(task => [
+const group = task.group(task => [
     task(
         'Task 1',
         async () => await someAsyncTask()
@@ -197,13 +195,14 @@ const api = await task.group(task => [
 ], {
     concurrency: 2 // Number of tasks to run at a time
 })
+await group
 
-api.clear() // Clear output
+group.clear() // Clear output
 ```
 
 <img src=".github/media/parallel.gif">
 
-Alternatively, you can also use the native `Promise.all()` if you prefer. The advantage of using `task.group()` is that you can limit concurrency, displays queued tasks as pending, and it returns an API to easily clear the results.
+Alternatively, you can also use the native `Promise.all()` if you prefer. The advantage of using `task.group()` is that you can limit concurrency, display queued tasks as pending, and clear the results via `.clear()` on the group promise.
 
 ```ts
 // No API
@@ -226,14 +225,11 @@ await Promise.all([
 
 ### task(taskTitle, taskFunction, options?)
 
-Returns a Promise that resolves with object:
+Returns a `TaskPromise<T>` — a Promise that resolves to `T` (the task function's return value) with additional properties:
 ```ts
-type TaskAPI = {
-    // Result from taskFunction
-    result: unknown
-
+type TaskPromise<T> = Promise<T> & {
     // State of the task
-    state: 'error' | 'warning' | 'success'
+    state: 'loading' | 'error' | 'warning' | 'success'
 
     // Warning message if state is 'warning', otherwise undefined
     warning: string | undefined
@@ -241,8 +237,9 @@ type TaskAPI = {
     // Error message if state is 'error', otherwise undefined
     error: string | undefined
 
-    // Invoke to clear the results from the terminal
-    clear: () => void
+    // Clear the task from the terminal. Returns the promise for chaining.
+    // If the task is still running, clears automatically on completion.
+    clear: () => TaskPromise<T>
 }
 ```
 
@@ -271,7 +268,7 @@ type TaskFunction = (taskInnerApi: {
 
 Required: true
 
-The task function. The return value will be stored in the `.result` property of the `task()` output object.
+The task function. The return value is the resolved value of the promise.
 
 
 #### task
@@ -370,22 +367,11 @@ Time display:
 
 
 ### task.group(createTaskFunctions, options)
-Returns a Promise that resolves with object:
+Returns a `TaskGroupPromise` — a Promise that resolves to an array of direct return values with a `.clear()` method:
 ```ts
-// The results from the taskFunctions
-type TaskGroupAPI = {
-    // Result from taskFunction
-    result: unknown
-
-    // State of the task
-    state: 'error' | 'warning' | 'success'
-
-    // Invoke to clear the task result
-    clear: () => void
-}[] & {
-
-    // Invoke to clear ALL results
-    clear: () => void
+type TaskGroupPromise<Results> = Promise<Results> & {
+    // Clear ALL task results from the terminal. Returns the promise for chaining.
+    clear: () => TaskGroupPromise<Results>
 }
 ```
 

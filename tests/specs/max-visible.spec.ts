@@ -185,17 +185,15 @@ export default testSuite(({ describe }) => {
 					import task from '#tasuku';
 					import { setTimeout } from 'node:timers/promises';
 
-					const tasks = await task.group(task =>
+					// clear() triggers renderFinal which lifts the limit
+					await task.group(task =>
 						Array.from({ length: 15 }, (_, i) =>
 							task('Task ' + String(i + 1).padStart(2, '0'), async () => {
 								await setTimeout(50);
 							})
 						),
 						{ concurrency: 5 }
-					);
-
-					// clear() triggers renderFinal which lifts the limit
-					tasks.clear();
+					).clear();
 					`,
 				}, { tempDir });
 
@@ -674,16 +672,14 @@ export default testSuite(({ describe }) => {
 					import task from '#tasuku';
 					import { setTimeout } from 'node:timers/promises';
 
-					const tasks = await task.group(task =>
+					await task.group(task =>
 						Array.from({ length: 10 }, (_, i) =>
 							task('Item ' + (i + 1), async () => {
 								await setTimeout(50);
 							})
 						),
 						{ concurrency: 3, maxVisible: 3 }
-					);
-
-					tasks.clear();
+					).clear();
 					`,
 				}, { tempDir });
 
@@ -750,13 +746,12 @@ export default testSuite(({ describe }) => {
 					const keeper = task('Keeper', async () => await setTimeout(1500));
 
 					// Group with maxVisible runs alongside keeper
-					const g1 = await task.group(task =>
+					await task.group(task =>
 						Array.from({ length: 10 }, (_, i) =>
 							task('Limited-' + (i + 1), async () => await setTimeout(50))
 						),
 						{ concurrency: 3, maxVisible: 3 }
-					);
-					g1.clear();
+					).clear();
 
 					// After g1 clears, maxVisible should be reset.
 					// New group without maxVisible should use default (rows-2=38).

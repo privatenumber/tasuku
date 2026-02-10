@@ -320,15 +320,16 @@ export default testSuite(({ describe }) => {
 					console.log(counter++);
 				}, 100);
 
-				const taskApi = await task('Some task', async ({ task }) => {
+				const p = task('Some task', async ({ task }) => {
 					await setTimeout(500);
 					await task('Nested task', async () => {
 						await setTimeout(500);
 					});
 				});
+				await p;
 
 				clearInterval(interval);
-				taskApi.clear();
+				p.clear();
 				`,
 			}, { tempDir });
 

@@ -5,18 +5,18 @@ import task from '#tasuku';
 export default testSuite(({ describe }) => {
 	describe('type inference', ({ test }) => {
 		test('task() return type - number', async () => {
-			const simpleTask = await task('title', async () => 123);
-			expectTypeOf(simpleTask.result).toBeNumber();
+			const result = await task('title', async () => 123);
+			expectTypeOf(result).toBeNumber();
 		});
 
 		test('task() return type - string', async () => {
-			const stringTask = await task('title', async () => 'hello');
-			expectTypeOf(stringTask.result).toBeString();
+			const result = await task('title', async () => 'hello');
+			expectTypeOf(result).toBeString();
 		});
 
 		test('task() return type - boolean', async () => {
-			const booleanTask = await task('title', async () => false);
-			expectTypeOf(booleanTask.result).toBeBoolean();
+			const result = await task('title', async () => false);
+			expectTypeOf(result).toBeBoolean();
 		});
 
 		test('task.group() return type inference', async () => {
@@ -26,19 +26,19 @@ export default testSuite(({ describe }) => {
 				task('title', async () => false),
 			]);
 
-			expectTypeOf(groupTasks[0].result).toBeNumber();
-			expectTypeOf(groupTasks[1].result).toBeString();
-			expectTypeOf(groupTasks[2].result).toBeBoolean();
+			expectTypeOf(groupTasks[0]).toBeNumber();
+			expectTypeOf(groupTasks[1]).toBeString();
+			expectTypeOf(groupTasks[2]).toBeBoolean();
 		});
 
 		test('nested task return type', async () => {
-			const someTask = await task('title', async ({ task }) => {
-				const nestedTask = await task('nested', async () => 'nested value');
-				expectTypeOf(nestedTask.result).toBeString();
+			const result = await task('title', async ({ task }) => {
+				const nestedResult = await task('nested', async () => 'nested value');
+				expectTypeOf(nestedResult).toBeString();
 				return 42;
 			});
 
-			expectTypeOf(someTask.result).toBeNumber();
+			expectTypeOf(result).toBeNumber();
 		});
 	});
 });
