@@ -1,9 +1,9 @@
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
 import ansis from 'ansis';
-import { nodePty } from '../utils/pty.js';
-import { tempDir } from '../utils/temp-dir.js';
-import { spinnerFrames } from '../utils/spinner-frames.js';
+import { nodePty } from '../utils/pty.ts';
+import { tempDir } from '../utils/temp-dir.ts';
+import { spinnerFrames } from '../utils/spinner-frames.ts';
 
 const countSpinnerFramesAfter = (output: string, marker: string) => {
 	const markerIndex = output.indexOf(marker);

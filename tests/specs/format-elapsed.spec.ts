@@ -1,5 +1,5 @@
 import { testSuite, expect } from 'manten';
-import { formatElapsed } from '../../src/utils/format-elapsed.js';
+import { formatElapsed } from '../../src/utils/format-elapsed.ts';
 
 export default testSuite(({ describe }) => {
 	describe('formatElapsed', ({ test }) => {

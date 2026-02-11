@@ -2,8 +2,8 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { Writable } from 'node:stream';
 import pMap from 'p-map';
 import stripAnsi from 'strip-ansi';
-import { createRenderer, type Renderer } from './renderer.js';
-import { reactive } from './reactive.js';
+import { createRenderer, type Renderer } from './renderer.ts';
+import { reactive } from './reactive.ts';
 import {
 	type TaskList,
 	type TaskObject,
@@ -19,7 +19,7 @@ import {
 	type RegisteredTask,
 	type StreamPreview,
 	runSymbol,
-} from './types.js';
+} from './types.ts';
 
 const defaultPreviewLines = 5;
 

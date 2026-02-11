@@ -1,8 +1,8 @@
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
-import { nodePty } from '../utils/pty.js';
-import { tempDir } from '../utils/temp-dir.js';
-import { spinnerFrames } from '../utils/spinner-frames.js';
+import { nodePty } from '../utils/pty.ts';
+import { tempDir } from '../utils/temp-dir.ts';
+import { spinnerFrames } from '../utils/spinner-frames.ts';
 
 export default testSuite(({ describe }) => {
 	describe('max visible', ({ describe }) => {

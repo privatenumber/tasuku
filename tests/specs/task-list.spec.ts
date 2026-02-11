@@ -1,6 +1,6 @@
 import { testSuite, expect } from 'manten';
-import { areAllTasksDone } from '../../src/utils/task-list.js';
-import type { TaskList } from '../../src/types.js';
+import { areAllTasksDone } from '../../src/utils/task-list.ts';
+import type { TaskList } from '../../src/types.ts';
 
 const createTask = (
 	state: 'pending' | 'loading' | 'success' | 'error' | 'warning',

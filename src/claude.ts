@@ -1,6 +1,6 @@
 import { rgb } from 'ansis';
-import { createTasuku } from './create-tasuku.js';
-import type { State, TasukuTheme } from './types.js';
+import { createTasuku } from './create-tasuku.ts';
+import type { State, TasukuTheme } from './types.ts';
 
 /**
  * Claude Code theme.
@@ -59,7 +59,7 @@ export const theme: TasukuTheme = {
 	},
 };
 
-export { createTasuku } from './create-tasuku.js';
+export { createTasuku } from './create-tasuku.ts';
 
 export default createTasuku(theme);
 
@@ -72,4 +72,4 @@ export type {
 	TaskGroupPromise,
 	TaskOptions,
 	TasukuTheme,
-} from './types.js';
+} from './types.ts';

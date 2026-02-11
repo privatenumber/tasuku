@@ -1,17 +1,13 @@
 {
 	"compilerOptions": {
-
-		// Node 12
-		"target": "ES2019",
-		"lib": [
-			"ES2022",
-			"esnext.disposable",
-		],
-		"module": "Preserve",
+		"target": "esnext",
+		"module": "preserve",
+		"rewriteRelativeImportExtensions": true,
+		"erasableSyntaxOnly": true,
 		"strict": true,
 		"noEmit": true,
-		"esModuleInterop": true,
 		"isolatedModules": true,
+		"verbatimModuleSyntax": true,
 		"skipLibCheck": true,
 	},
 }

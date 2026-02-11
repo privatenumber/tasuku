@@ -1,8 +1,8 @@
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
 import stripAnsi from 'strip-ansi';
-import { node } from '../utils/node.js';
-import { tempDir } from '../utils/temp-dir.js';
+import { node } from '../utils/node.ts';
+import { tempDir } from '../utils/temp-dir.ts';
 
 export default testSuite(({ describe }) => {
 	describe('claude theme', ({ test }) => {

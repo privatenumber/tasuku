@@ -4,9 +4,9 @@ import {
 	cursorSavePosition, cursorRestorePosition, eraseDown,
 } from 'ansi-escapes';
 import stringWidth from 'string-width';
-import type { TaskList, TasukuTheme } from './types.js';
-import { formatElapsed } from './utils/format-elapsed.js';
-import { areAllTasksDone } from './utils/task-list.js';
+import type { TaskList, TasukuTheme } from './types.ts';
+import { formatElapsed } from './utils/format-elapsed.ts';
+import { areAllTasksDone } from './utils/task-list.ts';
 
 // Simple CI detection (inline instead of is-in-ci dependency)
 // Only enable CI mode if explicitly in CI environment, not just !isTTY

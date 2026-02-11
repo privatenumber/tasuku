@@ -1,6 +1,6 @@
-import { nanoPty, type PtyProcess } from './nano-pty.js';
+import { nanoPty, type PtyProcess } from './nano-pty.ts';
 
-export type { PtyResult, PtyProcess } from './nano-pty.js';
+export type { PtyResult, PtyProcess } from './nano-pty.ts';
 
 /**
  * Spawns a Node.js process in a pseudo-TTY.

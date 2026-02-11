@@ -2,9 +2,9 @@ import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
 import ansiEscapes from 'ansi-escapes';
 import ansis from 'ansis';
-import { node } from '../utils/node.js';
-import { nodePty } from '../utils/pty.js';
-import { tempDir } from '../utils/temp-dir.js';
+import { node } from '../utils/node.ts';
+import { nodePty } from '../utils/pty.ts';
+import { tempDir } from '../utils/temp-dir.ts';
 
 export default testSuite(({ describe }) => {
 	describe('stream preview', ({ test }) => {

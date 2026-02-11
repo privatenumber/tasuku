@@ -64,11 +64,11 @@
 	"packageManager": "pnpm@10.19.0",
 	"scripts": {
 		"lint": "lintroll --node --cache --git",
-		"test": "tsx -C development tests",
+		"test": "node -C development tests/index.ts",
 		"type-check": "tsc",
 		"build": "pkgroll --target=node20 --minify --clean-dist",
 		"prepack": "clean-pkg-json",
-		"generate-media": "tsx scripts/generate-media.ts"
+		"generate-media": "node scripts/generate-media.ts"
 	},
 	"engines": {
 		"node": ">=20.20"
@@ -91,7 +91,6 @@
 		"pkgroll": "^2.21.5",
 		"string-width": "^5.1.2",
 		"strip-ansi": "^7.1.2",
-		"tsx": "^4.20.6",
 		"typescript": "^5.9.3"
 	},
 	"pnpm": {
