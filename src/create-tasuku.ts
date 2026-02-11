@@ -17,6 +17,7 @@ import {
 	type TaskGroup,
 	type TaskOptions,
 	type RegisteredTask,
+	type StreamPreview,
 	runSymbol,
 } from './types.js';
 
@@ -25,7 +26,7 @@ const defaultPreviewLines = 5;
 const createStreamPreview = (
 	taskState: TaskObject,
 	maxLines: number,
-): Writable => {
+): StreamPreview => {
 	const lines: string[] = [];
 	let totalLines = 0;
 	let partialLine = '';
@@ -48,7 +49,7 @@ const createStreamPreview = (
 		taskState.streamTruncatedLines = Math.max(0, totalLines - maxLines);
 	};
 
-	return new Writable({
+	const writable = new Writable({
 		write(chunk: Buffer, _encoding, callback) {
 			const text = stripAnsi(partialLine + chunk.toString());
 			const parts = text.split(/\r?\n/);
@@ -100,7 +101,14 @@ const createStreamPreview = (
 			}
 			callback();
 		},
-	});
+	}) as StreamPreview;
+
+	writable.clear = () => {
+		taskState.streamOutput = undefined;
+		taskState.streamTruncatedLines = undefined;
+	};
+
+	return writable;
 };
 
 export const createTasuku = (theme: TasukuTheme): Task => {
@@ -112,7 +120,7 @@ export const createTasuku = (theme: TasukuTheme): Task => {
 		taskState: TaskObject,
 		options?: TaskOptions,
 	) => {
-		let stream: Writable | undefined;
+		let stream: StreamPreview | undefined;
 
 		const api: TaskInnerAPI = {
 			setTitle(title) {
@@ -322,10 +330,12 @@ export const createTasuku = (theme: TasukuTheme): Task => {
 			const tasksQueue = createTasks((
 				title,
 				taskFunction,
+				taskOptions,
 			) => registerTask(
 				taskList,
 				title,
 				taskFunction,
+				taskOptions,
 			));
 
 			if (options?.maxVisible !== undefined && renderer) {

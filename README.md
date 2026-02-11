@@ -1,148 +1,125 @@
-<p align="center">
-    <img src=".github/tasuku.svg">
-    <br>
-    <i>The minimal task runner for Node.js</i>
+<p align="center" demo>
+<img src=".github/media/script.gif" width="500" alt="Terminal showing three build-pipeline tasks completing sequentially with title updates">
+
+<!-- @vhs
+Set Height 440
+Hide
+Type "node {file}"
+Enter
+Show
+Sleep 5s
+-->
+
+<!--
+```js
+import { setTimeout } from 'node:timers/promises'
+import task from 'tasuku'
+
+await task.group(task => [
+    task('Resolving dependencies', async ({ setTitle }) => {
+        await setTimeout(1000)
+        setTitle('Resolved 148 dependencies')
+    }),
+    task('Running tests', async ({ setTitle }) => {
+        await setTimeout(1500)
+        setTitle('42 tests passed')
+    }),
+    task('Building project', async ({ setTitle }) => {
+        await setTimeout(1200)
+        setTitle('Built in 1.2s')
+    }),
+])
+```
+-->
 </p>
+
+<h1 align="center">タスク</h1>
+<p align="center">	
+	<i>The minimalist's task runner for Node.js</i>
+</p>
+
 
 ### Features
 - Task list with dynamic states
 - Parallel & nestable tasks
 - Customizable themes (icons, colors, spinners)
-- Unopinionated
+- Zero runtime dependencies
+- `console.log` integration
 - Type-safe
 
-→ [Try it out online](https://stackblitz.com/edit/tasuku-demo?file=index.js&devtoolsheight=50&view=editor)
-
-<sub>Found this package useful? Show your support & appreciation by [sponsoring](https://github.com/sponsors/privatenumber)! ❤️</sub>
+> [!TIP]
+> [Try it out online](https://stackblitz.com/edit/tasuku-demo?file=index.js&devtoolsheight=50&view=editor)
 
 ## Install
 ```sh
 npm i tasuku
 ```
 
-## About
-タスク (Tasuku) is a minimal task runner for Node.js. You can use it to label any task/function so that its loading, success, and error states are rendered in the terminal.
+## Quick start
 
-For example, here's a simple script that copies a file from path A to B.
+タスク (Tasuku) is a minimal task runner for Node.js. Call `task()` from anywhere to display loading, success, and error states in the terminal:
 
 ```ts
-import { copyFile } from 'node:fs/promises'
 import task from 'tasuku'
 
-task('Copying file from path A to B', async ({ setTitle }) => {
-    await copyFile('/path/A', '/path/B')
-
-    setTitle('Successfully copied file from path A to B!')
+await task('Copying files', async () => {
+    await copyFiles(source, destination)
 })
 ```
 
-Running the script will look like this in the terminal:
-
-<img src=".github/media/basic.gif">
+Tasks can be grouped, nested, run in parallel, and cleared — all with a simple functional API. Read on for the full usage guide.
 
 ## Usage
-### Task list
-Call `task(taskTitle, taskFunction)` to start a task and display it in a task list in the terminal.
 
-```ts
-import task from 'tasuku'
+### Nesting
 
-task('Task 1', async () => {
-    await someAsyncTask()
-})
-
-task('Task 2', async () => {
-    await someAsyncTask()
-})
-
-task('Task 3', async () => {
-    await someAsyncTask()
-})
-```
-
-<img src=".github/media/task-list.gif">
-
-#### Task states
-- **◽️ Pending** The task is queued and has not started
-- **🔅 Loading** The task is running
-- **⚠️ Warning** The task completed with a warning
-- **❌ Error** The task exited with an error
-- **✅ Success** The task completed without error
-
-<img src=".github/media/task-states.png">
-
-### Unopinionated
-You can call `task()` from anywhere. There are no requirements. It is designed to be as unopinionated as possible not to interfere with your code.
-
-The tasks will be displayed in the terminal in a consolidated list.
-
-You can change the title of the task by calling `setTitle()`.
-```ts
-import task from 'tasuku'
-
-task('Task 1', async () => {
-    await someAsyncTask()
-})
-
-// ...
-
-someOtherCode()
-
-// ...
-
-task('Task 2', async ({ setTitle }) => {
-    await someAsyncTask()
-
-    setTitle('Task 2 complete')
-})
-```
-
-<img src=".github/media/set-title.gif">
-
-### Task return values
-The return value of a task is the resolved value of the promise.
-
-If using TypeScript, the type is inferred from the task function.
-
-```ts
-const result = await task('Task 2', async () => {
-    await someAsyncTask()
-
-    return 'Success'
-})
-
-console.log(result) // 'Success'
-```
-
-### Nesting tasks
 Tasks can be nested indefinitely. Any `task()` call inside a task function automatically becomes a child task via async context tracking.
-```ts
-await task('Do task', async () => {
-    await someAsyncTask()
 
-    await task('Do another task', async () => {
-        await someAsyncTask()
+<p align="center" demo>
+<img src=".github/media/nested.gif" width="600" alt="Terminal showing three levels of nested tasks">
+<details>
+<summary>View code</summary>
 
-        await task('And another', async () => {
-            await someAsyncTask()
+<!-- @vhs
+Set Height 440
+Hide
+Type "node {file}"
+Enter
+Show
+Sleep 3s
+-->
+
+```js
+import { setTimeout } from 'node:timers/promises'
+import task from 'tasuku'
+
+await task('Deploy', async () => {
+    await setTimeout(1000)
+
+    await task('Run migrations', async () => {
+        await setTimeout(1000)
+
+        await task('Seed database', async () => {
+            await setTimeout(1000)
         })
     })
 })
 ```
 
-<img src=".github/media/nested.gif">
+</details>
+</p>
 
 Since nesting is based on async context, task functions are composable across modules:
 ```ts
 // db.ts
 import task from 'tasuku'
 
-export const migrate = () => task('Running migrations', async () => {
-    await runMigrations()
+export const migrate = (directory: string) => task('Running migrations', async () => {
+    await runMigrations(directory)
 })
 
-export const seed = () => task('Seeding data', async () => {
-    await seedDatabase()
+export const seed = (count: number) => task('Seeding data', async () => {
+    await seedDatabase(count)
 })
 ```
 ```ts
@@ -151,104 +128,92 @@ import { migrate, seed } from './db.js'
 import task from 'tasuku'
 
 await task('Deploy', async () => {
-    await migrate() // automatically nested under "Deploy"
-    await seed()
+    await migrate('./migrations') // automatically nested under "Deploy"
+    await seed(1000)
 })
 ```
 
-### Collapsing nested tasks
-Call `.clear()` on the task promise to collapse the nested task. `.clear()` returns the promise, so you can chain it:
-```ts
-await task('Do task', async () => {
-    await someAsyncTask()
+### Collapsing
 
-    await task('Do another task', async () => {
-        await someAsyncTask()
+Call `.clear()` on the task promise to collapse the nested task. `.clear()` returns the promise, so you can chain it.
+
+<p align="center" demo>
+<img src=".github/media/collapse.gif" width="600" alt="Terminal showing a nested task that collapses after completion">
+<details>
+<summary>View code</summary>
+
+<!-- @vhs
+Set Height 300
+Hide
+Type "node {file}"
+Enter
+Show
+Sleep 3s
+-->
+
+```js
+import { setTimeout } from 'node:timers/promises'
+import task from 'tasuku'
+
+await task('Deploy', async () => {
+    await setTimeout(500)
+
+    // .clear() collapses the nested task on completion
+    await task('Run migrations', async () => {
+        await setTimeout(500)
     }).clear()
 })
 ```
 
-<img src=".github/media/collapse.gif">
+</details>
+</p>
 
-### Grouped tasks
-Tasks can be grouped with `task.group()`. Pass in a function that returns an array of tasks to run them sequentially.
+### task.group
 
-This is useful for displaying a queue of tasks that have yet to run.
+Group tasks with `task.group()` to display a queue and control execution. Pass a function that returns an array of tasks. Set `concurrency` to run tasks in parallel — queued tasks show as pending until their turn.
 
-```ts
-const groupedTasks = await task.group(task => [
-    task('Task 1', async () => {
-        await someAsyncTask()
+<p align="center" demo>
+<img src=".github/media/grouped-parallel.gif" width="600" alt="Terminal showing four tasks running with concurrency 2, two at a time">
+<details>
+<summary>View code</summary>
 
-        return 'one'
+<!-- @vhs
+Set Height 400
+Hide
+Type "node {file}"
+Enter
+Show
+Sleep 5s
+-->
+
+```js
+import { setTimeout } from 'node:timers/promises'
+import task from 'tasuku'
+
+await task.group(task => [
+    task('Lint', async () => {
+        await setTimeout(1000)
     }),
-
-    task('Waiting for Task 1', async ({ setTitle }) => {
-        setTitle('Task 2 running...')
-
-        await someAsyncTask()
-
-        setTitle('Task 2 complete')
-
-        return 'two'
+    task('Type check', async () => {
+        await setTimeout(1500)
+    }),
+    task('Unit tests', async () => {
+        await setTimeout(2000)
+    }),
+    task('Build', async () => {
+        await setTimeout(2500)
     })
-
-    // ...
-])
-
-console.log(groupedTasks) // ['one', 'two']
+], { concurrency: 2 })
 ```
 
-<img src=".github/media/grouped.gif">
+</details>
+</p>
 
-### Running tasks in parallel
-You can run tasks in parallel by passing in `{ concurrency: n }` as the second argument in `task.group()`.
-
-```ts
-const group = task.group(task => [
-    task(
-        'Task 1',
-        async () => await someAsyncTask()
-    ),
-
-    task(
-        'Task 2',
-        async () => await someAsyncTask()
-    )
-
-    // ...
-], {
-    concurrency: 2 // Number of tasks to run at a time
-})
-await group
-
-group.clear() // Clear output
-```
-
-<img src=".github/media/parallel.gif">
-
-Alternatively, you can also use the native `Promise.all()` if you prefer. The advantage of using `task.group()` is that you can limit concurrency, display queued tasks as pending, and clear the results via `.clear()` on the group promise.
-
-```ts
-// No API
-await Promise.all([
-    task(
-        'Task 1',
-        async () => await someAsyncTask()
-    ),
-
-    task(
-        'Task 2',
-        async () => await someAsyncTask()
-    )
-
-    // ...
-])
-```
+Alternatively, use `Promise.all()` if you prefer. The advantage of `task.group()` is concurrency control, pending state for queued tasks, and `.clear()` on the group promise.
 
 ## API
 
-### task(taskTitle, taskFunction, options?)
+### task(title, taskFunction, options?)
 
 Returns a `TaskPromise<T>` — a Promise that resolves to `T` (the task function's return value) with additional properties:
 ```ts
@@ -268,79 +233,112 @@ type TaskPromise<T> = Promise<T> & {
 }
 ```
 
-#### taskTitle
-Type: `string`
+The return value is the resolved value of the task function. If using TypeScript, the type is inferred:
 
-Required: true
-
-The name of the task displayed.
-
-#### taskFunction
-Type:
 ```ts
-type TaskFunction = (taskInnerApi: {
+const result = await task('Fetch data', async () => {
+    const response = await fetch(apiUrl)
+    return response.json()
+})
+
+console.log(result) // typed as the return value
+```
+
+### Task inner API
+
+The task function receives an API object for controlling the task display:
+
+```ts
+type TaskFunction = (api: {
     setTitle(title: string): void
     setStatus(status?: string): void
     setOutput(output: string | { message: string }): void
     setWarning(warning?: Error | string | false | null): void
     setError(error?: Error | string | false | null): void
-    streamPreview: Writable
+    streamPreview: Writable & { clear(): void }
     startTime(): void
     stopTime(): number
 }) => Promise<unknown>
 ```
 
-Required: true
-
-The task function. The return value is the resolved value of the promise.
-
-
 #### setTitle()
-Call with a string to change the task title.
+
+Change the task title.
 
 #### setStatus()
-Call with a string to set the status of the task.
+
+Set dimmed metadata after the title.
 
 #### setOutput()
-Call with a string to set the output of the task.
 
-<img src=".github/media/task-output.png">
+Set static output below the task.
 
 #### streamPreview
-A `Writable` stream for displaying live output below the task. Pipe a child process or any readable stream into it to show a scrolling preview of the output.
 
-Handles both `\n` (newline) and `\r` (carriage return) — programs like `curl` that use `\r` for in-place progress bars work out of the box.
+A `Writable` stream for displaying live output below the task. Pipe a child process or any readable stream into it to show a scrolling preview.
 
-```ts
+Handles both `\n` (newline) and `\r` (carriage return) — programs like `wget` that use `\r` for in-place progress bars work out of the box.
+
+<p align="center" demo>
+<img src=".github/media/stream-preview.gif" width="600" alt="Terminal showing a task with a wget progress bar streamed below it">
+<details>
+<summary>View code</summary>
+
+<!-- @vhs
+Set Width 1790
+Set Height 300
+Hide
+Type "node {file}"
+Enter
+Show
+Sleep 5s
+-->
+
+```js
 import { spawn } from 'node:child_process'
 import { pipeline } from 'node:stream/promises'
+import task from 'tasuku'
 
-await task('Download', async ({ streamPreview }) => {
-    const child = spawn('curl', ['-o', '/dev/null', 'https://example.com/file'])
+await task('Download TypeScript', async ({ setTitle, streamPreview }) => {
+    const child = spawn('wget', [
+        '-q',
+        '--show-progress',
+        '--progress=bar:force',
+        '--limit-rate=2M',
+        '-O',
+        '/dev/null',
+        'https://registry.npmjs.org/typescript/-/typescript-5.7.3.tgz'
+    ])
     await pipeline(child.stderr, streamPreview)
+    setTitle('Downloaded TypeScript')
 })
 ```
 
-<img src=".github/media/stream-preview.gif">
+</details>
+</p>
 
 By default, shows the last 5 lines. Use the `previewLines` option to change this. When there are more lines than the limit, a `(+ N lines)` indicator is shown.
+
+Call `streamPreview.clear()` to remove the preview output. Useful for cleaning up verbose output after a task succeeds.
 
 > [!NOTE]
 > `setOutput()` and `streamPreview` render independently. If both are used, static output appears above the stream preview.
 
 #### setWarning()
-Call with a string or Error instance to put the task in a warning state. Call with no argument (or a falsy value) to revert to loading state.
+
+Call with a string or Error to put the task in a warning state. Call with no argument (or a falsy value) to revert to loading state.
 
 #### setError()
-Call with a string or Error instance to put the task in an error state. Call with no argument (or a falsy value) to revert to loading state. Tasks automatically go into an error state when it catches an error in the task.
 
-<img src=".github/media/set-error.png">
+Call with a string or Error to put the task in an error state. Call with no argument (or a falsy value) to revert to loading state. Tasks automatically enter error state when an uncaught error is thrown.
 
 #### startTime()
+
 Start or restart the elapsed time counter. Calling again resets to 0. Time is displayed after the status: `⠋ Task [status] (3s)`
 
 #### stopTime()
-Stop the elapsed time counter and return the elapsed milliseconds. The displayed time freezes at the stopped value. Useful for profiling task phases.
+
+Stop the elapsed time counter and return the elapsed milliseconds. The displayed time freezes at the stopped value.
 
 ```ts
 await task('Multi-phase', async ({ startTime, stopTime, setStatus }) => {
@@ -357,38 +355,27 @@ await task('Multi-phase', async ({ startTime, stopTime, setStatus }) => {
 })
 ```
 
-#### options
-Type: `{ showTime?: boolean, previewLines?: number }`
+Time format: `(Xs)` under a minute, `(Xm Ys)` under an hour, `(Xh Ym)` for longer. Not shown if elapsed < 1 second.
 
-Optional task options.
+#### options
+
+##### showTime
+
+Type: `boolean`
+
+Automatically start the elapsed time counter when the task begins. Equivalent to calling `startTime()` at the start of the task function.
 
 ##### previewLines
+
 Type: `number`
 
 Default: `5`
 
-Maximum number of lines to display in the `streamPreview` output (minimum 1). When the stream produces more lines, older lines scroll off and a `(+ N lines)` indicator shows the total.
+Maximum lines to display in `streamPreview` output (minimum 1). When the stream produces more lines, older lines scroll off and a `(+ N lines)` indicator shows the total.
 
-##### showTime
-When `true`, automatically starts the elapsed time counter when the task begins. Equivalent to calling `startTime()` at the start of the task function.
+### task.group(createTasks, options?)
 
-```ts
-await task('Building', async () => {
-    await build()
-}, { showTime: true })
-// Output: ✔ Building (3s)
-```
-
-<img src=".github/media/elapsed-time.gif">
-
-Time display:
-- Format: `(Xs)` for under a minute, `(Xm Ys)` for under an hour, `(Xh Ym)` for longer
-- Not shown if elapsed < 1 second
-- Freezes at final value when task completes
-
-
-### task.group(createTaskFunctions, options)
-Returns a `TaskGroupPromise` — a Promise that resolves to an array of direct return values with a `.clear()` method:
+Returns a `TaskGroupPromise` — a Promise that resolves to an array of return values with a `.clear()` method:
 ```ts
 type TaskGroupPromise<Results> = Promise<Results> & {
     // Clear ALL task results from the terminal. Returns the promise for chaining.
@@ -396,58 +383,182 @@ type TaskGroupPromise<Results> = Promise<Results> & {
 }
 ```
 
-#### createTaskFunctions
+#### createTasks
+
 Type: `(task) => Task[]`
 
-Required: true
-
-A function that returns all the tasks you want to group in an array.
+A function that returns all the tasks to group in an array.
 
 #### options
 
-Directly passed into [`p-map`](https://github.com/sindresorhus/p-map).
-
 ##### concurrency
-Type: `number` (Integer)
+
+Type: `number`
 
 Default: `1`
 
 Number of tasks to run at a time.
 
 ##### stopOnError
+
 Type: `boolean`
 
 Default: `true`
 
-When set to `false`, instead of stopping when a task fails, it will wait for all the tasks to finish and then reject with an aggregated error containing all the errors from the rejected promises.
+When `false`, instead of stopping when a task fails, waits for all tasks to finish and rejects with an aggregated error.
+
+##### signal
+
+Type: `AbortSignal`
+
+Abort signal to cancel pending tasks.
 
 ##### maxVisible
-
-<p align="center"><img src=".github/media/max-visible.gif" width="600"></p>
 
 Type: `number | ((terminalHeight: number) => number)`
 
 Default: Responsive to terminal height (rows - 2, minimum 5)
 
-Maximum number of lines to display in the task list. When there are more task lines than this limit, remaining tasks are hidden with a state breakdown (e.g., "(+ 3 loading, 5 queued, 4 completed)"). Active tasks are always prioritized over pending and completed ones. This accounts for nested subtasks which add extra lines.
+Maximum number of lines to display in the task list. When there are more task lines than this limit, remaining tasks are hidden with a state breakdown (e.g., "(+ 3 loading, 5 queued, 4 completed)"). Active tasks are always prioritized over pending and completed ones.
 
-Can be a fixed number or a function called on each render for responsive limits.
+Can be a fixed number or a function called on each render for responsive limits. By default, the limit is automatically lifted when all tasks complete and `.clear()` is called.
 
-By default, the limit is automatically lifted when all tasks complete and `.clear()` is called, revealing the full list.
+<p align="center" demo>
+<img src=".github/media/max-visible.gif" width="600" alt="Terminal showing a task group with maxVisible limiting displayed tasks">
+<details>
+<summary>View code</summary>
 
-```ts
-// Fixed limit
-await task.group(task => [...tasks], {
-    concurrency: 5,
-    maxVisible: 10
-})
+<!-- @vhs
+Set Height 660
+Hide
+Type "node {file}"
+Enter
+Show
+Sleep 8s
+-->
 
-// Responsive limit (terminal height passed as parameter)
-await task.group(task => [...tasks], {
-    concurrency: 5,
-    maxVisible: height => height - 5
+```js
+import { setTimeout } from 'node:timers/promises'
+import task from 'tasuku'
+
+await task.group(
+    task => Array.from(
+        { length: 10 },
+        (_, i) => task(
+            `Task ${i + 1}`,
+            () => setTimeout(500 + Math.random() * 1200)
+        )
+    ),
+    {
+        concurrency: 2,
+        maxVisible: 8
+    }
+)
+```
+
+</details>
+</p>
+
+### Task anatomy
+
+<p align="center" demo>
+<img src=".github/media/task-anatomy.gif" width="600" alt="Terminal showing task API methods being called: setStatus, setOutput, and setTitle">
+<details>
+<summary>View code</summary>
+
+<!-- @vhs
+Set Height 340
+Hide
+Type "node {file}"
+Enter
+Show
+Sleep 7s
+-->
+
+```js
+import { setTimeout } from 'node:timers/promises'
+import task from 'tasuku'
+
+await task('my title', async ({ setTitle, setStatus, setOutput }) => {
+    await setTimeout(1000)
+
+    setStatus('my status')
+    await setTimeout(1500)
+
+    setOutput('my output')
+    await setTimeout(1500)
+
+    setTitle('updated title')
+    await setTimeout(1000)
 })
 ```
+
+</details>
+</p>
+
+#### Task states
+
+| State | Icon | Description |
+| :--- | :---: | :--- |
+| Pending | ◼ | Queued, not yet started |
+| Loading | ⠋ | Running (animated spinner) |
+| Success | ✔ | Completed without error |
+| Warning | ⚠ | Completed with a warning |
+| Error | ✖ | Exited with an error |
+
+<p align="center" demo>
+<img src=".github/media/task-states.gif" width="600" alt="Terminal showing all five task states: success, warning, error, loading, and pending">
+<details>
+<summary>View code</summary>
+
+<!-- @vhs
+Set Height 480
+Set TypingSpeed 0
+Hide
+Type "node {file}"
+Enter
+Sleep 800ms
+Show
+Sleep 3s
+-->
+
+```js
+import { setTimeout } from 'node:timers/promises'
+import task from 'tasuku'
+
+const tasks = task.group(task => [
+    task('Success task', async () => {
+        await setTimeout(100)
+    }),
+
+    task('Warning task', async ({ setWarning }) => {
+        await setTimeout(100)
+        setWarning('Something might be wrong')
+    }),
+
+    task('Error task', async ({ setError }) => {
+        await setTimeout(100)
+        setError(new Error('Something went wrong'))
+    }),
+
+    task('Loading task', async () => {
+        await setTimeout(5000)
+    }),
+
+    task('Pending task', async () => {
+        await setTimeout(100)
+    })
+], {
+    concurrency: 1,
+    maxVisible: 10
+})
+await tasks
+
+tasks.clear()
+```
+
+</details>
+</p>
 
 ## Themes
 
@@ -455,41 +566,125 @@ await task.group(task => [...tasks], {
 
 The built-in theme with braille spinner and standard terminal colors.
 
-```ts
+<p align="center" demo>
+<img src=".github/media/theme-default.gif" width="600" alt="Terminal showing the default theme with braille spinner">
+<details>
+<summary>View code</summary>
+
+<!-- @vhs
+Set Height 260
+Hide
+Type "node {file}"
+Enter
+Show
+Sleep 6s
+-->
+
+```js
+import { setTimeout } from 'node:timers/promises'
 import task from 'tasuku'
+
+await task('Building project', async ({ setTitle }) => {
+    await setTimeout(3000)
+    setTitle('Build complete')
+})
 ```
 
-<img src=".github/media/theme-default.gif">
+</details>
+</p>
 
 ### Claude
 
-Claude Code-inspired theme with truecolor palette, dingbat star spinner, and shimmer title animation.
+Claude Code-inspired theme with truecolor palette, dingbat star spinner, and shimmer title animation. Import from `tasuku/claude`.
 
-```ts
+<p align="center" demo>
+<img src=".github/media/theme-claude.gif" width="600" alt="Terminal showing the Claude theme with star spinner and shimmer animation">
+<details>
+<summary>View code</summary>
+
+<!-- @vhs
+Set Height 260
+Hide
+Type "node {file}"
+Enter
+Show
+Sleep 6s
+-->
+
+```js
+import { setTimeout } from 'node:timers/promises'
 import task from 'tasuku/claude'
+
+await task('Building project', async ({ setTitle }) => {
+    await setTimeout(5000)
+    setTitle('Build complete')
+})
 ```
 
-<img src=".github/media/theme-claude.gif">
+</details>
+</p>
 
 ### Blink
 
-Reduced-motion theme inspired by Claude Code's accessibility mode. The `⏺` indicator pulses between bright and dim on a 2-second cycle.
+Reduced-motion theme inspired by Claude Code's accessibility mode. The `⏺` indicator pulses between bright and dim on a 2-second cycle. Import from `tasuku/blink`.
 
-```ts
+<p align="center" demo>
+<img src=".github/media/theme-blink.gif" width="600" alt="Terminal showing the Blink reduced-motion theme with pulsing indicator">
+<details>
+<summary>View code</summary>
+
+<!-- @vhs
+Set Height 260
+Hide
+Type "node {file}"
+Enter
+Show
+Sleep 6s
+-->
+
+```js
+import { setTimeout } from 'node:timers/promises'
 import task from 'tasuku/blink'
+
+await task('Building project', async ({ setTitle }) => {
+    await setTimeout(5000)
+    setTitle('Build complete')
+})
 ```
 
-<img src=".github/media/theme-blink.gif">
+</details>
+</p>
 
 ### Codex
 
-OpenAI Codex CLI-inspired theme with cosine-based shimmer gradient and monochrome palette.
+OpenAI Codex CLI-inspired theme with cosine-based shimmer gradient and monochrome palette. Import from `tasuku/codex`.
 
-```ts
+<p align="center" demo>
+<img src=".github/media/theme-codex.gif" width="600" alt="Terminal showing the Codex theme with shimmer gradient">
+<details>
+<summary>View code</summary>
+
+<!-- @vhs
+Set Height 260
+Hide
+Type "node {file}"
+Enter
+Show
+Sleep 6s
+-->
+
+```js
+import { setTimeout } from 'node:timers/promises'
 import task from 'tasuku/codex'
+
+await task('Building project', async ({ setTitle }) => {
+    await setTimeout(5000)
+    setTitle('Build complete')
+})
 ```
 
-<img src=".github/media/theme-codex.gif">
+</details>
+</p>
 
 ### Custom themes
 
@@ -540,29 +735,13 @@ type TasukuTheme = {
 }
 ```
 
-The `title` color function receives the task state and animation frame counter, enabling per-frame effects like shimmer animations. A simple `(text: string) => string` function also works — extra arguments are ignored.
+The `title` color function receives the task state and animation frame counter, enabling per-frame effects like shimmer animations.
 
-## FAQ
+### Contributing a theme
 
-### What does "Tasuku" mean?
-_Tasuku_  or タスク is the phonetic Japanese pronounciation of the word "task".
+Have a theme you're proud of? We'd love to see it. Open a PR to add it as a built-in theme.
 
-
-### Why did you make this?
-
-I built _Tasuku_ as a lightweight task runner for scripts and CLI tools. It's designed to show task progress clearly without forcing a rigid structure on how you write your code.
-
-Big thanks to [listr](https://github.com/SamVerschueren/listr) and [listr2](https://github.com/cenk1cenk2/listr2), which inspired both the visuals and the idea—I've relied on them for years. But over time, I found their declarative approach too restrictive for my workflow, so I created something simpler and more flexible.
-
-_Tasuku_ uses its own minimal ANSI-based renderer for terminal output, giving you smooth `console.log()` integration with zero runtime dependencies. The rendering model was originally inspired by [ink](https://github.com/vadimdemedes/ink)'s approach to terminal UIs.
-
-### Doesn't the usage of nested `task` functions violate ESLint's [no-shadow](https://eslint.org/docs/rules/no-shadow)?
-Yes, but it should be fine as you don't need access to other `task` functions aside from the immediate one.
-
-Put `task` in the allow list:
-- `"no-shadow": ["error", { "allow": ["task"] }]`
-- `"@typescript-eslint/no-shadow": ["error", { "allow": ["task"] }]`
-
+We hold themes to a high design standard — they should be elegant, versatile, and visually cohesive across all task states. We may decline themes that don't meet this bar, so don't take it personally.
 
 ## Sponsors
 <p align="center">

@@ -68,7 +68,7 @@
 		"type-check": "tsc",
 		"build": "pkgroll --target=node20 --minify --clean-dist",
 		"prepack": "clean-pkg-json",
-		"generate-media": "ls .github/media/*.tape | xargs -P 10 -I{} vhs {}"
+		"generate-media": "tsx scripts/generate-media.ts"
 	},
 	"engines": {
 		"node": ">=20.20"

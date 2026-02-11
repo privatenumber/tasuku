@@ -62,13 +62,17 @@ export type TaskList = TaskObject[] & {
 	isRoot?: boolean;
 };
 
+export type StreamPreview = Writable & {
+	clear(): void;
+};
+
 export type TaskInnerAPI = {
 	setTitle(title: string): void;
 	setStatus(status?: string): void;
 	setWarning(warning?: Error | string | false | null): void;
 	setError(error?: Error | string | false | null): void;
 	setOutput(output: string | { message: string }): void;
-	streamPreview: Writable;
+	streamPreview: StreamPreview;
 	startTime(): void;
 	stopTime(): number;
 };
@@ -135,6 +139,11 @@ export type CreateTask = <ReturnType>(
 	 * The task function
 	 */
 	taskFunction: TaskFunction<ReturnType>,
+
+	/**
+	 * Task options
+	 */
+	options?: TaskOptions,
 ) => RegisteredTask<ReturnType>;
 
 export type TaskGroup = <
