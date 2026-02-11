@@ -390,8 +390,7 @@ export default testSuite(({ describe }) => {
 				const result = await node(fixture.getPath('test.mjs'));
 				onTestFail(() => { console.log(result); });
 
-				// Bug: console.error output goes to stdout via patch-console
-				expect(result.output).toContain('error message');
+				expect(result.stderr).toContain('error message');
 			});
 
 			test('console.warn during task execution', async ({ onTestFail }) => {
@@ -408,8 +407,7 @@ export default testSuite(({ describe }) => {
 				const result = await node(fixture.getPath('test.mjs'));
 				onTestFail(() => { console.log(result); });
 
-				// Bug: console.warn output goes to stdout via patch-console
-				expect(result.output).toContain('warning message');
+				expect(result.stderr).toContain('warning message');
 			});
 
 			test('console restored after cleanup', async ({ onTestFail }) => {

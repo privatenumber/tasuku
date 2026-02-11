@@ -47,9 +47,6 @@ importers:
       p-map:
         specifier: ^5.5.0
         version: 5.5.0
-      patch-console:
-        specifier: ^2.0.0
-        version: 2.0.0
       pkgroll:
         specifier: ^2.21.5
         version: 2.21.5(typescript@5.9.3)
@@ -2254,10 +2251,6 @@ packages:
   parent-module@1.0.1:
     resolution: {integrity: sha512-GQ2EWRpQV8/o+Aw8YqtfZZPfNRWZYkbidE9k5rpl/hC3vtHHBfGm2Ifi6qWV+coDGkrUKZAxE3Lot5kcsRlh+g==}
     engines: {node: '>=6'}
-
-  patch-console@2.0.0:
-    resolution: {integrity: sha512-0YNdUceMdaQwoKce1gatDScmMo5pu/tfABfnzEqeG0gtTmd7mh/WcwgUjtAeOU7N8nFFlbQBnFK2gXW5fGvmMA==}
-    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
 
   path-exists@4.0.0:
     resolution: {integrity: sha512-ak9Qy5Q7jYb2Wwcey5Fpvg2KoAc/ZIhLSLOSBmRmygPsGwkVVt0fZa0qrtMz+m6tJTAHfZQ8FnmB4MG4LWy7/w==}
@@ -5241,8 +5234,6 @@ snapshots:
   parent-module@1.0.1:
     dependencies:
       callsites: 3.1.0
-
-  patch-console@2.0.0: {}
 
   path-exists@4.0.0: {}
 

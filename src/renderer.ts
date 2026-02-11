@@ -1,4 +1,3 @@
-import patchConsole from 'patch-console';
 import {
 	cursorUp, cursorDown, cursorShow,
 	cursorSavePosition, cursorRestorePosition, eraseDown,
@@ -6,6 +5,7 @@ import {
 import stringWidth from 'string-width';
 import type { TaskList, TasukuTheme } from './types.ts';
 import { formatElapsed } from './utils/format-elapsed.ts';
+import { patchConsole } from './utils/patch-console.ts';
 import { areAllTasksDone } from './utils/task-list.ts';
 
 // Simple CI detection (inline instead of is-in-ci dependency)
@@ -271,14 +271,14 @@ export const createRenderer = (
 		return tasks.map(task => renderTask(task, depth)).join('');
 	};
 
-	const handleConsoleOutput = (_stream: 'stdout' | 'stderr', data: string) => {
+	const handleConsoleOutput = (stream: 'stdout' | 'stderr', data: string) => {
 		// Clear task UI from saved position
 		clearRenderArea();
 
-		// Write console output to stdout (both stdout and stderr)
-		// We write all intercepted console output to the renderer's stdout
-		// to keep it synchronized with the task UI
-		stdout.write(data);
+		// Write to the original stream (not the renderer's output stream)
+		// so console.log → stdout and console.error → stderr
+		const target = stream === 'stderr' ? process.stderr : process.stdout;
+		target.write(data);
 
 		// Save new position — render area moves below console output
 		savePosition();
