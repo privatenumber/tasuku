@@ -38,7 +38,7 @@ export const theme: TasukuTheme = {
 
 export { createTasuku } from './create-tasuku.ts';
 
-export default createTasuku(theme);
+export default createTasuku({ theme });
 
 export type {
 	State,
@@ -49,4 +49,5 @@ export type {
 	TaskGroupPromise,
 	TaskOptions,
 	TasukuTheme,
+	CreateTasukuOptions,
 } from './types.ts';

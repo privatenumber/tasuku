@@ -26,7 +26,7 @@ export type Renderer = {
 
 export const createRenderer = (
 	taskList: TaskList,
-	stdout: NodeJS.WriteStream,
+	outputStream: NodeJS.WriteStream,
 	theme: TasukuTheme,
 ): Renderer => {
 	let animationFrame = 0;
@@ -39,7 +39,7 @@ export const createRenderer = (
 	let restoreConsole: (() => void) | undefined;
 	let cursorHidden = false;
 
-	const isTTY = stdout.isTTY === true;
+	const isTTY = outputStream.isTTY === true;
 	const isInteractive = isTTY && !isCI;
 
 	// Save cursor position at the top of the render area.
@@ -48,7 +48,7 @@ export const createRenderer = (
 	// the old cursor-up clearing behavior which also ran in non-TTY mode.
 	const savePosition = () => {
 		if (!isCI) {
-			stdout.write(cursorSavePosition);
+			outputStream.write(cursorSavePosition);
 			hasSavedPosition = true;
 		}
 	};
@@ -57,16 +57,16 @@ export const createRenderer = (
 	// Handles any extra lines (e.g. stdin echo) that appeared since last render.
 	const clearRenderArea = () => {
 		if (hasSavedPosition) {
-			stdout.write(cursorRestorePosition + eraseDown);
+			outputStream.write(cursorRestorePosition + eraseDown);
 		}
 	};
 
 	let maxVisibleOverride: number | ((terminalHeight: number) => number) | undefined;
 
-	// Cache terminal height to avoid reading stdout.rows on every render.
+	// Cache terminal height to avoid reading outputStream.rows on every render.
 	// Updated on resize events. Falls back to 24 (VT100 default) in
-	// non-TTY environments where stdout.rows is undefined.
-	let terminalHeight = stdout.rows || 24;
+	// non-TTY environments where outputStream.rows is undefined.
+	let terminalHeight = outputStream.rows || 24;
 
 	// Get the visible lines limit (user override or terminal height - 2, minimum 1)
 	const getVisibleLinesLimit = (): number => {
@@ -82,7 +82,7 @@ export const createRenderer = (
 	// Restore cursor - used by exit handlers and destroy()
 	const restoreCursor = () => {
 		if (cursorHidden) {
-			stdout.write(cursorShow);
+			outputStream.write(cursorShow);
 			cursorHidden = false;
 		}
 	};
@@ -325,7 +325,7 @@ export const createRenderer = (
 			// CI mode: only write final output when all tasks are done
 			// This produces clean append-only output without intermediate states
 			if (areAllTasksDone(taskList) && output !== lastOutput) {
-				stdout.write(output);
+				outputStream.write(output);
 				lastOutput = output;
 			}
 			return;
@@ -338,7 +338,7 @@ export const createRenderer = (
 		}
 
 		// Write new output
-		stdout.write(output);
+		outputStream.write(output);
 		lastOutput = output;
 
 		// Re-anchor: the output above may have caused the terminal to
@@ -350,7 +350,7 @@ export const createRenderer = (
 		// characters — a logical line wider than the terminal wraps to
 		// multiple rows, and cursorUp must cover all of them.
 		if (isTTY) {
-			const columns = stdout.columns || 80;
+			const columns = outputStream.columns || 80;
 			let visualLineCount = 0;
 			// Split on \n; the trailing \n produces an empty last element — skip it
 			const lines = output.split('\n');
@@ -361,9 +361,9 @@ export const createRenderer = (
 					: Math.ceil(width / columns);
 			}
 			if (visualLineCount > 0) {
-				stdout.write(cursorUp(visualLineCount));
+				outputStream.write(cursorUp(visualLineCount));
 				savePosition();
-				stdout.write(cursorDown(visualLineCount));
+				outputStream.write(cursorDown(visualLineCount));
 			}
 		}
 	};
@@ -387,7 +387,7 @@ export const createRenderer = (
 	const flushRender = () => {
 		// Clear any pending throttled render and render immediately
 		// Used when task reaches terminal state to prevent overwriting
-		// subsequent stdout writes
+		// subsequent output writes
 		// Only needed in interactive mode (TTY with ANSI clearing)
 		if (!isInteractive) {
 			return;
@@ -408,7 +408,7 @@ export const createRenderer = (
 
 	// Handle terminal resize: update cached height and re-render
 	const handleResize = () => {
-		terminalHeight = stdout.rows || 24;
+		terminalHeight = outputStream.rows || 24;
 		scheduleRender();
 	};
 
@@ -420,7 +420,7 @@ export const createRenderer = (
 
 		// Remove resize handler
 		if (isTTY) {
-			stdout.off('resize', handleResize);
+			outputStream.off('resize', handleResize);
 		}
 
 		if (spinnerInterval) {
@@ -460,7 +460,7 @@ export const createRenderer = (
 
 	// Register resize handler
 	if (isTTY) {
-		stdout.on('resize', handleResize);
+		outputStream.on('resize', handleResize);
 	}
 
 	// Register exit handler

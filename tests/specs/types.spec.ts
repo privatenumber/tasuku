@@ -1,6 +1,12 @@
+import { Writable } from 'node:stream';
 import { testSuite } from 'manten';
 import { expectTypeOf } from 'expect-type';
-import task from '#tasuku';
+import { createTasuku, theme } from '#tasuku';
+
+const task = createTasuku({
+	theme,
+	outputStream: new Writable({ write: (_, __, callback) => { callback(); } }) as NodeJS.WriteStream,
+});
 
 export default testSuite(({ describe }) => {
 	describe('type inference', ({ test }) => {

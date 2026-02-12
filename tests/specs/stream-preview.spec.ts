@@ -23,10 +23,10 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
-			expect(result.stdout).toContain(`\u23BF  ${ansis.gray('line 1')}`);
-			expect(result.stdout).toContain(ansis.gray('line 2'));
-			expect(result.stdout).toContain(ansis.gray('line 3'));
+			expect(result.stdout).toBe('');
+			expect(result.stderr).toContain(`\u23BF  ${ansis.gray('line 1')}`);
+			expect(result.stderr).toContain(ansis.gray('line 2'));
+			expect(result.stderr).toContain(ansis.gray('line 3'));
 		});
 
 		test('shows last 5 lines by default with truncation indicator', async () => {
@@ -44,14 +44,14 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Should show last 5 lines
-			expect(result.stdout).toContain(`\u23BF  ${ansis.gray('line 6')}`);
-			expect(result.stdout).toContain(ansis.gray('line 10'));
+			expect(result.stderr).toContain(`\u23BF  ${ansis.gray('line 6')}`);
+			expect(result.stderr).toContain(ansis.gray('line 10'));
 
 			// Check the truncation indicator
-			expect(result.stdout).toContain(ansis.gray('(+ 5 lines)'));
+			expect(result.stderr).toContain(ansis.gray('(+ 5 lines)'));
 		});
 
 		test('custom previewLines option', async () => {
@@ -69,14 +69,14 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Should show last 3 lines
-			expect(result.stdout).toContain(`\u23BF  ${ansis.gray('line 8')}`);
-			expect(result.stdout).toContain(ansis.gray('line 10'));
+			expect(result.stderr).toContain(`\u23BF  ${ansis.gray('line 8')}`);
+			expect(result.stderr).toContain(ansis.gray('line 10'));
 
 			// 7 lines truncated
-			expect(result.stdout).toContain(ansis.gray('(+ 7 lines)'));
+			expect(result.stderr).toContain(ansis.gray('(+ 7 lines)'));
 		});
 
 		test('previewLines clamped to minimum 1', async () => {
@@ -94,13 +94,13 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Should show at least 1 line (clamped from 0)
-			expect(result.stdout).toContain(`\u23BF  ${ansis.gray('line 5')}`);
+			expect(result.stderr).toContain(`\u23BF  ${ansis.gray('line 5')}`);
 
 			// 4 lines truncated (5 total - 1 visible)
-			expect(result.stdout).toContain(ansis.gray('(+ 4 lines)'));
+			expect(result.stderr).toContain(ansis.gray('(+ 4 lines)'));
 		});
 
 		test('handles partial line buffering', async () => {
@@ -119,9 +119,9 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
-			expect(result.stdout).toContain(`\u23BF  ${ansis.gray('hello world')}`);
-			expect(result.stdout).toContain(ansis.gray('foo bar'));
+			expect(result.stdout).toBe('');
+			expect(result.stderr).toContain(`\u23BF  ${ansis.gray('hello world')}`);
+			expect(result.stderr).toContain(ansis.gray('foo bar'));
 		});
 
 		test('handles carriage return for in-place updates', async () => {
@@ -141,15 +141,15 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Final state should show the last \r-overwritten value and the done line
-			expect(result.stdout).toContain(ansis.gray('progress 100%'));
-			expect(result.stdout).toContain(ansis.gray('done'));
+			expect(result.stderr).toContain(ansis.gray('progress 100%'));
+			expect(result.stderr).toContain(ansis.gray('done'));
 
 			// Earlier overwritten values should not appear in the final output
-			expect(result.stdout).not.toContain('progress 0%');
-			expect(result.stdout).not.toContain('progress 50%');
+			expect(result.stderr).not.toContain('progress 0%');
+			expect(result.stderr).not.toContain('progress 50%');
 		});
 
 		test('handles chunks ending with trailing carriage return', async () => {
@@ -168,14 +168,14 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Should display the last frame (each \r overwrites the previous)
-			expect(result.stdout).toContain(ansis.gray('frame 3'));
+			expect(result.stderr).toContain(ansis.gray('frame 3'));
 
 			// Earlier frames should be overwritten
-			expect(result.stdout).not.toContain('frame 1');
-			expect(result.stdout).not.toContain('frame 2');
+			expect(result.stderr).not.toContain('frame 1');
+			expect(result.stderr).not.toContain('frame 2');
 		});
 
 		test('trailing carriage return stripped on stream end', async () => {
@@ -194,11 +194,11 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Final output should show last frame without raw \r
-			expect(result.stdout).toContain(ansis.gray('frame 2'));
-			expect(result.stdout).not.toContain('\r');
+			expect(result.stderr).toContain(ansis.gray('frame 2'));
+			expect(result.stderr).not.toContain('\r');
 		});
 
 		test('strips ANSI codes from piped output', async () => {
@@ -215,11 +215,11 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Should contain the text without the original ANSI codes
 			// (tasuku applies its own gray styling)
-			expect(result.stdout).toContain(`\u23BF  ${ansis.gray('success message')}`);
+			expect(result.stderr).toContain(`\u23BF  ${ansis.gray('success message')}`);
 		});
 
 		test('no truncation indicator when lines fit within limit', async () => {
@@ -236,10 +236,10 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
-			expect(result.stdout).toContain(`\u23BF  ${ansis.gray('line 1')}`);
-			expect(result.stdout).toContain(ansis.gray('line 2'));
-			expect(result.stdout).not.toContain('+ ');
+			expect(result.stdout).toBe('');
+			expect(result.stderr).toContain(`\u23BF  ${ansis.gray('line 1')}`);
+			expect(result.stderr).toContain(ansis.gray('line 2'));
+			expect(result.stderr).not.toContain('+ ');
 		});
 
 		test('setOutput and streamPreview coexist', async () => {
@@ -258,16 +258,16 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Both should be present: static output with → prefix, stream with ⎿ prefix
-			expect(result.stdout).toContain(ansis.gray('\u2192 static output'));
-			expect(result.stdout).toContain(`\u23BF  ${ansis.gray('stream line 1')}`);
-			expect(result.stdout).toContain(ansis.gray('stream line 2'));
+			expect(result.stderr).toContain(ansis.gray('\u2192 static output'));
+			expect(result.stderr).toContain(`\u23BF  ${ansis.gray('stream line 1')}`);
+			expect(result.stderr).toContain(ansis.gray('stream line 2'));
 
 			// Static output should appear before stream output
-			const staticIndex = result.stdout.lastIndexOf('\u2192 static output');
-			const streamIndex = result.stdout.lastIndexOf('\u23BF');
+			const staticIndex = result.stderr.lastIndexOf('\u2192 static output');
+			const streamIndex = result.stderr.lastIndexOf('\u23BF');
 			expect(staticIndex).toBeLessThan(streamIndex);
 		});
 
@@ -287,8 +287,8 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
-			expect(result.stdout).toContain(`\u23BF  ${ansis.gray('no trailing newline')}`);
+			expect(result.stdout).toBe('');
+			expect(result.stderr).toContain(`\u23BF  ${ansis.gray('no trailing newline')}`);
 		});
 
 		test('clear removes preview output', async () => {
@@ -307,16 +307,16 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toContain('AFTER_CLEAR');
 
-			// After clearing, preview lines should not be in final output
-			const parts = result.stdout.split('AFTER_CLEAR');
-			const afterClear = parts[1] || '';
+			// After clearing, preview lines should not be in final stderr output
+			const parts = result.stderr.split(ansiEscapes.cursorRestorePosition + ansiEscapes.eraseDown);
+			const afterClear = parts.at(-1) ?? '';
 			expect(afterClear).not.toContain('Task');
 			expect(afterClear).not.toContain('line');
 
 			// ANSI save/restore codes should be present
-			expect(result.stdout).toContain(ansiEscapes.cursorRestorePosition + ansiEscapes.eraseDown);
+			expect(result.stderr).toContain(ansiEscapes.cursorRestorePosition + ansiEscapes.eraseDown);
 		});
 
 		test('preview lines count toward maxVisible limit', async () => {
@@ -378,12 +378,12 @@ export default testSuite(({ describe }) => {
 			const result = await node(fixture.getPath('test.mjs'), {
 				CI: '1',
 			});
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// CI shows final state with colors
-			expect(result.stdout).toContain(`\u23BF  ${ansis.gray('line 4')}`);
-			expect(result.stdout).toContain(ansis.gray('line 8'));
-			expect(result.stdout).toContain(ansis.gray('(+ 3 lines)'));
+			expect(result.stderr).toContain(`\u23BF  ${ansis.gray('line 4')}`);
+			expect(result.stderr).toContain(ansis.gray('line 8'));
+			expect(result.stderr).toContain(ansis.gray('(+ 3 lines)'));
 		});
 	});
 });

@@ -23,11 +23,11 @@ export default testSuite(({ describe }) => {
 				const result = await node(fixture.getPath('test.mjs'), {
 					CI: 'true',
 				});
-				expect(result.stderr).toBe('');
+				expect(result.stdout).toBe('');
 
 				// Should NOT contain ANSI save/restore cursor codes
-				expect(result.stdout).not.toContain(ansiEscapes.cursorRestorePosition);
-				expect(result.stdout).not.toContain(ansiEscapes.eraseDown);
+				expect(result.stderr).not.toContain(ansiEscapes.cursorRestorePosition);
+				expect(result.stderr).not.toContain(ansiEscapes.eraseDown);
 			});
 
 			test('GITHUB_ACTIONS=true does not disable ANSI clearing', async () => {
@@ -45,11 +45,11 @@ export default testSuite(({ describe }) => {
 				const result = await node(fixture.getPath('test.mjs'), {
 					GITHUB_ACTIONS: 'true',
 				});
-				expect(result.stderr).toBe('');
+				expect(result.stdout).toBe('');
 
 				// Only respects CI env var, not GITHUB_ACTIONS
-				expect(result.stdout).toContain(ansiEscapes.cursorRestorePosition);
-				expect(result.stdout).toContain(ansiEscapes.eraseDown);
+				expect(result.stderr).toContain(ansiEscapes.cursorRestorePosition);
+				expect(result.stderr).toContain(ansiEscapes.eraseDown);
 			});
 
 			test('CI mode still shows final task states', async () => {
@@ -67,10 +67,10 @@ export default testSuite(({ describe }) => {
 				const result = await node(fixture.getPath('test.mjs'), {
 					CI: 'true',
 				});
-				expect(result.stderr).toBe('');
+				expect(result.stdout).toBe('');
 
-				expect(result.stdout).toContain(ansis.green('✔'));
-				expect(result.stdout).toContain('Task');
+				expect(result.stderr).toContain(ansis.green('✔'));
+				expect(result.stderr).toContain('Task');
 			});
 
 			test('CI=1 produces clean append-only output', async () => {
@@ -95,9 +95,9 @@ export default testSuite(({ describe }) => {
 				const result = await node(fixture.getPath('test.mjs'), {
 					CI: '1',
 				});
-				expect(result.stderr).toBe('');
+				expect(result.stdout).toBe('');
 
-				expect(result.stdout).toBe(
+				expect(result.stderr).toBe(
 					`${ansis.green('✔')} Simple task\n`
 					+ `${ansis.yellow('❯')} Task with nested\n`
 					+ `  ${ansis.green('✔')} Nested task`,
@@ -120,9 +120,9 @@ export default testSuite(({ describe }) => {
 				const result = await node(fixture.getPath('test.mjs'), {
 					CI: '1',
 				});
-				expect(result.stderr).toBe('');
+				expect(result.stdout).toBe('');
 
-				expect(result.stdout).toBe(
+				expect(result.stderr).toBe(
 					`${ansis.red('✖')} Error task\n`
 					+ `  ${ansis.gray('→ Something failed')}`,
 				);
@@ -144,9 +144,9 @@ export default testSuite(({ describe }) => {
 				const result = await node(fixture.getPath('test.mjs'), {
 					CI: '1',
 				});
-				expect(result.stderr).toBe('');
+				expect(result.stdout).toBe('');
 
-				expect(result.stdout).toBe(
+				expect(result.stderr).toBe(
 					`${ansis.yellow('⚠')} Warning task\n`
 					+ `  ${ansis.gray('→ Warning message')}`,
 				);
@@ -174,9 +174,9 @@ export default testSuite(({ describe }) => {
 				const result = await node(fixture.getPath('test.mjs'), {
 					CI: '1',
 				});
-				expect(result.stderr).toBe('');
+				expect(result.stdout).toBe('');
 
-				expect(result.stdout).toBe(
+				expect(result.stderr).toBe(
 					`${ansis.yellow('❯')} Parent task\n`
 					+ `  ${ansis.green('✔')} Child 1\n`
 					+ `  ${ansis.yellow('⚠')} Child 2\n`
@@ -201,9 +201,9 @@ export default testSuite(({ describe }) => {
 				const result = await node(fixture.getPath('test.mjs'), {
 					CI: '1',
 				});
-				expect(result.stderr).toBe('');
+				expect(result.stdout).toBe('');
 
-				expect(result.stdout).toBe(
+				expect(result.stderr).toBe(
 					`${ansis.green('✔')} Updated title`,
 				);
 			});
@@ -226,9 +226,9 @@ export default testSuite(({ describe }) => {
 				const result = await node(fixture.getPath('test.mjs'), {
 					CI: '1',
 				});
-				expect(result.stderr).toBe('');
+				expect(result.stdout).toBe('');
 
-				expect(result.stdout).toBe(
+				expect(result.stderr).toBe(
 					`${ansis.green('✔')} Task with status ${ansis.dim('[finalizing...]')}`,
 				);
 			});
@@ -249,9 +249,9 @@ export default testSuite(({ describe }) => {
 				const result = await node(fixture.getPath('test.mjs'), {
 					CI: '1',
 				});
-				expect(result.stderr).toBe('');
+				expect(result.stdout).toBe('');
 
-				expect(result.stdout).toBe(
+				expect(result.stderr).toBe(
 					`${ansis.green('✔')} Task with output\n`
 					+ `  ${ansis.gray('→ Some output text')}`,
 				);
@@ -286,10 +286,10 @@ export default testSuite(({ describe }) => {
 					const result = await node(fixture.getPath('test.mjs'), {
 						[name]: value,
 					});
-					expect(result.stderr).toBe('');
+					expect(result.stdout).toBe('');
 
 					// Verify no ANSI color codes present (only cursor/erase codes allowed)
-					expect(result.stdout).toBe(
+					expect(result.stderr).toBe(
 						`${ansiEscapes.cursorSavePosition}⠋ Success task\n`
 						+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}✔ Success task`,
 					);
@@ -309,9 +309,9 @@ export default testSuite(({ describe }) => {
 				}, { tempDir });
 
 				const result = await node(fixture.getPath('test.mjs'));
-				expect(result.stderr).toBe('');
+				expect(result.stdout).toBe('');
 
-				expect(result.stdout).toBe(
+				expect(result.stderr).toBe(
 					`${ansiEscapes.cursorSavePosition}${ansis.yellow('⠋')} Success task\n`
 					+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}${ansis.green('✔')} Success task`,
 				);
@@ -331,9 +331,9 @@ export default testSuite(({ describe }) => {
 				}, { tempDir });
 
 				const result = await node(fixture.getPath('test.mjs'));
-				expect(result.stderr).toBe('');
+				expect(result.stdout).toBe('');
 
-				expect(result.stdout).toBe(
+				expect(result.stderr).toBe(
 					`${ansiEscapes.cursorSavePosition}${ansis.yellow('⠋')} Error task\n`
 					+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}${ansis.red('✖')} Error task\n`
 					+ `  ${ansis.gray('→ Something failed')}`,
@@ -356,9 +356,9 @@ export default testSuite(({ describe }) => {
 				const result = await node(fixture.getPath('test.mjs'), {
 					NO_COLOR: '1',
 				});
-				expect(result.stderr).toBe('');
+				expect(result.stdout).toBe('');
 
-				expect(result.stdout).toBe(
+				expect(result.stderr).toBe(
 					`${ansiEscapes.cursorSavePosition}⠋ Warning task\n`
 					+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}⚠ Warning task\n`
 					+ '  → A warning',
@@ -381,9 +381,9 @@ export default testSuite(({ describe }) => {
 				}, { tempDir });
 
 				const result = await node(fixture.getPath('test.mjs'));
-				expect(result.stderr).toBe('');
+				expect(result.stdout).toBe('');
 
-				expect(result.stdout).toBe(
+				expect(result.stderr).toBe(
 					`${ansiEscapes.cursorSavePosition}${ansis.yellow('⠋')} Parent task\n`
 					+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}${ansis.yellow('❯')} Parent task\n`
 					+ `  ${ansis.yellow('⠋')} Child task\n`
@@ -410,9 +410,9 @@ export default testSuite(({ describe }) => {
 				const result = await node(fixture.getPath('test.mjs'), {
 					NO_COLOR: '1',
 				});
-				expect(result.stderr).toBe('');
+				expect(result.stdout).toBe('');
 
-				expect(result.stdout).toBe(
+				expect(result.stderr).toBe(
 					`${ansiEscapes.cursorSavePosition}⠋ Parent task\n`
 					+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}❯ Parent task\n`
 					+ '  ⠋ Child task\n'

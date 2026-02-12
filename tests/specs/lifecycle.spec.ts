@@ -25,7 +25,6 @@ export default testSuite(({ describe }) => {
 				}, { tempDir });
 
 				const result = await node(fixture.getPath('test.mjs'));
-				expect(result.stderr).toBe('');
 				expect(result.stdout).toContain('CAUGHT: task error');
 				expect(result.stdout).toContain('PROCESS_COMPLETED');
 			});
@@ -45,11 +44,11 @@ export default testSuite(({ describe }) => {
 				}, { tempDir });
 
 				const result = await node(fixture.getPath('test.mjs'));
-				expect(result.stderr).toBe('');
+				expect(result.stdout).toBe('');
 
 				// Verify task completed successfully
-				expect(result.stdout).toContain(ansis.green('✔'));
-				expect(result.stdout).toContain('Task');
+				expect(result.stderr).toContain(ansis.green('✔'));
+				expect(result.stderr).toContain('Task');
 			});
 
 			test('cleared task removed but other tasks remain', async ({ onTestFail }) => {
@@ -76,10 +75,9 @@ export default testSuite(({ describe }) => {
 
 				const result = await node(fixture.getPath('test.mjs'));
 				onTestFail(() => { console.log(result); });
-				expect(result.stderr).toBe('');
 
 				// Get the final rendered output (after all ANSI clearing)
-				const lines = result.stdout.split('\n').filter(line => line.trim());
+				const lines = result.stderr.split('\n').filter(line => line.trim());
 				const lastLine = lines.at(-1) || '';
 
 				// Task 1 should be cleared from final output
@@ -113,15 +111,11 @@ export default testSuite(({ describe }) => {
 				}, { tempDir });
 
 				const result = await node(fixture.getPath('test.mjs'));
-				expect(result.stderr).toBe('');
 
-				// Check output after marker
-				const parts = result.stdout.split('After all cleared');
-				const afterMarker = parts[1] || '';
-
-				// Both tasks should be cleared from final output
-				expect(afterMarker).not.toContain('Task 1');
-				expect(afterMarker).not.toContain('Task 2');
+				// After clear(), the final erase-down leaves no task text
+				const afterLastErase = result.stderr.split(ansiEscapes.eraseDown).at(-1) ?? '';
+				expect(afterLastErase).not.toContain('Task 1');
+				expect(afterLastErase).not.toContain('Task 2');
 
 				// Console should work normally after renderer destroyed
 				expect(result.stdout).toContain('After all cleared');

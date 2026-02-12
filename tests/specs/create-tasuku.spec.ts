@@ -14,8 +14,10 @@ export default testSuite(({ describe }) => {
 				import { setTimeout } from 'node:timers/promises';
 
 				const task = createTasuku({
-					...theme,
-					spinner: ['A', 'B', 'C'],
+					theme: {
+						...theme,
+						spinner: ['A', 'B', 'C'],
+					},
 				});
 
 				await task('Spinner test', async () => {
@@ -25,9 +27,9 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
-			const plain = stripAnsi(result.stdout);
+			const plain = stripAnsi(result.stderr);
 			// Custom spinner frame should appear (one of A, B, or C)
 			expect(plain).toMatch(/[ABC] Spinner test/);
 			// Default spinner frames should NOT appear
@@ -40,8 +42,10 @@ export default testSuite(({ describe }) => {
 				import { createTasuku, theme } from '#tasuku';
 
 				const task = createTasuku({
-					...theme,
-					icons: { ...theme.icons, success: '✓', pending: '○' },
+					theme: {
+						...theme,
+						icons: { ...theme.icons, success: '✓', pending: '○' },
+					},
 				});
 
 				await task('Icon test', async () => {});
@@ -49,9 +53,9 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
-			const plain = stripAnsi(result.stdout);
+			const plain = stripAnsi(result.stderr);
 			// Custom success icon
 			expect(plain).toContain('✓ Icon test');
 			// Default success icon should NOT appear
@@ -65,8 +69,10 @@ export default testSuite(({ describe }) => {
 				import { blue } from 'ansis';
 
 				const task = createTasuku({
-					...theme,
-					icons: { ...theme.icons, success: blue('✔') },
+					theme: {
+						...theme,
+						icons: { ...theme.icons, success: blue('✔') },
+					},
 				});
 
 				await task('Color test', async () => {});
@@ -74,11 +80,11 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Blue success icon instead of green
-			expect(result.stdout).toContain(ansis.blue('✔'));
-			expect(result.stdout).not.toContain(ansis.green('✔'));
+			expect(result.stderr).toContain(ansis.blue('✔'));
+			expect(result.stderr).not.toContain(ansis.green('✔'));
 		});
 
 		test('custom parent icon', async () => {
@@ -87,8 +93,10 @@ export default testSuite(({ describe }) => {
 				import { createTasuku, theme } from '#tasuku';
 
 				const task = createTasuku({
-					...theme,
-					icons: { ...theme.icons, parent: '▸' },
+					theme: {
+						...theme,
+						icons: { ...theme.icons, parent: '▸' },
+					},
 				});
 
 				await task('Parent test', async () => {
@@ -98,9 +106,9 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
-			const plain = stripAnsi(result.stdout);
+			const plain = stripAnsi(result.stderr);
 			expect(plain).toContain('▸ Parent test');
 			expect(plain).not.toContain('❯');
 		});
@@ -115,10 +123,10 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
-			expect(result.stdout).toContain(ansis.green('✔'));
-			expect(result.stdout).toContain('Default export');
+			expect(result.stderr).toContain(ansis.green('✔'));
+			expect(result.stderr).toContain('Default export');
 		});
 
 		test('independent instances do not interfere', async () => {
@@ -128,13 +136,17 @@ export default testSuite(({ describe }) => {
 				import { blue, magenta } from 'ansis';
 
 				const taskA = createTasuku({
-					...theme,
-					icons: { ...theme.icons, success: blue('A') },
+					theme: {
+						...theme,
+						icons: { ...theme.icons, success: blue('A') },
+					},
 				});
 
 				const taskB = createTasuku({
-					...theme,
-					icons: { ...theme.icons, success: magenta('B') },
+					theme: {
+						...theme,
+						icons: { ...theme.icons, success: magenta('B') },
+					},
 				});
 
 				await Promise.all([
@@ -145,13 +157,13 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Each instance uses its own theme
-			expect(result.stdout).toContain(ansis.blue('A'));
-			expect(result.stdout).toContain(ansis.magenta('B'));
-			expect(result.stdout).toContain('Instance A');
-			expect(result.stdout).toContain('Instance B');
+			expect(result.stderr).toContain(ansis.blue('A'));
+			expect(result.stderr).toContain(ansis.magenta('B'));
+			expect(result.stderr).toContain('Instance A');
+			expect(result.stderr).toContain('Instance B');
 		});
 	});
 });

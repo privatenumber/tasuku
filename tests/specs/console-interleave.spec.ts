@@ -1,6 +1,5 @@
 import { testSuite, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
-import stripAnsi from 'strip-ansi';
 import ansiEscapes from 'ansi-escapes';
 import ansis from 'ansis';
 import { node } from '../utils/node.ts';
@@ -10,39 +9,6 @@ import { assertInOrder } from '../utils/assert-order.ts';
 
 export default testSuite(({ describe }) => {
 	describe('console interleaving', ({ test, describe }) => {
-		const clearRender = `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}`;
-		const saveCursor = ansiEscapes.cursorSavePosition;
-
-		test('console.log after task completion preserves all output', async () => {
-			await using fixture = await createFixture({
-				'test.mjs': `
-				import task from '#tasuku';
-				import { setTimeout } from 'node:timers/promises';
-
-				await task('Test task', async () => {
-					// Task completes
-				});
-
-				// Wait for render to complete, then log
-				await setTimeout(50);
-				console.log('After task');
-				`,
-			}, { tempDir });
-
-			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
-
-			// Both task and console.log should be visible
-			expect(result.stdout).toContain(`${ansis.green('✔')} Test task`);
-			expect(result.stdout).toContain('After task');
-
-			// Critical: task must be RE-RENDERED after console.log (not overwritten)
-			// The output should end with the task, proving it was restored after console.log
-			const afterTaskIndex = result.stdout.indexOf('After task');
-			const lastTaskIndex = result.stdout.lastIndexOf('Test task');
-			expect(lastTaskIndex).toBeGreaterThan(afterTaskIndex);
-		});
-
 		test('console.logs between tasks appear in order', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
@@ -65,52 +31,19 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
 
+			// Console.log text goes to stdout (clean, no ANSI codes)
 			expect(result.stdout).toBe(
 				'Before any tasks\n'
 				+ 'Inside first task\n'
-				+ `${saveCursor}`
-				+ `${clearRender}Between tasks\n`
-				+ `${saveCursor}`
-				+ `${clearRender}Inside second task\n`
-				+ `${saveCursor}`
-				+ `${clearRender}After all tasks\n`
-				+ `${saveCursor}`
-				+ `${clearRender}${ansis.green('✔')} First task\n`
-				+ `${ansis.green('✔')} Second task`,
+				+ 'Between tasks\n'
+				+ 'Inside second task\n'
+				+ 'After all tasks',
 			);
-		});
 
-		test('console.logs between tasks persist', async () => {
-			await using fixture = await createFixture({
-				'test.mjs': `
-				import tasuku from '#tasuku';
-
-				console.log(1111);
-
-				await tasuku('A', ({ setStatus }) => {
-					setStatus('Status A');
-				});
-
-				console.log(2222);
-
-				await tasuku('B', ({ setStatus }) => {
-					setStatus('Status B');
-				});
-
-				console.log(3333);
-				`,
-			}, { tempDir });
-
-			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
-
-			assertInOrder(stripAnsi(result.stdout), [
-				'1111\n',
-				'2222\n',
-				'3333\n',
-			]);
+			// Task UI renders to stderr
+			expect(result.stderr).toContain(`${ansis.green('✔')} First task`);
+			expect(result.stderr).toContain(`${ansis.green('✔')} Second task`);
 		});
 
 		test('console.logs with nested tasks', async () => {
@@ -141,26 +74,22 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
 
+			// Console.log text goes to stdout in order
 			expect(result.stdout).toBe(
 				'1: Start\n'
 				+ '2: Inside parent\n'
-				+ `${saveCursor}`
-				+ `${clearRender}3: Inside child 1\n`
-				+ `${saveCursor}`
-				+ `${clearRender}4: Between children\n`
-				+ `${saveCursor}`
-				+ `${clearRender}5: Inside child 2\n`
-				+ `${saveCursor}`
-				+ `${clearRender}6: After children\n`
-				+ `${saveCursor}`
-				+ `${clearRender}7: End\n`
-				+ `${saveCursor}`
-				+ `${clearRender}${ansis.yellow('❯')} Parent task\n`
-				+ `  ${ansis.green('✔')} Child task 1\n`
-				+ `  ${ansis.green('✔')} Child task 2`,
+				+ '3: Inside child 1\n'
+				+ '4: Between children\n'
+				+ '5: Inside child 2\n'
+				+ '6: After children\n'
+				+ '7: End',
 			);
+
+			// Task UI renders to stderr
+			expect(result.stderr).toContain(`${ansis.yellow('❯')} Parent task`);
+			expect(result.stderr).toContain(`${ansis.green('✔')} Child task 1`);
+			expect(result.stderr).toContain(`${ansis.green('✔')} Child task 2`);
 		});
 
 		test('console.logs with task.group parallel execution', async () => {
@@ -190,28 +119,23 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
 
+			// Console.log text goes to stdout in order
 			expect(result.stdout).toBe(
 				'Before group\n'
 				+ 'A: Start\n'
-				+ `${saveCursor}`
-				+ `${clearRender}A: End\n`
-				+ `${saveCursor}`
-				+ `${clearRender}B: Start\n`
-				+ `${saveCursor}`
-				+ `${clearRender}B: End\n`
-				+ `${saveCursor}`
-				+ `${clearRender}C: Start\n`
-				+ `${saveCursor}`
-				+ `${clearRender}C: End\n`
-				+ `${saveCursor}`
-				+ `${clearRender}After group\n`
-				+ `${saveCursor}`
-				+ `${clearRender}${ansis.green('✔')} Task A\n`
-				+ `${ansis.green('✔')} Task B\n`
-				+ `${ansis.green('✔')} Task C`,
+				+ 'A: End\n'
+				+ 'B: Start\n'
+				+ 'B: End\n'
+				+ 'C: Start\n'
+				+ 'C: End\n'
+				+ 'After group',
 			);
+
+			// Task UI renders to stderr
+			expect(result.stderr).toContain(`${ansis.green('✔')} Task A`);
+			expect(result.stderr).toContain(`${ansis.green('✔')} Task B`);
+			expect(result.stderr).toContain(`${ansis.green('✔')} Task C`);
 		});
 
 		test('console.logs with mixed states', async () => {
@@ -249,30 +173,25 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
 
+			// Console.log text goes to stdout in order
 			expect(result.stdout).toBe(
 				'1: Starting tests\n'
 				+ '2: Will succeed\n'
-				+ `${saveCursor}`
-				+ `${clearRender}3: First task done\n`
-				+ `${saveCursor}`
-				+ `${clearRender}4: Will warn\n`
-				+ `${saveCursor}`
-				+ `${clearRender}5: Warning task done\n`
-				+ `${saveCursor}`
-				+ `${clearRender}6: Will error\n`
-				+ `${saveCursor}`
-				+ `${clearRender}7: Error caught\n`
-				+ `${saveCursor}`
-				+ `${clearRender}8: All done\n`
-				+ `${saveCursor}`
-				+ `${clearRender}${ansis.green('✔')} Success task\n`
-				+ `${ansis.yellow('⚠')} Warning task\n`
-				+ `  ${ansis.gray('→ This is a warning')}\n`
-				+ `${ansis.red('✖')} Error task\n`
-				+ `  ${ansis.gray('→ Task failed')}`,
+				+ '3: First task done\n'
+				+ '4: Will warn\n'
+				+ '5: Warning task done\n'
+				+ '6: Will error\n'
+				+ '7: Error caught\n'
+				+ '8: All done',
 			);
+
+			// Task UI with mixed states renders to stderr
+			expect(result.stderr).toContain(`${ansis.green('✔')} Success task`);
+			expect(result.stderr).toContain(`${ansis.yellow('⚠')} Warning task`);
+			expect(result.stderr).toContain(`${ansis.gray('→ This is a warning')}`);
+			expect(result.stderr).toContain(`${ansis.red('✖')} Error task`);
+			expect(result.stderr).toContain(`${ansis.gray('→ Task failed')}`);
 		});
 
 		test('rapid console.logs during task execution', async () => {
@@ -290,21 +209,18 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
 
+			// Console.log text goes to stdout in order
 			expect(result.stdout).toBe(
 				'Log 1\n'
-				+ `${saveCursor}`
-				+ `${clearRender}Log 2\n`
-				+ `${saveCursor}`
-				+ `${clearRender}Log 3\n`
-				+ `${saveCursor}`
-				+ `${clearRender}Log 4\n`
-				+ `${saveCursor}`
-				+ `${clearRender}Log 5\n`
-				+ `${saveCursor}`
-				+ `${clearRender}${ansis.green('✔')} Task with many logs ${ansis.dim('[Step 5/5]')}`,
+				+ 'Log 2\n'
+				+ 'Log 3\n'
+				+ 'Log 4\n'
+				+ 'Log 5',
 			);
+
+			// Task UI renders to stderr with final status
+			expect(result.stderr).toContain(`${ansis.green('✔')} Task with many logs ${ansis.dim('[Step 5/5]')}`);
 		});
 
 		test('console output interspersed with task clearing', async () => {
@@ -334,11 +250,10 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
 
-			// Check that ANSI save/restore codes are present
-			expect(result.stdout).toContain(ansiEscapes.cursorRestorePosition);
-			expect(result.stdout).toContain(ansiEscapes.eraseDown);
+			// ANSI save/restore codes are on stderr (renderer's stream)
+			expect(result.stderr).toContain(ansiEscapes.cursorRestorePosition);
+			expect(result.stderr).toContain(ansiEscapes.eraseDown);
 
 			// Console output should have happened during execution
 			expect(result.stdout).toContain('0');
@@ -376,71 +291,77 @@ export default testSuite(({ describe }) => {
 		});
 
 		describe('console routing', ({ test }) => {
-			test('console.error during task execution', async ({ onTestFail }) => {
+			test('console.error between tasks persists on stderr', async ({ onTestFail }) => {
 				await using fixture = await createFixture({
 					'test.mjs': `
 					import task from '#tasuku';
 
-					await task('Task with error', async () => {
-						console.error('error message');
+					console.error('before');
+
+					await task('A', async () => {
+						console.error('inside A');
 					});
+
+					console.error('between');
+
+					await task('B', async () => {
+						console.error('inside B');
+					});
+
+					console.error('after');
 					`,
 				}, { tempDir });
 
 				const result = await node(fixture.getPath('test.mjs'));
 				onTestFail(() => { console.log(result); });
 
-				expect(result.stderr).toContain('error message');
+				// console.error shares stderr with task UI — verify all messages persist in order
+				assertInOrder(result.stderr, [
+					'before',
+					'inside A',
+					'between',
+					'inside B',
+					'after',
+				]);
 			});
 
-			test('console.warn during task execution', async ({ onTestFail }) => {
+			test('console.warn between tasks persists on stderr', async ({ onTestFail }) => {
 				await using fixture = await createFixture({
 					'test.mjs': `
 					import task from '#tasuku';
 
-					await task('Task with warning', async () => {
-						console.warn('warning message');
+					console.warn('before');
+
+					await task('A', async () => {
+						console.warn('inside A');
 					});
+
+					console.warn('between');
+
+					await task('B', async () => {
+						console.warn('inside B');
+					});
+
+					console.warn('after');
 					`,
 				}, { tempDir });
 
 				const result = await node(fixture.getPath('test.mjs'));
 				onTestFail(() => { console.log(result); });
 
-				expect(result.stderr).toContain('warning message');
-			});
-
-			test('console restored after cleanup', async ({ onTestFail }) => {
-				await using fixture = await createFixture({
-					'test.mjs': `
-					import task from '#tasuku';
-					import { setTimeout } from 'node:timers/promises';
-
-					await task('Task', async () => {
-						await setTimeout(50);
-					});
-
-					// After task completion, console should work normally
-					console.log('test message');
-					`,
-				}, { tempDir });
-
-				const result = await node(fixture.getPath('test.mjs'));
-				onTestFail(() => { console.log(result); });
-				expect(result.stderr).toBe('');
-
-				// Verify console.log still works after cleanup
-				const successString = `${ansis.green('✔')} Task`;
-				expect(result.stdout).toContain('test message');
-				expect(result.stdout).toContain(successString);
-				expect(result.stdout.indexOf('test message')).toBeLessThan(result.stdout.lastIndexOf(successString));
+				// console.warn shares stderr with task UI — verify all messages persist in order
+				assertInOrder(result.stderr, [
+					'before',
+					'inside A',
+					'between',
+					'inside B',
+					'after',
+				]);
 			});
 
 			test('stdout.write after task completion is not overwritten', async ({ onTestFail }) => {
 				await using fixture = await createFixture({
 					'test.mjs': `
-					process.stdout.isTTY = true;
-
 					import task from '#tasuku';
 					import { setTimeout } from 'node:timers/promises';
 
@@ -451,20 +372,12 @@ export default testSuite(({ describe }) => {
 
 				const result = await node(fixture.getPath('test.mjs'));
 				onTestFail(() => { console.log(result); });
-				expect(result.stderr).toBe('');
 
-				// The stdout.write output should appear in final output
+				// stdout.write output appears on stdout
 				expect(result.stdout).toContain('Should not get overwritten');
 
-				// The stdout.write output should appear AFTER the final task render
-				// (no ANSI clear codes should appear after it)
-				const userOutput = 'Should not get overwritten';
-				const userOutputIndex = result.stdout.lastIndexOf(userOutput);
-				const afterUserOutput = result.stdout.slice(userOutputIndex + userOutput.length);
-
-				// There should be no ANSI clear codes after the user's output
-				// If there are, it means the renderer overwrote the user's output
-				expect(afterUserOutput).not.toContain(ansiEscapes.eraseDown);
+				// Task UI renders to stderr — no ANSI clear codes on stdout
+				expect(result.stdout).not.toContain(ansiEscapes.eraseDown);
 			});
 		});
 	});

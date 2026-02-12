@@ -12,7 +12,7 @@ export default testSuite(({ describe }) => {
 				import { createTasuku, theme } from '#tasuku/claude';
 				import { setTimeout } from 'node:timers/promises';
 
-				const task = createTasuku(theme);
+				const task = createTasuku({ theme });
 
 				await task('Spinner test', async () => {
 					await setTimeout(500);
@@ -21,9 +21,9 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'), { FORCE_COLOR: '3' });
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
-			const plain = stripAnsi(result.stdout);
+			const plain = stripAnsi(result.stderr);
 			// Should contain one of the spinner frames (middle dot or dingbat stars)
 			expect(plain).toMatch(/[·✢✳✶✻✽] Spinner test/);
 			// Default braille spinner frames should NOT appear
@@ -40,11 +40,11 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'), { FORCE_COLOR: '3' });
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Success icon should use truecolor green: rgb(78,186,101)
-			expect(result.stdout).toContain('\u001B[38;2;78;186;101m✔\u001B[39m');
-			expect(result.stdout).toContain('Color test');
+			expect(result.stderr).toContain('\u001B[38;2;78;186;101m✔\u001B[39m');
+			expect(result.stderr).toContain('Color test');
 		});
 
 		test('error state uses Claude pink-red', async () => {
@@ -59,10 +59,10 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'), { FORCE_COLOR: '3' });
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Error icon should use truecolor pink-red: rgb(255,107,128)
-			expect(result.stdout).toContain('\u001B[38;2;255;107;128m✖\u001B[39m');
+			expect(result.stderr).toContain('\u001B[38;2;255;107;128m✖\u001B[39m');
 		});
 
 		test('loading spinner uses Claude terracotta', async () => {
@@ -71,7 +71,7 @@ export default testSuite(({ describe }) => {
 				import { createTasuku, theme } from '#tasuku/claude';
 				import { setTimeout } from 'node:timers/promises';
 
-				const task = createTasuku(theme);
+				const task = createTasuku({ theme });
 
 				await task('Loading test', async () => {
 					await setTimeout(500);
@@ -80,10 +80,10 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'), { FORCE_COLOR: '3' });
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Spinner should use terracotta: rgb(215,119,87)
-			expect(result.stdout).toContain('\u001B[38;2;215;119;87m');
+			expect(result.stderr).toContain('\u001B[38;2;215;119;87m');
 		});
 	});
 });

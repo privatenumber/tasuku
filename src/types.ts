@@ -176,3 +176,8 @@ export type TasukuTheme = {
 	icons: TasukuIcons;
 	colors: TasukuColors;
 };
+
+export type CreateTasukuOptions = {
+	theme: TasukuTheme;
+	outputStream?: NodeJS.WriteStream;
+};

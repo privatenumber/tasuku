@@ -14,7 +14,7 @@ export default testSuite(({ describe }) => {
 				import { createTasuku, theme } from '#tasuku/blink';
 				import { setTimeout } from 'node:timers/promises';
 
-				const task = createTasuku(theme);
+				const task = createTasuku({ theme });
 
 				await task('Spinner test', async () => {
 					await setTimeout(500);
@@ -23,9 +23,9 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'), { FORCE_COLOR: '3' });
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
-			const plain = stripAnsi(result.stdout);
+			const plain = stripAnsi(result.stderr);
 			// Should use dot character, not braille
 			expect(plain).toMatch(new RegExp(`[${dot}] Spinner test`));
 			expect(plain).not.toMatch(/[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏] Spinner test/);
@@ -41,13 +41,13 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'), { FORCE_COLOR: '3' });
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
-			const plain = stripAnsi(result.stdout);
+			const plain = stripAnsi(result.stderr);
 			expect(plain).toContain(`${dot} Done`);
 
 			// Success dot should use truecolor green: rgb(78,186,101)
-			expect(result.stdout).toContain('\u001B[38;2;78;186;101m');
+			expect(result.stderr).toContain('\u001B[38;2;78;186;101m');
 		});
 
 		test('spinner uses terracotta color', async () => {
@@ -56,7 +56,7 @@ export default testSuite(({ describe }) => {
 				import { createTasuku, theme } from '#tasuku/blink';
 				import { setTimeout } from 'node:timers/promises';
 
-				const task = createTasuku(theme);
+				const task = createTasuku({ theme });
 
 				await task('Loading test', async () => {
 					await setTimeout(500);
@@ -65,10 +65,10 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'), { FORCE_COLOR: '3' });
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Spinner should use terracotta: rgb(215,119,87)
-			expect(result.stdout).toContain('\u001B[38;2;215;119;87m');
+			expect(result.stderr).toContain('\u001B[38;2;215;119;87m');
 		});
 	});
 });

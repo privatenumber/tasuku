@@ -19,10 +19,10 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Should show elapsed time (at least 1s)
-			expect(result.stdout).toMatch(/\(1s\)|\(2s\)/);
+			expect(result.stderr).toMatch(/\(1s\)|\(2s\)/);
 		});
 
 		test('time not shown if under 1 second', async () => {
@@ -38,10 +38,10 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Should NOT show elapsed time (no seconds pattern)
-			expect(result.stdout).not.toMatch(/\(\d+s\)/);
+			expect(result.stderr).not.toMatch(/\(\d+s\)/);
 		});
 
 		test('startTime/stopTime manual control', async () => {
@@ -62,8 +62,8 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
-			expect(result.stdout).toMatch(/\(1s\)|\(2s\)/);
+			expect(result.stdout).toBe('');
+			expect(result.stderr).toMatch(/\(1s\)|\(2s\)/);
 		});
 
 		test('stopTime returns elapsed milliseconds', async () => {
@@ -82,7 +82,6 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
 
 			// Extract elapsed value from console output
 			const match = result.stdout.match(/ELAPSED:(\d+)/);
@@ -110,7 +109,6 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
 
 			// Should be ~1200ms, not ~1700ms
 			const match = result.stdout.match(/ELAPSED:(\d+)/);
@@ -135,11 +133,11 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Final output shows checkmark with frozen time
-			expect(result.stdout).toContain(ansis.green('✔'));
-			expect(result.stdout).toMatch(/\(1s\)|\(2s\)/);
+			expect(result.stderr).toContain(ansis.green('✔'));
+			expect(result.stderr).toMatch(/\(1s\)|\(2s\)/);
 		});
 
 		test('elapsed time shown after status', async () => {
@@ -156,10 +154,10 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Status should appear before time
-			expect(result.stdout).toMatch(/\[working\].*\(\d+s\)/);
+			expect(result.stderr).toMatch(/\[working\].*\(\d+s\)/);
 		});
 
 		test('stopTime returns 0 if timer was never started', async () => {
@@ -175,7 +173,6 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
 			expect(result.stdout).toContain('ELAPSED:0');
 		});
 
@@ -197,11 +194,11 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Should show error state with frozen time
-			expect(result.stdout).toContain(ansis.red('✖'));
-			expect(result.stdout).toMatch(/\(1s\)|\(2s\)/);
+			expect(result.stderr).toContain(ansis.red('✖'));
+			expect(result.stderr).toMatch(/\(1s\)|\(2s\)/);
 		});
 	});
 });

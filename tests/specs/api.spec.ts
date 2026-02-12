@@ -1,6 +1,12 @@
 import { setTimeout } from 'node:timers/promises';
+import { Writable } from 'node:stream';
 import { testSuite, expect } from 'manten';
-import task from '#tasuku';
+import { createTasuku, theme } from '#tasuku';
+
+const task = createTasuku({
+	theme,
+	outputStream: new Writable({ write: (_, __, callback) => { callback(); } }) as NodeJS.WriteStream,
+});
 
 export default testSuite(({ describe }) => {
 	describe('API', ({ test, describe }) => {

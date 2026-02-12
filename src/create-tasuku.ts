@@ -9,7 +9,6 @@ import {
 	type TaskObject,
 	type Task,
 	type TaskPromise,
-	type TasukuTheme,
 	type TaskInnerAPI,
 	type TaskGroupPromise,
 	type TaskGroupResults,
@@ -18,6 +17,7 @@ import {
 	type TaskOptions,
 	type RegisteredTask,
 	type StreamPreview,
+	type CreateTasukuOptions,
 	runSymbol,
 } from './types.ts';
 
@@ -111,7 +111,10 @@ const createStreamPreview = (
 	return writable;
 };
 
-export const createTasuku = (theme: TasukuTheme): Task => {
+export const createTasuku = ({
+	theme,
+	outputStream,
+}: CreateTasukuOptions): Task => {
 	const taskContext = new AsyncLocalStorage<TaskList>();
 	let renderer: Renderer | undefined;
 	const triggerRender = () => { renderer?.triggerRender(); };
@@ -193,7 +196,7 @@ export const createTasuku = (theme: TasukuTheme): Task => {
 		options?: TaskOptions,
 	): RegisteredTask<T> => {
 		if (!renderer) {
-			renderer = createRenderer(taskList, process.stdout, theme);
+			renderer = createRenderer(taskList, outputStream ?? process.stderr, theme);
 			taskList.isRoot = true;
 		}
 

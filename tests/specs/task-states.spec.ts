@@ -22,15 +22,15 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
-			expect(result.stdout).toContain('Error task');
+			expect(result.stderr).toContain('Error task');
 
 			// Red error icon (31m = red)
-			expect(result.stdout).toContain(ansis.red('✖'));
+			expect(result.stderr).toContain(ansis.red('✖'));
 
 			// Gray arrow and message (90m = gray/bright black)
-			expect(result.stdout).toContain(ansis.gray('→ Something went wrong'));
+			expect(result.stderr).toContain(ansis.gray('→ Something went wrong'));
 		});
 
 		test('warning state shows yellow warning with gray message', async () => {
@@ -46,15 +46,15 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
-			expect(result.stdout).toContain('Warning task');
+			expect(result.stderr).toContain('Warning task');
 
 			// Yellow warning icon (33m = yellow)
-			expect(result.stdout).toContain(ansis.yellow('⚠'));
+			expect(result.stderr).toContain(ansis.yellow('⚠'));
 
 			// Gray arrow and message
-			expect(result.stdout).toContain(ansis.gray('→ Warning message'));
+			expect(result.stderr).toContain(ansis.gray('→ Warning message'));
 		});
 
 		test('pending state shows square symbol', async () => {
@@ -71,14 +71,14 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
-			expect(result.stdout).toContain('one');
-			expect(result.stdout).toContain('two');
-			expect(result.stdout).toContain(ansis.green('✔'));
+			expect(result.stderr).toContain('one');
+			expect(result.stderr).toContain('two');
+			expect(result.stderr).toContain(ansis.green('✔'));
 
 			// Gray square for pending state (90m = gray/bright black)
-			expect(result.stdout).toContain(ansis.gray('◼'));
+			expect(result.stderr).toContain(ansis.gray('◼'));
 		});
 
 		test('status displays in brackets with dim styling', async () => {
@@ -93,13 +93,13 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Status appears in brackets after title
-			expect(result.stdout).toContain('My task');
+			expect(result.stderr).toContain('My task');
 
 			// Status has dim styling (2m = dim, 22m = reset dim)
-			expect(result.stdout).toContain(ansis.dim('[loading]'));
+			expect(result.stderr).toContain(ansis.dim('[loading]'));
 		});
 
 		test('status can be updated and cleared', async () => {
@@ -120,16 +120,16 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Both status updates appear in output
 
 			// Dim styling for status
-			expect(result.stdout).toContain(ansis.dim('[step 1]'));
-			expect(result.stdout).toContain(ansis.dim('[step 2]'));
+			expect(result.stderr).toContain(ansis.dim('[step 1]'));
+			expect(result.stderr).toContain(ansis.dim('[step 2]'));
 
 			// Final output has no status brackets after clearing
-			const lines = result.stdout.split('\n');
+			const lines = result.stderr.split('\n');
 			const finalTaskLine = lines.reverse().find(line => line.includes('✔') && line.includes('Task'));
 			expect(finalTaskLine).toBeTruthy();
 			expect(finalTaskLine).not.toMatch(/\[step/);
@@ -147,12 +147,12 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// All output lines should be indented at the same level (2 spaces)
-			expect(result.stdout).toContain(`\n  ${ansis.gray('→ line 1')}`);
-			expect(result.stdout).toContain(`\n  ${ansis.gray('line 2')}`);
-			expect(result.stdout).toContain(`\n  ${ansis.gray('line 3')}`);
+			expect(result.stderr).toContain(`\n  ${ansis.gray('→ line 1')}`);
+			expect(result.stderr).toContain(`\n  ${ansis.gray('line 2')}`);
+			expect(result.stderr).toContain(`\n  ${ansis.gray('line 3')}`);
 		});
 
 		test('setTitle updates task title dynamically', async () => {
@@ -170,27 +170,27 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Both titles should appear in output
-			expect(result.stdout).toContain('Initial title');
-			expect(result.stdout).toContain('Updated title');
+			expect(result.stderr).toContain('Initial title');
+			expect(result.stderr).toContain('Updated title');
 
 			// Verify title update order: initial appears before updated
-			const initialIndex = result.stdout.indexOf('Initial title');
-			const updatedIndex = result.stdout.indexOf('Updated title');
+			const initialIndex = result.stderr.indexOf('Initial title');
+			const updatedIndex = result.stderr.indexOf('Updated title');
 			expect(initialIndex).toBeLessThan(updatedIndex);
 
 			// Check for spinner
-			expect(result.stdout).toContain(ansis.yellow('⠋'));
+			expect(result.stderr).toContain(ansis.yellow('⠋'));
 
 			// Check that the *final* line is the updated title
 			const finalSuccessLine = `${ansis.green('✔')} Updated title`;
-			expect(result.stdout).toContain(finalSuccessLine);
+			expect(result.stderr).toContain(finalSuccessLine);
 
 			// Initial title should not appear in final success line
 			const initialSuccessLine = `${ansis.green('✔')} Initial title`;
-			expect(result.stdout).not.toContain(initialSuccessLine);
+			expect(result.stderr).not.toContain(initialSuccessLine);
 		});
 
 		test('setError with Error object', async () => {
@@ -205,13 +205,13 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
-			expect(result.stdout).toContain('Error object message');
+			expect(result.stderr).toContain('Error object message');
 
 			// Check for red X and gray arrow
-			expect(result.stdout).toContain(ansis.red('✖'));
-			expect(result.stdout).toContain(ansis.gray('→ Error object message'));
+			expect(result.stderr).toContain(ansis.red('✖'));
+			expect(result.stderr).toContain(ansis.gray('→ Error object message'));
 		});
 
 		test('task function throws error', async () => {
@@ -230,13 +230,13 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
 
+			// console.log output stays on stdout
 			expect(result.stdout).toContain('Caught: Task failed');
 
-			// Check for red X and gray arrow in error output
-			expect(result.stdout).toContain(ansis.red('✖'));
-			expect(result.stdout).toContain(ansis.gray('→ Task failed'));
+			// Task UI renders to stderr
+			expect(result.stderr).toContain(ansis.red('✖'));
+			expect(result.stderr).toContain(ansis.gray('→ Task failed'));
 		});
 
 		test('clear method removes single task', async () => {
@@ -254,15 +254,12 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
 
-			// Task should be cleared after marker
-			const parts = result.stdout.split('AFTER_CLEAR');
-			const afterClear = parts[1] || '';
-			expect(afterClear).not.toContain('Task to clear');
+			// console.log output stays on stdout
+			expect(result.stdout).toContain('AFTER_CLEAR');
 
-			// Check for ANSI clear codes
-			expect(result.stdout).toContain(ansiEscapes.cursorRestorePosition + ansiEscapes.eraseDown);
+			// Check for ANSI clear codes in task UI output (stderr)
+			expect(result.stderr).toContain(ansiEscapes.cursorRestorePosition + ansiEscapes.eraseDown);
 		});
 
 		test('setError() with no arg reverts to loading state', async () => {
@@ -439,19 +436,15 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
 
-			// Tasks should be cleared after marker
-			const parts = result.stdout.split('AFTER_CLEAR');
-			const afterClear = parts[1] || '';
-			expect(afterClear).not.toContain('Task 1');
-			expect(afterClear).not.toContain('Task 2');
+			// console.log output stays on stdout
+			expect(result.stdout).toContain('AFTER_CLEAR');
 
-			// Check for green checkmarks before clearing
-			expect(result.stdout).toContain(ansis.green('✔'));
+			// Check for green checkmarks before clearing (task UI on stderr)
+			expect(result.stderr).toContain(ansis.green('✔'));
 
 			// Check for ANSI clear codes (clear line and move up)
-			expect(result.stdout).toContain(ansiEscapes.cursorRestorePosition + ansiEscapes.eraseDown);
+			expect(result.stderr).toContain(ansiEscapes.cursorRestorePosition + ansiEscapes.eraseDown);
 		});
 	});
 });

@@ -21,17 +21,17 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
-			expect(result.stdout).toContain(ansis.yellow('⠋'));
+			expect(result.stderr).toContain(ansis.yellow('⠋'));
 
 			// Task completes successfully
-			expect(result.stdout).toContain(ansis.green('✔'));
-			expect(result.stdout).toContain('Task');
+			expect(result.stderr).toContain(ansis.green('✔'));
+			expect(result.stderr).toContain('Task');
 
 			// Verify spinner appears before completion
-			const spinnerIndex = result.stdout.indexOf(ansis.yellow('⠋'));
-			const checkmarkIndex = result.stdout.indexOf(ansis.green('✔'));
+			const spinnerIndex = result.stderr.indexOf(ansis.yellow('⠋'));
+			const checkmarkIndex = result.stderr.indexOf(ansis.green('✔'));
 			expect(spinnerIndex).toBeLessThan(checkmarkIndex);
 		});
 
@@ -49,15 +49,15 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Both task names appear
-			expect(result.stdout).toContain('one');
-			expect(result.stdout).toContain('two');
-			expect(result.stdout).toContain(ansis.green('✔'));
+			expect(result.stderr).toContain('one');
+			expect(result.stderr).toContain('two');
+			expect(result.stderr).toContain(ansis.green('✔'));
 
 			// Yellow spinners
-			expect(result.stdout).toContain(ansis.yellow('⠋'));
+			expect(result.stderr).toContain(ansis.yellow('⠋'));
 		});
 
 		test('nested tasks render correctly on success', async () => {
@@ -75,18 +75,18 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Define the exact final lines we expect
 			const finalParentLine = `${ansis.yellow('❯')} Parent`;
 			const finalChildLine = `  ${ansis.green('✔')} Child`;
 
 			// Check that these lines exist in the output
-			expect(result.stdout).toContain(finalParentLine);
-			expect(result.stdout).toContain(finalChildLine);
+			expect(result.stderr).toContain(finalParentLine);
+			expect(result.stderr).toContain(finalChildLine);
 
 			// For a more robust check, verify they are the *last* two lines
-			const lines = result.stdout.split('\n').filter(line => line.trim());
+			const lines = result.stderr.split('\n').filter(line => line.trim());
 			const secondToLastLine = lines.at(-2);
 			const lastLine = lines.at(-1);
 
@@ -110,13 +110,13 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Yellow pointer (not red) with foreground-only reset
-			expect(result.stdout).toContain(ansis.yellow('❯'));
+			expect(result.stderr).toContain(ansis.yellow('❯'));
 
 			// Verify spinner appears while child is loading
-			expect(result.stdout).toContain(ansis.yellow('⠋'));
+			expect(result.stderr).toContain(ansis.yellow('⠋'));
 		});
 
 		test('parent task shows red pointer on error', async () => {
@@ -139,13 +139,13 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
 			// Red pointer when child errors with foreground-only reset
-			expect(result.stdout).toContain(ansis.red('❯'));
+			expect(result.stderr).toContain(ansis.red('❯'));
 
 			// Red X for failed child task
-			expect(result.stdout).toContain(ansis.red('✖'));
+			expect(result.stderr).toContain(ansis.red('✖'));
 		});
 
 		test('child task starts with frame 0 spinner', async () => {
@@ -164,9 +164,9 @@ export default testSuite(({ describe }) => {
 			}, { tempDir });
 
 			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
+			expect(result.stdout).toBe('');
 
-			expect(result.stdout).toBe(
+			expect(result.stderr).toBe(
 				`${ansiEscapes.cursorSavePosition}${ansis.yellow('⠋')} Parent\n`
 				+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}${ansis.yellow('❯')} Parent\n`
 				+ `  ${ansis.yellow('⠋')} Child\n`

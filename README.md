@@ -44,7 +44,7 @@ await task.group(task => [
 - Parallel & nestable tasks
 - Customizable themes (icons, colors, spinners)
 - Zero runtime dependencies
-- `console.log` integration
+- Renders to stderr — stdout stays clean for program output
 - Type-safe
 
 > [!TIP]
@@ -704,8 +704,10 @@ const rainbow = frames.map((frame, i) => {
 })
 
 const task = createTasuku({
-    ...theme,
-    spinner: rainbow
+    theme: {
+        ...theme,
+        spinner: rainbow
+    }
 })
 
 await task('Custom task', async () => {
@@ -736,6 +738,14 @@ type TasukuTheme = {
 ```
 
 The `title` color function receives the task state and animation frame counter, enabling per-frame effects like shimmer animations.
+
+#### outputStream
+
+Type: `NodeJS.WriteStream`
+
+Default: `process.stderr`
+
+The stream to render task UI to. Defaults to stderr so that stdout stays clean for program output (e.g. `mytool | jq`). `console.log` output goes to stdout unaffected.
 
 ### Contributing a theme
 
