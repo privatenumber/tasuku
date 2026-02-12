@@ -67,7 +67,7 @@
 		"pkgroll": "^2.21.5",
 		"string-width": "^5.1.2",
 		"strip-ansi": "^7.1.2",
-		"tsx": "^4.20.6",
+		"tsx": "^4.21.0",
 		"typescript": "^5.9.3"
 	},
 	"pnpm": {
