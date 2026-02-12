@@ -65,7 +65,7 @@
 		"p-map": "^5.5.0",
 		"patch-console": "^2.0.0",
 		"pkgroll": "^2.21.5",
-		"string-width": "^5.1.2",
+		"string-width": "^7.2.0",
 		"strip-ansi": "^7.1.2",
 		"tsx": "^4.20.6",
 		"typescript": "^5.9.3"
