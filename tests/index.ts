@@ -1,34 +1,34 @@
 import { describe } from 'manten';
 
-await describe('tasuku', ({ runTestSuite }) => {
+describe('tasuku', () => {
 	// Core API
-	runTestSuite(import('./specs/api.spec.ts'));
-	runTestSuite(import('./specs/types.spec.ts'));
+	import('./specs/api.spec.ts');
+	import('./specs/types.spec.ts');
 
 	// Task behavior
-	runTestSuite(import('./specs/task-states.spec.ts'));
-	runTestSuite(import('./specs/elapsed-time.spec.ts'));
-	runTestSuite(import('./specs/stream-preview.spec.ts'));
+	import('./specs/task-states.spec.ts');
+	import('./specs/elapsed-time.spec.ts');
+	import('./specs/stream-preview.spec.ts');
 
 	// Rendering
-	runTestSuite(import('./specs/rendering.spec.ts'));
-	runTestSuite(import('./specs/spinner-restart.spec.ts'));
-	runTestSuite(import('./specs/max-visible.spec.ts'));
+	import('./specs/rendering.spec.ts');
+	import('./specs/spinner-restart.spec.ts');
+	import('./specs/max-visible.spec.ts');
 
 	// Environment
-	runTestSuite(import('./specs/environment.spec.ts'));
+	import('./specs/environment.spec.ts');
 
 	// Console & Lifecycle
-	runTestSuite(import('./specs/console-interleave.spec.ts'));
-	runTestSuite(import('./specs/lifecycle.spec.ts'));
+	import('./specs/console-interleave.spec.ts');
+	import('./specs/lifecycle.spec.ts');
 
 	// Unit tests
-	runTestSuite(import('./specs/format-elapsed.spec.ts'));
-	runTestSuite(import('./specs/task-list.spec.ts'));
+	import('./specs/format-elapsed.spec.ts');
+	import('./specs/task-list.spec.ts');
 
 	// Factory
-	runTestSuite(import('./specs/create-tasuku.spec.ts'));
-	runTestSuite(import('./specs/claude-theme.spec.ts'));
-	runTestSuite(import('./specs/blink-theme.spec.ts'));
-	runTestSuite(import('./specs/codex-theme.spec.ts'));
+	import('./specs/create-tasuku.spec.ts');
+	import('./specs/claude-theme.spec.ts');
+	import('./specs/blink-theme.spec.ts');
+	import('./specs/codex-theme.spec.ts');
 });

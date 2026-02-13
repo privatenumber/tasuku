@@ -1,109 +1,168 @@
-import { testSuite, expect } from 'manten';
+import { describe, test, expect, onTestFail } from 'manten';
 import { createFixture } from 'fs-fixture';
 import ansis from 'ansis';
 import { nodePty } from '../utils/pty.ts';
 import { tempDir } from '../utils/temp-dir.ts';
 import { spinnerFrames } from '../utils/spinner-frames.ts';
 
+/**
+ * PTY tests use { retry: 3 } because of a known node-pty bug
+ * (https://github.com/microsoft/node-pty/issues/72) where onExit can fire
+ * before all onData events are delivered. Under heavy concurrent PTY load,
+ * this escalates to zero data delivered. The issue is all-or-nothing: when
+ * data IS delivered, it arrives completely. Retries handle this cleanly.
+ */
+
 const countSpinnerFramesAfter = (output: string, marker: string) => {
 	const markerIndex = output.indexOf(marker);
-	expect(markerIndex).toBeGreaterThan(-1);
-	// eslint-disable-next-line unicorn/prefer-set-has -- multi-char ANSI
+	if (markerIndex === -1) {
+		return {
+			markerFound: false as const,
+			framesFound: 0,
+		};
+	}
+	// eslint-disable-next-line unicorn/prefer-set-has -- substring search, not membership check
 	const afterMarker = output.slice(markerIndex);
-	return spinnerFrames.filter(
-		frame => afterMarker.includes(ansis.yellow(frame)),
-	).length;
+	return {
+		markerFound: true as const,
+		framesFound: spinnerFrames.filter(
+			frame => afterMarker.includes(ansis.yellow(frame)),
+		).length,
+	};
 };
 
-export default testSuite(({ describe }) => {
-	describe('spinner restart', ({ test }) => {
-		test('restarts after all tasks complete and new tasks start', async () => {
-			// Regression test: spinner interval was stopped when first group completed
-			// and not restarted when second group started.
-			// Must use PTY because spinner only runs when isTTY=true.
-			await using fixture = await createFixture({
-				'test.mjs': `
-				import task from '#tasuku';
-				import { setTimeout } from 'node:timers/promises';
+describe('spinner restart', () => {
+	test('restarts after all tasks complete and new tasks start', async () => {
+		// Regression test: spinner interval was stopped when first group completed
+		// and not restarted when second group started.
+		// Must use PTY because spinner only runs when isTTY=true.
+		await using fixture = await createFixture({
+			'test.mjs': `
+			import task from '#tasuku';
+			import { setTimeout } from 'node:timers/promises';
 
-				await task.group(task => [
-					task('first-1', async () => { await setTimeout(100); }),
-				], { concurrency: 1 });
+			await task.group(task => [
+				task('first-1', async () => { await setTimeout(100); }),
+			], { concurrency: 1 });
 
-				await task.group(task => [
-					task('second-1', async () => { await setTimeout(500); }),
-				], { concurrency: 1 });
-				`,
-			}, { tempDir });
+			await task.group(task => [
+				task('second-1', async () => { await setTimeout(500); }),
+			], { concurrency: 1 });
+			`,
+		}, { tempDir });
 
-			const result = await nodePty(fixture.getPath('test.mjs'), { cols: 80 });
-			expect(result.exitCode).toBe(0);
+		const marker = `${ansis.green('✔')} first-1`;
+		const result = await nodePty(fixture.getPath('test.mjs'), { cols: 80 });
+		const observed = countSpinnerFramesAfter(result.output, marker);
 
-			// Multiple unique frames proves the spinner restarted (not a stale single frame)
-			const frameCount = countSpinnerFramesAfter(result.output, `${ansis.green('✔')} first-1`);
-			expect(frameCount).toBeGreaterThanOrEqual(2);
+		onTestFail(() => {
+			console.log({
+				marker,
+				...observed,
+				exitCode: result.exitCode,
+				outputLength: result.output.length,
+				output: result.output,
+			});
 		});
 
-		test('restarts for sequential single task() calls', async () => {
-			await using fixture = await createFixture({
-				'test.mjs': `
-				import task from '#tasuku';
-				import { setTimeout } from 'node:timers/promises';
+		expect(result.exitCode).toBe(0);
+		expect(observed.markerFound).toBe(true);
+		expect(observed.framesFound).toBeGreaterThanOrEqual(2);
+	}, { retry: 3 });
 
-				await task('first', async () => { await setTimeout(100); });
-				await task('second', async () => { await setTimeout(500); });
-				`,
-			}, { tempDir });
+	test('restarts for sequential single task() calls', async () => {
+		await using fixture = await createFixture({
+			'test.mjs': `
+			import task from '#tasuku';
+			import { setTimeout } from 'node:timers/promises';
 
-			const result = await nodePty(fixture.getPath('test.mjs'), { cols: 80 });
-			expect(result.exitCode).toBe(0);
+			await task('first', async () => { await setTimeout(100); });
+			await task('second', async () => { await setTimeout(500); });
+			`,
+		}, { tempDir });
 
-			const frameCount = countSpinnerFramesAfter(result.output, `${ansis.green('✔')} first`);
-			expect(frameCount).toBeGreaterThanOrEqual(2);
+		const marker = `${ansis.green('✔')} first`;
+		const result = await nodePty(fixture.getPath('test.mjs'), { cols: 80 });
+		const observed = countSpinnerFramesAfter(result.output, marker);
+
+		onTestFail(() => {
+			console.log({
+				marker,
+				...observed,
+				exitCode: result.exitCode,
+				outputLength: result.output.length,
+				output: result.output,
+			});
 		});
 
-		test('restarts after error in first task', async () => {
-			await using fixture = await createFixture({
-				'test.mjs': `
-				import task from '#tasuku';
-				import { setTimeout } from 'node:timers/promises';
+		expect(result.exitCode).toBe(0);
+		expect(observed.markerFound).toBe(true);
+		expect(observed.framesFound).toBeGreaterThanOrEqual(2);
+	}, { retry: 3 });
 
-				await task('fails', async () => {
-					await setTimeout(100);
-					throw new Error('intentional');
-				}).catch(() => {});
+	test('restarts after error in first task', async () => {
+		await using fixture = await createFixture({
+			'test.mjs': `
+			import task from '#tasuku';
+			import { setTimeout } from 'node:timers/promises';
 
-				await task('second', async () => { await setTimeout(500); });
-				`,
-			}, { tempDir });
+			await task('fails', async () => {
+				await setTimeout(100);
+				throw new Error('intentional');
+			}).catch(() => {});
 
-			const result = await nodePty(fixture.getPath('test.mjs'), { cols: 80 });
-			expect(result.exitCode).toBe(0);
+			await task('second', async () => { await setTimeout(500); });
+			`,
+		}, { tempDir });
 
-			const frameCount = countSpinnerFramesAfter(result.output, `${ansis.red('✖')} fails`);
-			expect(frameCount).toBeGreaterThanOrEqual(2);
+		const marker = `${ansis.red('✖')} fails`;
+		const result = await nodePty(fixture.getPath('test.mjs'), { cols: 80 });
+		const observed = countSpinnerFramesAfter(result.output, marker);
+
+		onTestFail(() => {
+			console.log({
+				marker,
+				...observed,
+				exitCode: result.exitCode,
+				outputLength: result.output.length,
+				output: result.output,
+			});
 		});
 
-		test('works after clear() destroys and recreates renderer', async () => {
-			await using fixture = await createFixture({
-				'test.mjs': `
-				import task from '#tasuku';
-				import { setTimeout } from 'node:timers/promises';
+		expect(result.exitCode).toBe(0);
+		expect(observed.markerFound).toBe(true);
+		expect(observed.framesFound).toBeGreaterThanOrEqual(2);
+	}, { retry: 3 });
 
-				await task('first', async () => { await setTimeout(100); }).clear();
+	test('works after clear() destroys and recreates renderer', async () => {
+		await using fixture = await createFixture({
+			'test.mjs': `
+			import task from '#tasuku';
+			import { setTimeout } from 'node:timers/promises';
 
-				await task('second', async () => { await setTimeout(500); });
-				`,
-			}, { tempDir });
+			await task('first', async () => { await setTimeout(100); }).clear();
 
-			const result = await nodePty(fixture.getPath('test.mjs'), { cols: 80 });
-			expect(result.exitCode).toBe(0);
+			await task('second', async () => { await setTimeout(500); });
+			`,
+		}, { tempDir });
 
-			// Count frames in entire output since first task was cleared
-			const framesInOutput = spinnerFrames.filter(
-				frame => result.output.includes(ansis.yellow(frame)),
-			).length;
-			expect(framesInOutput).toBeGreaterThanOrEqual(2);
+		const result = await nodePty(fixture.getPath('test.mjs'), { cols: 80 });
+
+		// Count frames in entire output since first task was cleared
+		const framesFound = spinnerFrames.filter(
+			frame => result.output.includes(ansis.yellow(frame)),
+		).length;
+
+		onTestFail(() => {
+			console.log({
+				framesFound,
+				exitCode: result.exitCode,
+				outputLength: result.output.length,
+				output: result.output,
+			});
 		});
-	});
+
+		expect(result.exitCode).toBe(0);
+		expect(framesFound).toBeGreaterThanOrEqual(2);
+	}, { retry: 3 });
 });

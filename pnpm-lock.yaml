@@ -36,20 +36,20 @@ importers:
         specifier: ^1.26.1
         version: 1.28.1(@types/estree@1.0.8)(@typescript-eslint/utils@8.50.1(eslint@9.39.2)(typescript@5.9.3))(jsonc-eslint-parser@2.4.1)(typescript@5.9.3)
       manten:
-        specifier: ^1.10.0
-        version: 1.10.0
+        specifier: 2.0.0-beta.2
+        version: 2.0.0-beta.2
       nano-spawn:
         specifier: ^2.0.0
         version: 2.0.0
-      node-pty:
-        specifier: 1.2.0-beta.10
-        version: 1.2.0-beta.10
       p-map:
         specifier: ^5.5.0
         version: 5.5.0
       pkgroll:
         specifier: ^2.21.5
         version: 2.21.5(typescript@5.9.3)
+      pty-spawn:
+        specifier: ^1.1.0
+        version: 1.1.0
       string-width:
         specifier: ^5.1.2
         version: 5.1.2
@@ -2012,8 +2012,9 @@ packages:
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
 
-  manten@1.10.0:
-    resolution: {integrity: sha512-YcapOHCdvi+Cm6qlxFBTCw/X3WfGahLCBo/OM8Ot3CK7QyT/rZtouDuVbbnkHhgX0g6ZkGMpjKPs0UsL5rWSAQ==}
+  manten@2.0.0-beta.2:
+    resolution: {integrity: sha512-sr4epsS6WG7oikdmEE+53IMWCMex8DN/57JY0NLfb0b0rruwz61ai3X0gK0gntL3b632v1vSZseBv7aAA27qAw==}
+    engines: {node: '>=20.20.0'}
 
   markdown-table@3.0.4:
     resolution: {integrity: sha512-wiYz4+JrLyb/DqW2hkFJxP7Vd7JuTDm77fvbM8VfEQdmSMqcImWeeRbHwZjBjIFki/VaMK2BhFi7oUUZeM5bqw==}
@@ -2310,6 +2311,10 @@ packages:
   prototype-properties@5.0.0:
     resolution: {integrity: sha512-uCWE2QqnGlwvvJXTwiHTPTyHE62+zORO5hpFWhAwBGDtEtTmNZZleNLJDoFsqHCL4p/CeAP2Q1uMKFUKALuRGQ==}
     engines: {node: '>=18.20'}
+
+  pty-spawn@1.1.0:
+    resolution: {integrity: sha512-Rrcr5hT49XWapvsZGVu64SSSquJ1fk+X4orPcEFpwosUDlCnQsiYn2BiaJpsf3Ww7sbyykubfT/NgYA4XqyEiA==}
+    engines: {node: '>=20.20.0'}
 
   punycode@2.3.1:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
@@ -4801,7 +4806,7 @@ snapshots:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  manten@1.10.0:
+  manten@2.0.0-beta.2:
     dependencies:
       expect: 30.2.0
 
@@ -5289,6 +5294,10 @@ snapshots:
       react-is: 16.13.1
 
   prototype-properties@5.0.0: {}
+
+  pty-spawn@1.1.0:
+    dependencies:
+      node-pty: 1.2.0-beta.10
 
   punycode@2.3.1: {}
 

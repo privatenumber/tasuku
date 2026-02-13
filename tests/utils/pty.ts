@@ -1,6 +1,12 @@
-import { nanoPty, type PtyProcess } from './nano-pty.ts';
+import { spawn, waitFor } from 'pty-spawn';
 
-export type { PtyResult, PtyProcess } from './nano-pty.ts';
+type NodePtyOptions = {
+	cols?: number;
+	rows?: number;
+	env?: Record<string, string>;
+};
+
+export { waitFor };
 
 /**
  * Spawns a Node.js process in a pseudo-TTY.
@@ -9,27 +15,23 @@ export type { PtyResult, PtyProcess } from './nano-pty.ts';
  *   const { output, exitCode } = await nodePty(script);
  *
  * Interactive:
- *   const pty = nodePty(script, { cols: 80, rows: 10 });
- *   for await (const _ of pty) {
- *     if (pty.output.includes('DONE')) break;
- *   }
- *   pty.resize(80, 40);
- *   const { output, exitCode } = await pty;
+ *   const subprocess = nodePty(script, { cols: 80, rows: 10 });
+ *   await waitFor(subprocess, output => output.includes('DONE'));
+ *   subprocess.resize(80, 40);
+ *   const { output, exitCode } = await subprocess;
  */
 export const nodePty = (
 	scriptPath: string,
-	options?: {
-		cols?: number;
-		rows?: number;
-		env?: Record<string, string>;
-	},
-): PtyProcess => nanoPty(
+	options?: NodePtyOptions,
+) => spawn(
 	process.execPath,
 	[...process.execArgv, scriptPath],
 	{
 		name: 'xterm-256color',
-		cols: options?.cols ?? 80,
-		rows: options?.rows ?? 24,
+		window: {
+			cols: options?.cols ?? 80,
+			rows: options?.rows ?? 24,
+		},
 		cwd: process.cwd(),
 		env: {
 			...process.env,
