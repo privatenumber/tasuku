@@ -5,6 +5,7 @@ import { createFixture } from 'fs-fixture';
 import ansiEscapes from 'ansi-escapes';
 import ansis from 'ansis';
 import { node } from '../utils/node.ts';
+import { nodePty } from '../utils/pty.ts';
 import { tempDir } from '../utils/temp-dir.ts';
 
 describe('lifecycle', () => {
@@ -120,6 +121,42 @@ describe('lifecycle', () => {
 
 			// Console should work normally after renderer destroyed
 			expect(result.stdout).toContain('After all cleared');
+		});
+	});
+
+	describe('console interception', () => {
+		test('task UI redraws immediately after console.log', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+				import task from '#tasuku';
+				import { setTimeout } from 'node:timers/promises';
+
+				await task('MyTask', async () => {
+					// Two synchronous console.log calls — no setTimeout can fire
+					// between them, so only an immediate render() in the console
+					// handler can place the task UI between the markers.
+					console.log('CONSOLE_START');
+					console.log('CONSOLE_END');
+					await setTimeout(200);
+				});
+				`,
+			}, { tempDir });
+
+			const result = await nodePty(fixture.getPath('test.mjs'), {
+				cols: 80,
+				rows: 24,
+			});
+			expect(result.exitCode).toBe(0);
+
+			const startIndex = result.output.indexOf('CONSOLE_START');
+			const endIndex = result.output.indexOf('CONSOLE_END');
+			expect(startIndex).toBeGreaterThan(-1);
+			expect(endIndex).toBeGreaterThan(startIndex);
+
+			// Between the two synchronous markers, the task line should
+			// be re-rendered (proves handleConsoleOutput calls render())
+			const between = result.output.slice(startIndex + 'CONSOLE_START'.length, endIndex);
+			expect(between).toContain('MyTask');
 		});
 	});
 

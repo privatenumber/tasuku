@@ -187,15 +187,11 @@ export const pinned: RendererFactory = (
 		// Save new position — render area moves below console output
 		savePosition();
 
-		// After console output, either re-render task UI or mark idle.
-		// No placeholder '\n' is needed — save/restore anchors the
-		// render area without line-count tracking.
+		// Immediately re-render the task UI so it stays visible below
+		// the console output. Without this, the UI remains erased until
+		// the next spinner tick (up to ~113ms), causing visible flicker.
 		if (taskList.length > 0) {
-			if (areAllTasksDone(taskList) && lastOutput !== '\n') {
-				render();
-			} else {
-				lastOutput = '\n';
-			}
+			render();
 		}
 	};
 
