@@ -2,6 +2,7 @@ import {
 	green, red, yellow, gray, dim,
 } from 'ansis';
 import { createTasuku } from './create-tasuku.ts';
+import { pinned } from './renderers/pinned.ts';
 import type { TasukuTheme } from './types.ts';
 
 export const theme: TasukuTheme = {
@@ -21,8 +22,13 @@ export const theme: TasukuTheme = {
 };
 
 export { createTasuku } from './create-tasuku.ts';
+export { pinned } from './renderers/pinned.ts';
+export { inline } from './renderers/inline.ts';
 
-export default createTasuku({ theme });
+export default createTasuku({
+	renderer: pinned,
+	theme,
+});
 
 export type {
 	State,
@@ -34,4 +40,6 @@ export type {
 	TaskOptions,
 	TasukuTheme,
 	CreateTasukuOptions,
+	Renderer,
+	RendererFactory,
 } from './types.ts';

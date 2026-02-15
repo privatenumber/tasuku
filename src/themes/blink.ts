@@ -1,6 +1,7 @@
 import { rgb, dim } from 'ansis';
-import { createTasuku } from './create-tasuku.ts';
-import type { TasukuTheme } from './types.ts';
+import { createTasuku } from '../create-tasuku.ts';
+import { pinned } from '../renderers/pinned.ts';
+import type { TasukuTheme } from '../types.ts';
 
 /**
  * Blink theme — ⏺ pulses between bright and dim during loading.
@@ -36,9 +37,12 @@ export const theme: TasukuTheme = {
 	},
 };
 
-export { createTasuku } from './create-tasuku.ts';
+export { createTasuku } from '../create-tasuku.ts';
 
-export default createTasuku({ theme });
+export default createTasuku({
+	renderer: pinned,
+	theme,
+});
 
 export type {
 	State,
@@ -50,4 +54,6 @@ export type {
 	TaskOptions,
 	TasukuTheme,
 	CreateTasukuOptions,
-} from './types.ts';
+	Renderer,
+	RendererFactory,
+} from '../types.ts';

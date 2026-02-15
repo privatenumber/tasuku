@@ -9,10 +9,11 @@ describe('createTasuku', () => {
 	test('custom spinner frames appear in output', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
-			import { createTasuku, theme } from '#tasuku';
+			import { createTasuku, pinned, theme } from '#tasuku';
 			import { setTimeout } from 'node:timers/promises';
 
 			const task = createTasuku({
+				renderer: pinned,
 				theme: {
 					...theme,
 					spinner: ['A', 'B', 'C'],
@@ -38,9 +39,10 @@ describe('createTasuku', () => {
 	test('custom icons appear in output', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
-			import { createTasuku, theme } from '#tasuku';
+			import { createTasuku, pinned, theme } from '#tasuku';
 
 			const task = createTasuku({
+				renderer: pinned,
 				theme: {
 					...theme,
 					icons: { ...theme.icons, success: '✓', pending: '○' },
@@ -62,10 +64,11 @@ describe('createTasuku', () => {
 	test('pre-colored icons applied in output', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
-			import { createTasuku, theme } from '#tasuku';
+			import { createTasuku, pinned, theme } from '#tasuku';
 			import { blue } from 'ansis';
 
 			const task = createTasuku({
+				renderer: pinned,
 				theme: {
 					...theme,
 					icons: { ...theme.icons, success: blue('✔') },
@@ -86,9 +89,10 @@ describe('createTasuku', () => {
 	test('custom parent icon', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
-			import { createTasuku, theme } from '#tasuku';
+			import { createTasuku, pinned, theme } from '#tasuku';
 
 			const task = createTasuku({
+				renderer: pinned,
 				theme: {
 					...theme,
 					icons: { ...theme.icons, parent: '▸' },
@@ -128,10 +132,11 @@ describe('createTasuku', () => {
 	test('independent instances do not interfere', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
-			import { createTasuku, theme } from '#tasuku';
+			import { createTasuku, pinned, theme } from '#tasuku';
 			import { blue, magenta } from 'ansis';
 
 			const taskA = createTasuku({
+				renderer: pinned,
 				theme: {
 					...theme,
 					icons: { ...theme.icons, success: blue('A') },
@@ -139,6 +144,7 @@ describe('createTasuku', () => {
 			});
 
 			const taskB = createTasuku({
+				renderer: pinned,
 				theme: {
 					...theme,
 					icons: { ...theme.icons, success: magenta('B') },

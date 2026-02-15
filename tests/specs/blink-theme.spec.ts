@@ -10,10 +10,11 @@ describe('blink theme', () => {
 	test('uses dot spinner instead of braille', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
+			import { pinned } from '#tasuku';
 			import { createTasuku, theme } from '#tasuku/blink';
 			import { setTimeout } from 'node:timers/promises';
 
-			const task = createTasuku({ theme });
+			const task = createTasuku({ renderer: pinned, theme });
 
 			await task('Spinner test', async () => {
 				await setTimeout(500);
@@ -51,10 +52,11 @@ describe('blink theme', () => {
 	test('spinner uses terracotta color', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
+			import { pinned } from '#tasuku';
 			import { createTasuku, theme } from '#tasuku/blink';
 			import { setTimeout } from 'node:timers/promises';
 
-			const task = createTasuku({ theme });
+			const task = createTasuku({ renderer: pinned, theme });
 
 			await task('Loading test', async () => {
 				await setTimeout(500);

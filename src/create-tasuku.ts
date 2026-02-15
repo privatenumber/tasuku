@@ -2,9 +2,10 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { Writable } from 'node:stream';
 import pMap from 'p-map';
 import stripAnsi from 'strip-ansi';
-import { createRenderer, type Renderer } from './renderer.ts';
 import { reactive } from './reactive.ts';
+import { isTerminalState } from './utils/task-list.ts';
 import {
+	type Renderer,
 	type TaskList,
 	type TaskObject,
 	type Task,
@@ -113,6 +114,7 @@ const createStreamPreview = (
 
 export const createTasuku = ({
 	theme,
+	renderer: rendererFactory,
 	outputStream,
 }: CreateTasukuOptions): Task => {
 	const taskContext = new AsyncLocalStorage<TaskList>();
@@ -154,8 +156,8 @@ export const createTasuku = ({
 			},
 			setWarning(warning) {
 				if (warning) {
-					taskState.state = 'warning';
 					api.setOutput(warning);
+					taskState.state = 'warning';
 				} else {
 					taskState.state = 'loading';
 					taskState.output = undefined;
@@ -163,8 +165,8 @@ export const createTasuku = ({
 			},
 			setError(error) {
 				if (error) {
-					taskState.state = 'error';
 					api.setOutput(error);
+					taskState.state = 'error';
 				} else {
 					taskState.state = 'loading';
 					taskState.output = undefined;
@@ -196,7 +198,7 @@ export const createTasuku = ({
 		options?: TaskOptions,
 	): RegisteredTask<T> => {
 		if (!renderer) {
-			renderer = createRenderer(taskList, outputStream ?? process.stderr, theme);
+			renderer = rendererFactory(taskList, outputStream ?? process.stderr, theme);
 			taskList.isRoot = true;
 		}
 
@@ -293,7 +295,7 @@ export const createTasuku = ({
 			clear: {
 				value: () => {
 					const { state } = registeredTask.task;
-					if (state === 'success' || state === 'warning' || state === 'error') {
+					if (isTerminalState(state)) {
 						registeredTask.clear();
 					} else {
 						taskPromise.finally(() => registeredTask.clear()).catch(() => {});
@@ -376,10 +378,7 @@ export const createTasuku = ({
 
 			Object.assign(groupPromise, {
 				clear: () => {
-					const allDone = tasksQueue.every(({ task }) => {
-						const { state } = task;
-						return state === 'success' || state === 'warning' || state === 'error';
-					});
+					const allDone = tasksQueue.every(({ task }) => isTerminalState(task.state));
 
 					if (allDone) {
 						clearAll();

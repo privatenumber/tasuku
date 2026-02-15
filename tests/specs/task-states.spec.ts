@@ -1,4 +1,6 @@
-import { describe, test, expect, onTestFail } from 'manten';
+import {
+	describe, test, expect, onTestFail,
+} from 'manten';
 import { createFixture } from 'fs-fixture';
 import ansiEscapes from 'ansi-escapes';
 import ansis from 'ansis';

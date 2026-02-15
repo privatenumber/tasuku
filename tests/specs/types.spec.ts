@@ -1,9 +1,10 @@
 import { Writable } from 'node:stream';
 import { describe, test } from 'manten';
 import { expectTypeOf } from 'expect-type';
-import { createTasuku, theme } from '#tasuku';
+import { createTasuku, pinned, theme } from '#tasuku';
 
 const task = createTasuku({
+	renderer: pinned,
 	theme,
 	outputStream: new Writable({ write: (_, __, callback) => { callback(); } }) as NodeJS.WriteStream,
 });

@@ -25,6 +25,10 @@ describe('tasuku', () => {
 	// Unit tests
 	import('./specs/format-elapsed.spec.ts');
 	import('./specs/task-list.spec.ts');
+	import('./specs/truncate-line.spec.ts');
+
+	// Inline renderer
+	import('./specs/inline-renderer.spec.ts');
 
 	// Factory
 	import('./specs/create-tasuku.spec.ts');

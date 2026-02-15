@@ -27,16 +27,16 @@
 			"default": "./dist/index.mjs"
 		},
 		"./claude": {
-			"types": "./dist/claude.d.mts",
-			"default": "./dist/claude.mjs"
+			"types": "./dist/themes/claude.d.mts",
+			"default": "./dist/themes/claude.mjs"
 		},
 		"./blink": {
-			"types": "./dist/blink.d.mts",
-			"default": "./dist/blink.mjs"
+			"types": "./dist/themes/blink.d.mts",
+			"default": "./dist/themes/blink.mjs"
 		},
 		"./codex": {
-			"types": "./dist/codex.d.mts",
-			"default": "./dist/codex.mjs"
+			"types": "./dist/themes/codex.d.mts",
+			"default": "./dist/themes/codex.mjs"
 		}
 	},
 	"imports": {
@@ -46,19 +46,19 @@
 			"default": "./dist/index.mjs"
 		},
 		"#tasuku/claude": {
-			"types": "./src/claude.ts",
-			"development": "./src/claude.ts",
-			"default": "./dist/claude.mjs"
+			"types": "./src/themes/claude.ts",
+			"development": "./src/themes/claude.ts",
+			"default": "./dist/themes/claude.mjs"
 		},
 		"#tasuku/blink": {
-			"types": "./src/blink.ts",
-			"development": "./src/blink.ts",
-			"default": "./dist/blink.mjs"
+			"types": "./src/themes/blink.ts",
+			"development": "./src/themes/blink.ts",
+			"default": "./dist/themes/blink.mjs"
 		},
 		"#tasuku/codex": {
-			"types": "./src/codex.ts",
-			"development": "./src/codex.ts",
-			"default": "./dist/codex.mjs"
+			"types": "./src/themes/codex.ts",
+			"development": "./src/themes/codex.ts",
+			"default": "./dist/themes/codex.mjs"
 		}
 	},
 	"packageManager": "pnpm@10.19.0",

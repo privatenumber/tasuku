@@ -177,7 +177,22 @@ export type TasukuTheme = {
 	colors: TasukuColors;
 };
 
+export type Renderer = {
+	triggerRender: () => void;
+	flushRender: () => void;
+	renderFinal: () => void;
+	destroy: () => void;
+	setMaxVisible: (limit?: number | ((terminalHeight: number) => number)) => void;
+};
+
+export type RendererFactory = (
+	taskList: TaskList,
+	outputStream: NodeJS.WriteStream,
+	theme: TasukuTheme,
+) => Renderer;
+
 export type CreateTasukuOptions = {
 	theme: TasukuTheme;
+	renderer: RendererFactory;
 	outputStream?: NodeJS.WriteStream;
 };

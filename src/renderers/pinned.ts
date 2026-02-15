@@ -3,28 +3,17 @@ import {
 	cursorSavePosition, cursorRestorePosition, eraseDown,
 } from 'ansi-escapes';
 import stringWidth from 'string-width';
-import type { TaskList, TasukuTheme } from './types.ts';
-import { formatElapsed } from './utils/format-elapsed.ts';
-import { patchConsole } from './utils/patch-console.ts';
-import { areAllTasksDone } from './utils/task-list.ts';
+import type {
+	Renderer, RendererFactory, TaskList, TasukuTheme,
+} from '../types.ts';
+import { formatTaskLine } from '../utils/format-task-line.ts';
+import { formatTaskOutput } from '../utils/format-task-output.ts';
+import { getIcon } from '../utils/get-icon.ts';
+import { isCI } from '../utils/is-ci.ts';
+import { patchConsole } from '../utils/patch-console.ts';
+import { areAllTasksDone } from '../utils/task-list.ts';
 
-// Simple CI detection (inline instead of is-in-ci dependency)
-// Only enable CI mode if explicitly in CI environment, not just !isTTY
-const isCI = Boolean(
-	process.env.CI
-	|| process.env.CONTINUOUS_INTEGRATION
-	|| process.env.BUILD_NUMBER,
-);
-
-export type Renderer = {
-	triggerRender: () => void;
-	flushRender: () => void;
-	renderFinal: () => void;
-	destroy: () => void;
-	setMaxVisible: (limit?: number | ((terminalHeight: number) => number)) => void;
-};
-
-export const createRenderer = (
+export const pinned: RendererFactory = (
 	taskList: TaskList,
 	outputStream: NodeJS.WriteStream,
 	theme: TasukuTheme,
@@ -89,89 +78,12 @@ export const createRenderer = (
 
 	// Exit handler registered after render() is defined (see below)
 
-	const getIcon = (state: TaskList[number]['state'], hasChildren: boolean): string => {
-		if (state === 'pending') {
-			return theme.icons.pending;
-		}
-
-		if (state === 'loading') {
-			if (hasChildren) {
-				return theme.icons.parent;
-			}
-			return theme.spinner[spinnerFrame];
-		}
-
-		if (state === 'success') {
-			if (hasChildren) {
-				return theme.icons.parent;
-			}
-			return theme.icons.success;
-		}
-
-		if (state === 'error') {
-			if (hasChildren) {
-				return theme.icons.parentError;
-			}
-			return theme.icons.error;
-		}
-
-		if (state === 'warning') {
-			return theme.icons.warning;
-		}
-
-		return theme.icons.pending;
-	};
-
 	const renderTask = (task: TaskList[number], depth: number): string => {
-		const indent = '  '.repeat(depth);
 		const hasChildren = task.children && task.children.length > 0;
-		const icon = getIcon(task.state, hasChildren);
+		const icon = getIcon(task.state, hasChildren, theme, spinnerFrame);
 
-		const styledTitle = theme.colors.title
-			? theme.colors.title(task.title, task.state, animationFrame)
-			: task.title;
-		let line = `${indent}${icon} ${styledTitle}`;
-		if (task.status) {
-			line += ` ${theme.colors.dim(`[${task.status}]`)}`;
-		}
-
-		// Add elapsed time if timer is active or frozen
-		const elapsedMs = task.elapsedMs ?? (
-			task.startedAt === undefined
-				? undefined
-				: Date.now() - task.startedAt
-		);
-		if (elapsedMs !== undefined && elapsedMs >= 1000) {
-			line += ` ${theme.colors.dim(formatElapsed(elapsedMs))}`;
-		}
-
-		line += '\n';
-
-		const outputIndent = `${indent}  `;
-
-		// Static output: → prefix
-		if (task.output) {
-			line += `${task.output
-				.split('\n')
-				.map((outputLine, index) => `${outputIndent}${theme.colors.secondary(index === 0 ? `→ ${outputLine}` : outputLine)}`)
-				.join('\n')}\n`;
-		}
-
-		// Stream preview: ⎿ prefix with aligned continuation
-		if (task.streamOutput) {
-			const continuationIndent = `${outputIndent}   `;
-			line += `${task.streamOutput
-				.split('\n')
-				.map((outputLine, index) => (index === 0
-					? `${outputIndent}⎿  ${theme.colors.secondary(outputLine)}`
-					: `${continuationIndent}${theme.colors.secondary(outputLine)}`))
-				.join('\n')}\n`;
-
-			if (task.streamTruncatedLines) {
-				const truncatedText = `(+ ${task.streamTruncatedLines} lines)`;
-				line += `${continuationIndent}${theme.colors.secondary(truncatedText)}\n`;
-			}
-		}
+		let line = `${formatTaskLine(task, icon, depth, theme, animationFrame)}\n`;
+		line += formatTaskOutput(task, depth, theme);
 
 		// Render children recursively
 		if (hasChildren) {
@@ -199,7 +111,9 @@ export const createRenderer = (
 			// that scrolled off screen, which would break the next redraw.
 			const skipLimit = isFinalRender && maxVisibleOverride === undefined;
 
-			if (!skipLimit) {
+			if (skipLimit) {
+				hasHiddenTasks = false;
+			} else {
 				const maxLines = getVisibleLinesLimit();
 
 				// Sort by state only when truncation is needed — preserves
@@ -235,37 +149,27 @@ export const createRenderer = (
 				const hiddenTasks = sortedTasks.slice(renderedTaskCount);
 				hasHiddenTasks = hiddenTasks.length > 0;
 
-				// If nothing was hidden, render in original insertion order.
-				// This re-renders tasks unsorted, but renderTask is a pure
-				// string builder so the cost is negligible.
-				if (!hasHiddenTasks) {
-					return tasks.map(task => renderTask(task, depth)).join('');
-				}
-
-				const parts: string[] = [];
-				let loading = 0;
-				let pending = 0;
-				let completed = 0;
-				for (const task of hiddenTasks) {
-					if (task.state === 'loading') {
-						loading += 1;
-					} else if (task.state === 'pending') {
-						pending += 1;
-					} else {
-						completed += 1;
+				if (hasHiddenTasks) {
+					const parts: string[] = [];
+					let loading = 0;
+					let pending = 0;
+					let completed = 0;
+					for (const task of hiddenTasks) {
+						if (task.state === 'loading') {
+							loading += 1;
+						} else if (task.state === 'pending') {
+							pending += 1;
+						} else {
+							completed += 1;
+						}
 					}
+					if (loading > 0) { parts.push(`${loading} loading`); }
+					if (pending > 0) { parts.push(`${pending} queued`); }
+					if (completed > 0) { parts.push(`${completed} completed`); }
+					output += `${theme.colors.dim(`(+ ${parts.join(', ')})`)}\n`;
+					return output;
 				}
-				if (loading > 0) { parts.push(`${loading} loading`); }
-				if (pending > 0) { parts.push(`${pending} queued`); }
-				if (completed > 0) { parts.push(`${completed} completed`); }
-				const hiddenText = `(+ ${parts.join(', ')})`;
-				output += `${theme.colors.dim(hiddenText)}\n`;
-
-				return output;
 			}
-
-			hasHiddenTasks = false;
-			return tasks.map(task => renderTask(task, depth)).join('');
 		}
 
 		return tasks.map(task => renderTask(task, depth)).join('');
@@ -413,27 +317,11 @@ export const createRenderer = (
 	};
 
 	const destroy = () => {
-		// Remove exit handler to prevent memory leaks
-		if (isInteractive) {
-			process.off('exit', handleExit);
-		}
-
-		// Remove resize handler
-		if (isTTY) {
-			outputStream.off('resize', handleResize);
-		}
-
-		if (spinnerInterval) {
-			clearInterval(spinnerInterval);
-		}
-
-		if (renderTimeout) {
-			clearTimeout(renderTimeout);
-		}
-
-		if (restoreConsole) {
-			restoreConsole();
-		}
+		process.off('exit', handleExit);
+		outputStream.off('resize', handleResize);
+		clearInterval(spinnerInterval);
+		clearTimeout(renderTimeout);
+		restoreConsole?.();
 
 		// Clear all task output before destroying
 		clearRenderArea();

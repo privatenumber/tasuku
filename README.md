@@ -43,6 +43,7 @@ await task.group(task => [
 - Task list with dynamic states
 - Parallel & nestable tasks
 - Customizable themes (icons, colors, spinners)
+- Two renderers: [pinned](#pinned-default) (animated) and [inline](#inline) (sequential)
 - Zero runtime dependencies
 - Renders to stderr — stdout stays clean for program output
 - Type-safe
@@ -560,6 +561,74 @@ tasks.clear()
 </details>
 </p>
 
+## Renderers
+
+Tasuku ships two renderers that control how task output appears in the terminal. The default export uses `pinned`, but you can switch to `inline` via `createTasuku`.
+
+### Pinned (default)
+
+The pinned renderer keeps the task list fixed at the bottom of the terminal using cursor save/restore. Spinner animations update in-place, and `console.log` output is moved above the task area. This is the default behavior.
+
+### Inline
+
+The inline renderer writes output sequentially — each task result is appended as a new line, and `console.log` output appears exactly where it was called, interleaved with task results.
+
+Use this when:
+- You want `console.log` and task output in natural order ([#16](https://github.com/privatenumber/tasuku/issues/16))
+- You're logging to a file or piping output
+- You want minimal terminal manipulation
+
+<p align="center" demo>
+<img src=".github/media/inline.gif" width="600" alt="Terminal showing inline renderer with console.log interleaved between tasks">
+<details>
+<summary>View code</summary>
+
+<!-- @vhs
+Set Height 440
+Hide
+Type "node {file}"
+Enter
+Show
+Sleep 7s
+-->
+
+```js
+import { setTimeout } from 'node:timers/promises'
+import { createTasuku, inline, theme } from 'tasuku'
+
+const task = createTasuku({
+    renderer: inline,
+    theme
+})
+
+console.log('Starting build pipeline...')
+
+await task('Resolving dependencies', async ({ setTitle }) => {
+    await setTimeout(1500)
+    setTitle('Resolved 148 dependencies')
+})
+
+console.log('Dependencies locked ✓')
+
+await task('Running tests', async ({ setTitle }) => {
+    await setTimeout(2000)
+    setTitle('42 tests passed')
+})
+
+console.log('All checks passed — ready to deploy')
+```
+
+</details>
+</p>
+
+On TTY, the inline renderer tracks each task line by its offset from the cursor and updates it in-place using `CSI n A` (cursor up) and `CSI n B` (cursor down). On non-TTY (piped output, CI), only the final state is written — no spinner frames or cursor sequences.
+
+> [!NOTE]
+> The inline renderer does not support `maxVisible` since tasks are written to scrollback immediately.
+
+> [!IMPORTANT]
+> `CSI n A` clamps at row 1 of the visible viewport — it cannot enter the scrollback buffer. Tasks that scroll above the visible terminal window can no longer be updated in-place. This is a terminal limitation, not a software one. If you have more concurrent tasks than terminal rows, consider using the [pinned](#pinned-default) renderer instead.
+
 ## Themes
 
 ### Default
@@ -690,11 +759,11 @@ await task('Building project', async ({ setTitle }) => {
 
 Create your own theme with `createTasuku()`. Each call returns an independent task runner with its own renderer.
 
-Every theme entry point exports `createTasuku` and `theme`, so you can use any built-in theme as a base:
+Every theme entry point exports `createTasuku` and `theme`, so you can use any built-in theme as a base. Import renderers from the main `'tasuku'` entry point:
 
 ```ts
 import { rgb } from 'ansis'
-import { createTasuku, theme } from 'tasuku'
+import { createTasuku, pinned, theme } from 'tasuku'
 
 const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 const rainbow = frames.map((frame, i) => {
@@ -704,6 +773,7 @@ const rainbow = frames.map((frame, i) => {
 })
 
 const task = createTasuku({
+    renderer: pinned,
     theme: {
         ...theme,
         spinner: rainbow
@@ -738,6 +808,12 @@ type TasukuTheme = {
 ```
 
 The `title` color function receives the task state and animation frame counter, enabling per-frame effects like shimmer animations.
+
+#### renderer
+
+Type: `RendererFactory`
+
+Required. The [renderer](#renderers) to use. Import `pinned` or `inline` from any entry point.
 
 #### outputStream
 

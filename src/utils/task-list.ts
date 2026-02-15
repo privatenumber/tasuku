@@ -1,4 +1,8 @@
-import type { TaskList } from '../types.js';
+import type { State, TaskList } from '../types.ts';
+
+export const isTerminalState = (state: State): boolean => (
+	state === 'success' || state === 'error' || state === 'warning'
+);
 
 export const areAllTasksDone = (tasks: TaskList): boolean => {
 	for (const task of tasks) {

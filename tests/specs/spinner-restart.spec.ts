@@ -1,4 +1,6 @@
-import { describe, test, expect, onTestFail } from 'manten';
+import {
+	describe, test, expect, onTestFail,
+} from 'manten';
 import { createFixture } from 'fs-fixture';
 import ansis from 'ansis';
 import { nodePty } from '../utils/pty.ts';

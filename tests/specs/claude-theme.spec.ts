@@ -8,10 +8,11 @@ describe('claude theme', () => {
 	test('uses Claude spinner frames', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
+			import { pinned } from '#tasuku';
 			import { createTasuku, theme } from '#tasuku/claude';
 			import { setTimeout } from 'node:timers/promises';
 
-			const task = createTasuku({ theme });
+			const task = createTasuku({ renderer: pinned, theme });
 
 			await task('Spinner test', async () => {
 				await setTimeout(500);
@@ -67,10 +68,11 @@ describe('claude theme', () => {
 	test('loading spinner uses Claude terracotta', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
+			import { pinned } from '#tasuku';
 			import { createTasuku, theme } from '#tasuku/claude';
 			import { setTimeout } from 'node:timers/promises';
 
-			const task = createTasuku({ theme });
+			const task = createTasuku({ renderer: pinned, theme });
 
 			await task('Loading test', async () => {
 				await setTimeout(500);

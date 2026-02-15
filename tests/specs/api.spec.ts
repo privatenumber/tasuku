@@ -1,9 +1,10 @@
 import { setTimeout } from 'node:timers/promises';
 import { Writable } from 'node:stream';
 import { describe, test, expect } from 'manten';
-import { createTasuku, theme } from '#tasuku';
+import { createTasuku, pinned, theme } from '#tasuku';
 
 const task = createTasuku({
+	renderer: pinned,
 	theme,
 	outputStream: new Writable({ write: (_, __, callback) => { callback(); } }) as NodeJS.WriteStream,
 });
