@@ -4,8 +4,9 @@ import stringWidth from 'string-width';
  * Truncate a styled line to fit within a column limit.
  * Uses string-width for accurate visual width (CJK, emoji, ANSI).
  *
- * Walks the string, skipping ANSI escape sequences (CSI, OSC,
- * two-byte ESC), and measuring visible characters with string-width.
+ * Walks the string, skipping ANSI escape sequences (CSI, OSC, DCS, APC,
+ * PM, SOS, charset designation, and two-byte ESC), and measuring visible
+ * characters with string-width.
  */
 export const truncateLine = (line: string, columns: number): string => {
 	let visibleWidth = 0;
@@ -30,8 +31,15 @@ export const truncateLine = (line: string, columns: number): string => {
 					}
 					i += 1;
 				}
-			} else if (next === ']') {
-				// OSC sequence: ESC ] ... (terminated by BEL or ESC \)
+			} else if (
+				next === ']'
+				|| next === 'P'
+				|| next === '_'
+				|| next === '^'
+				|| next === 'X'
+			) {
+				// String sequences terminated by ST (BEL or ESC \):
+				// OSC (ESC ]), DCS (ESC P), APC (ESC _), PM (ESC ^), SOS (ESC X)
 				result += char + next;
 				i += 2;
 				while (i < line.length) {
@@ -45,6 +53,18 @@ export const truncateLine = (line: string, columns: number): string => {
 						break;
 					}
 					i += 1;
+				}
+			} else if (
+				next === '('
+				|| next === ')'
+				|| next === '*'
+				|| next === '+'
+			) {
+				// Charset designation: ESC ( X, ESC ) X, ESC * X, ESC + X (3 bytes)
+				result += char + next;
+				i += 2;
+				if (i < line.length) {
+					result += line[i];
 				}
 			} else {
 				// Two-byte ESC sequence (ESC 7, ESC 8, ESC c, etc.)
