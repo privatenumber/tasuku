@@ -200,13 +200,13 @@ describe('stream preview', () => {
 		expect(result.stderr).not.toContain('\r');
 	});
 
-	test('strips ANSI codes from piped output', async () => {
+	test('preserves ANSI colors from piped output', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': String.raw`
 			import task from '#tasuku';
 
 			await task('Task', async ({ streamPreview }) => {
-				// Simulate colored process output
+				// Simulate colored process output (e.g. jest, webpack)
 				streamPreview.write('\x1B[32msuccess\x1B[39m message\n');
 				await new Promise(resolve => setTimeout(resolve, 50));
 			});
@@ -216,9 +216,9 @@ describe('stream preview', () => {
 		const result = await node(fixture.getPath('test.mjs'));
 		expect(result.stdout).toBe('');
 
-		// Should contain the text without the original ANSI codes
-		// (tasuku applies its own gray styling)
-		expect(result.stderr).toContain(`\u23BF  ${ansis.gray('success message')}`);
+		// Original ANSI colors should be preserved in the output
+		// (ansis wraps with secondary color, so inner green overrides then secondary restores)
+		expect(result.stderr).toContain('\x1B[32msuccess');
 	});
 
 	test('no truncation indicator when lines fit within limit', async () => {
@@ -268,6 +268,41 @@ describe('stream preview', () => {
 		const staticIndex = result.stderr.lastIndexOf('\u2192 static output');
 		const streamIndex = result.stderr.lastIndexOf('\u23BF');
 		expect(staticIndex).toBeLessThan(streamIndex);
+	});
+
+	test('final flush triggers maxLines overflow shift', async () => {
+		await using fixture = await createFixture({
+			'test.mjs': `
+			import { Readable } from 'node:stream';
+			import { pipeline } from 'node:stream/promises';
+			import task from '#tasuku';
+
+			await task('Task', async ({ streamPreview }) => {
+				// 5 complete lines fill the default maxLines=5, then
+				// a partial line (no trailing newline) triggers final() overflow
+				const stream = Readable.from([
+					'line 1\\nline 2\\nline 3\\nline 4\\nline 5\\n',
+					'partial line 6',
+				]);
+				await pipeline(stream, streamPreview);
+			});
+			`,
+		}, { tempDir });
+
+		const result = await node(fixture.getPath('test.mjs'));
+		expect(result.stdout).toBe('');
+
+		// line 1 should be shifted out (6 lines, maxLines=5)
+		expect(result.stderr).not.toContain('line 1');
+
+		// line 2 should be the first visible line (with prefix)
+		expect(result.stderr).toContain(`\u23BF  ${ansis.gray('line 2')}`);
+
+		// partial line 6 should be flushed by final()
+		expect(result.stderr).toContain(ansis.gray('partial line 6'));
+
+		// 1 line truncated
+		expect(result.stderr).toContain(ansis.gray('(+ 1 lines)'));
 	});
 
 	test('flushes partial line on stream end', async () => {

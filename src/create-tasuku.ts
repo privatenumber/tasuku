@@ -1,7 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { Writable } from 'node:stream';
 import pMap from 'p-map';
-import stripAnsi from 'strip-ansi';
 import { reactive } from './reactive.ts';
 import { isTerminalState } from './utils/task-list.ts';
 import {
@@ -52,7 +51,7 @@ const createStreamPreview = (
 
 	const writable = new Writable({
 		write(chunk: Buffer, _encoding, callback) {
-			const text = stripAnsi(partialLine + chunk.toString());
+			const text = partialLine + chunk.toString();
 			const parts = text.split(/\r?\n/);
 
 			// Last element is either empty (if chunk ended with \n) or a partial line
