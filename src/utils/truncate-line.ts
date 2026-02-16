@@ -19,57 +19,65 @@ export const truncateLine = (line: string, columns: number): string => {
 		if (char === '\u001B' && i + 1 < line.length) {
 			const next = line[i + 1];
 
-			if (next === '[') {
-				// CSI sequence: ESC [ params final_byte (0x40-0x7E)
-				// Consume ESC [ first, then scan for final byte
-				result += char + next;
-				i += 2;
-				while (i < line.length) {
-					result += line[i];
-					if (line[i] >= '@' && line[i] <= '~') {
-						break;
-					}
-					i += 1;
-				}
-			} else if (
-				next === ']'
-				|| next === 'P'
-				|| next === '_'
-				|| next === '^'
-				|| next === 'X'
-			) {
-				// String sequences terminated by ST (BEL or ESC \):
-				// OSC (ESC ]), DCS (ESC P), APC (ESC _), PM (ESC ^), SOS (ESC X)
-				result += char + next;
-				i += 2;
-				while (i < line.length) {
-					result += line[i];
-					if (line[i] === '\u0007') {
-						break;
-					}
-					if (line[i] === '\u001B' && i + 1 < line.length && line[i + 1] === '\\') {
-						result += line[i + 1];
+			switch (next) {
+				case '[': {
+					// CSI sequence: ESC [ params final_byte (0x40-0x7E)
+					// Consume ESC [ first, then scan for final byte
+					result += char + next;
+					i += 2;
+					while (i < line.length) {
+						result += line[i];
+						if (line[i] >= '@' && line[i] <= '~') {
+							break;
+						}
 						i += 1;
-						break;
 					}
+					break;
+				}
+
+				case ']':
+				case 'P':
+				case '_':
+				case '^':
+				case 'X': {
+					// String sequences terminated by ST (BEL or ESC \):
+					// OSC (ESC ]), DCS (ESC P), APC (ESC _), PM (ESC ^), SOS (ESC X)
+					result += char + next;
+					i += 2;
+					while (i < line.length) {
+						result += line[i];
+						if (line[i] === '\u0007') {
+							break;
+						}
+						if (line[i] === '\u001B' && i + 1 < line.length && line[i + 1] === '\\') {
+							result += line[i + 1];
+							i += 1;
+							break;
+						}
+						i += 1;
+					}
+					break;
+				}
+
+				case '(':
+				case ')':
+				case '*':
+				case '+': {
+					// Charset designation: ESC ( X, ESC ) X, ESC * X, ESC + X (3 bytes)
+					result += char + next;
+					i += 2;
+					if (i < line.length) {
+						result += line[i];
+					}
+					break;
+				}
+
+				default: {
+					// Two-byte ESC sequence (ESC 7, ESC 8, ESC c, etc.)
+					result += char + next;
 					i += 1;
+					break;
 				}
-			} else if (
-				next === '('
-				|| next === ')'
-				|| next === '*'
-				|| next === '+'
-			) {
-				// Charset designation: ESC ( X, ESC ) X, ESC * X, ESC + X (3 bytes)
-				result += char + next;
-				i += 2;
-				if (i < line.length) {
-					result += line[i];
-				}
-			} else {
-				// Two-byte ESC sequence (ESC 7, ESC 8, ESC c, etc.)
-				result += char + next;
-				i += 1;
 			}
 		} else {
 			const charWidth = stringWidth(char);

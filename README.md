@@ -251,6 +251,7 @@ The task function receives an API object for controlling the task display:
 
 ```ts
 type TaskFunction = (api: {
+    signal: AbortSignal
     setTitle(title: string): void
     setStatus(status?: string): void
     setOutput(output: string | { message: string }): void
@@ -260,6 +261,82 @@ type TaskFunction = (api: {
     startTime(): void
     stopTime(): number
 }) => Promise<unknown>
+```
+
+#### signal
+
+An `AbortSignal` that the task can use to respond to cancellation. The signal is cooperative — it only cancels work if you pass it to an API that respects it (like `fetch()`, streams, or `setTimeout` from `timers/promises`). Tasks that don't use the signal will continue running normally.
+
+The signal is aborted automatically when:
+- **In `task.group()`**: a sibling task fails (when `stopOnError` is `true`, the default)
+- **In nested tasks**: the parent task throws an error
+
+The error that caused the abort is available on `signal.reason`.
+
+Many APIs like `fetch()` accept a signal and cancel automatically. For multi-step work, use `signal.throwIfAborted()` between steps to bail out early:
+
+```ts
+await task('Deploy', async ({ signal }) => {
+    const artifact = await build({ signal })
+
+    signal.throwIfAborted() // stop here if aborted during build
+
+    await upload(artifact, { signal })
+
+    signal.throwIfAborted() // stop here if aborted during upload
+
+    await notifySlack('Deployed!')
+})
+```
+
+##### Aborting by throwing
+
+Throwing an error from a task aborts the signal for all child and sibling tasks:
+
+```ts
+// Nested tasks: parent throw aborts children
+await task('Deploy', async () => {
+    task('Upload assets', async ({ signal }) => {
+        await upload(files, { signal })
+    }).catch(() => {})
+
+    throw new Error('deploy failed')
+})
+
+// Group tasks: sibling throw aborts siblings
+await task.group(task => [
+    task('Upload A', async ({ signal }) => {
+        // signal.aborted becomes true when B fails, but only
+        // cancels work if you pass it to an API that respects it
+        await upload(fileA, { signal })
+    }),
+    task('Upload B', async () => {
+        throw new Error('network error')
+    })
+], { concurrency: 2 })
+```
+
+##### Aborting with an external signal
+
+Pass an `AbortController` signal via `options.signal` to cancel from outside:
+
+```ts
+// Nested tasks — abort after a timeout
+await task('Deploy', async () => {
+    await task('Long upload', async ({ signal }) => {
+        await upload(files, { signal })
+    }, { signal: AbortSignal.timeout(5000) })
+})
+
+// Group tasks — abort after a timeout
+await task.group(task => [
+    task('Upload A', async ({ signal }) => {
+        await upload(fileA, { signal })
+    }),
+    task('Upload B', async ({ signal }) => {
+        await upload(fileB, { signal })
+    })
+], { signal: AbortSignal.timeout(5000) })
 ```
 
 #### setTitle()
@@ -374,6 +451,18 @@ Default: `5`
 
 Maximum lines to display in `streamPreview` output (minimum 1). When the stream produces more lines, older lines scroll off and a `(+ N lines)` indicator shows the total.
 
+##### signal
+
+Type: `AbortSignal`
+
+An external abort signal to cancel the task. The signal is exposed via the task inner API's `signal` property. When used in a group, the effective signal is a combination of both the external and group-internal signals.
+
+```ts
+task('Upload', async ({ signal }) => {
+    await fetch(url, { signal })
+}, { signal: AbortSignal.timeout(5000) })
+```
+
 ### task.group(createTasks, options?)
 
 Returns a `TaskGroupPromise` — a Promise that resolves to an array of return values with a `.clear()` method:
@@ -413,6 +502,19 @@ When `false`, instead of stopping when a task fails, waits for all tasks to fini
 Type: `AbortSignal`
 
 Abort signal to cancel pending tasks.
+
+In addition to this external signal, `task.group()` creates an internal signal that auto-aborts all running tasks when one fails (when `stopOnError` is `true`, the default). This signal is passed to each task's inner API as `signal`, so task functions can react to sibling failures:
+
+```ts
+await task.group(task => [
+    task('Upload A', async ({ signal }) => {
+        await upload(fileA, { signal }) // aborted when B fails
+    }),
+    task('Upload B', async () => {
+        throw new Error('network error') // triggers abort of A
+    })
+], { concurrency: 2 })
+```
 
 ##### maxVisible
 

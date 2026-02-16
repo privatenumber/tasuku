@@ -308,4 +308,122 @@ describe('API', () => {
 			expect(executedTasks).toEqual([1]);
 		});
 	});
+
+	describe('signal', () => {
+		test('signal is available in task inner API', async () => {
+			let receivedSignal: AbortSignal | undefined;
+
+			await task('Signal task', async ({ signal }) => {
+				receivedSignal = signal;
+			});
+
+			expect(receivedSignal).toBeInstanceOf(AbortSignal);
+			expect(receivedSignal!.aborted).toBe(false);
+		});
+
+		test('standalone task receives external signal', async () => {
+			const controller = new AbortController();
+			let receivedSignal: AbortSignal | undefined;
+
+			controller.abort();
+
+			await task('Signal task', async ({ signal }) => {
+				receivedSignal = signal;
+			}, { signal: controller.signal });
+
+			expect(receivedSignal!.aborted).toBe(true);
+		});
+
+		test('group auto-aborts running tasks on failure', async () => {
+			let siblingSignal: AbortSignal | undefined;
+			const failureError = new Error('boom');
+
+			await expect(
+				task.group(task => [
+					task('slow', async ({ signal }) => {
+						siblingSignal = signal;
+						// Wait until aborted
+						await new Promise((_resolve, reject) => {
+							signal.addEventListener('abort', () => reject(new Error('aborted')));
+						});
+					}),
+					task('fails', async () => {
+						throw failureError;
+					}),
+				], { concurrency: 2 }),
+			).rejects.toThrow();
+
+			expect(siblingSignal!.aborted).toBe(true);
+			expect(siblingSignal!.reason).toBe(failureError);
+		});
+
+		test('group with stopOnError false does not auto-abort', async () => {
+			let taskASignal: AbortSignal | undefined;
+
+			await expect(
+				task.group(task => [
+					task('A', async ({ signal }) => {
+						taskASignal = signal;
+						await setTimeout(50);
+					}),
+					task('B', async () => {
+						throw new Error('fail');
+					}),
+				], {
+					concurrency: 2,
+					stopOnError: false,
+				}),
+			).rejects.toThrow();
+
+			expect(taskASignal!.aborted).toBe(false);
+		});
+
+		test('parent abort propagates to nested child tasks', async () => {
+			let childSignal: AbortSignal | undefined;
+
+			await expect(
+				task('parent', async () => {
+					// Fire-and-forget child — catch its abort rejection
+					task('child', async ({ signal }) => {
+						childSignal = signal;
+						await setTimeout(5000, undefined, { signal });
+					}).catch(() => {});
+
+					throw new Error('parent failed');
+				}),
+			).rejects.toThrow('parent failed');
+
+			expect(childSignal).toBeInstanceOf(AbortSignal);
+			expect(childSignal!.aborted).toBe(true);
+		});
+
+		test('setError does not abort signal', async () => {
+			let receivedSignal: AbortSignal | undefined;
+
+			await task('Error task', async ({ signal, setError }) => {
+				setError('something broke');
+				receivedSignal = signal;
+			});
+
+			expect(receivedSignal!.aborted).toBe(false);
+		});
+
+		test('abort signal reason contains the error that caused it', async () => {
+			let childSignal: AbortSignal | undefined;
+			const parentError = new Error('parent failed');
+
+			await expect(
+				task('parent', async () => {
+					task('child', async ({ signal }) => {
+						childSignal = signal;
+						await setTimeout(5000, undefined, { signal });
+					}).catch(() => {});
+
+					throw parentError;
+				}),
+			).rejects.toThrow('parent failed');
+
+			expect(childSignal!.reason).toBe(parentError);
+		});
+	});
 });

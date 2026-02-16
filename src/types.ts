@@ -56,6 +56,7 @@ export type TaskObject = {
 export type TaskOptions = {
 	showTime?: boolean;
 	previewLines?: number;
+	signal?: AbortSignal;
 };
 
 export type TaskList = TaskObject[] & {
@@ -67,6 +68,7 @@ export type StreamPreview = Writable & {
 };
 
 export type TaskInnerAPI = {
+	signal: AbortSignal;
 	setTitle(title: string): void;
 	setStatus(status?: string): void;
 	setWarning(warning?: Error | string | false | null): void;
@@ -82,7 +84,7 @@ export type TaskFunction<T> = (innerApi: TaskInnerAPI) => Promise<T>;
 export const runSymbol: unique symbol = Symbol('run');
 
 export type RegisteredTask<T = unknown> = {
-	[runSymbol]: () => Promise<T>; // ReturnType<TaskFunction<T>>;
+	[runSymbol]: (signal?: AbortSignal) => Promise<T>;
 	task: TaskObject;
 	clear: () => void;
 };

@@ -218,7 +218,7 @@ describe('stream preview', () => {
 
 		// Original ANSI colors should be preserved in the output
 		// (ansis wraps with secondary color, so inner green overrides then secondary restores)
-		expect(result.stderr).toContain('\x1B[32msuccess');
+		expect(result.stderr).toContain('\u001B[32msuccess');
 	});
 
 	test('no truncation indicator when lines fit within limit', async () => {
@@ -272,7 +272,7 @@ describe('stream preview', () => {
 
 	test('final flush triggers maxLines overflow shift', async () => {
 		await using fixture = await createFixture({
-			'test.mjs': `
+			'test.mjs': String.raw`
 			import { Readable } from 'node:stream';
 			import { pipeline } from 'node:stream/promises';
 			import task from '#tasuku';
@@ -281,7 +281,7 @@ describe('stream preview', () => {
 				// 5 complete lines fill the default maxLines=5, then
 				// a partial line (no trailing newline) triggers final() overflow
 				const stream = Readable.from([
-					'line 1\\nline 2\\nline 3\\nline 4\\nline 5\\n',
+					'line 1\nline 2\nline 3\nline 4\nline 5\n',
 					'partial line 6',
 				]);
 				await pipeline(stream, streamPreview);

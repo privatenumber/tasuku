@@ -116,17 +116,23 @@ export const createTasuku = ({
 	renderer: rendererFactory,
 	outputStream,
 }: CreateTasukuOptions): Task => {
-	const taskContext = new AsyncLocalStorage<TaskList>();
+	type TaskContext = {
+		children: TaskList;
+		abortController: AbortController;
+	};
+	const taskContext = new AsyncLocalStorage<TaskContext>();
 	let renderer: Renderer | undefined;
 	const triggerRender = () => { renderer?.triggerRender(); };
 
 	const createTaskInnerApi = (
 		taskState: TaskObject,
+		signal: AbortSignal,
 		options?: TaskOptions,
 	) => {
 		let stream: StreamPreview | undefined;
 
 		const api: TaskInnerAPI = {
+			signal,
 			setTitle(title) {
 				taskState.title = title;
 			},
@@ -210,8 +216,38 @@ export const createTasuku = ({
 
 		return {
 			task,
-			[runSymbol]: async () => {
-				const { api, destroyStream } = createTaskInnerApi(task, options);
+			[runSymbol]: async (groupSignal?: AbortSignal) => {
+				// Collect all signal sources: group, per-task option, parent context
+				const parentSignal = taskContext.getStore()?.abortController.signal;
+				const childController = new AbortController();
+				const externalSignals = [
+					groupSignal,
+					options?.signal,
+					parentSignal,
+				].filter(Boolean) as AbortSignal[];
+
+				// Forward abort from external signals to childController.
+				// Using addEventListener instead of AbortSignal.any() to allow
+				// cleanup — AbortSignal.any() retains references on long-lived
+				// source signals, which accumulates in long-running processes.
+				const forwardAbort = function (this: AbortSignal) {
+					childController.abort(this.reason);
+				};
+				for (const source of externalSignals) {
+					if (source.aborted) {
+						childController.abort(source.reason);
+						break;
+					}
+					source.addEventListener('abort', forwardAbort);
+				}
+				const cleanupSignalListeners = () => {
+					for (const source of externalSignals) {
+						source.removeEventListener('abort', forwardAbort);
+					}
+				};
+
+				const { signal } = childController;
+				const { api, destroyStream } = createTaskInnerApi(task, signal, options);
 
 				task.state = 'loading';
 
@@ -222,12 +258,21 @@ export const createTasuku = ({
 
 				let taskResult;
 				try {
-					taskResult = await taskContext.run(task.children, () => taskFunction(api));
+					taskResult = await taskContext.run(
+						{
+							children: task.children,
+							abortController: childController,
+						},
+						() => taskFunction(api),
+					);
 				} catch (error) {
+					// Abort child tasks when parent fails — pass the error as reason
+					childController.abort(error);
 					// Auto-stop timer on error
 					api.stopTime();
 					api.setError(error as Error);
 					destroyStream();
+					cleanupSignalListeners();
 					// Flush render before throwing to prevent overwriting subsequent output
 					renderer?.flushRender();
 					throw error;
@@ -236,6 +281,7 @@ export const createTasuku = ({
 				// Auto-stop timer on completion
 				api.stopTime();
 				destroyStream();
+				cleanupSignalListeners();
 
 				if (task.state === 'loading') {
 					task.state = 'success';
@@ -269,8 +315,9 @@ export const createTasuku = ({
 
 	const createTaskPromise = <T>(
 		registeredTask: RegisteredTask<T>,
+		signal?: AbortSignal,
 	): TaskPromise<T> => {
-		const promise = registeredTask[runSymbol]();
+		const promise = registeredTask[runSymbol](signal);
 
 		const taskPromise = promise as TaskPromise<T>;
 
@@ -317,9 +364,9 @@ export const createTasuku = ({
 			taskFunction,
 			options,
 		) => {
-			const taskList = taskContext.getStore() ?? rootTaskList;
+			const taskList = taskContext.getStore()?.children ?? rootTaskList;
 			const registeredTask = registerTask(taskList, title, taskFunction, options);
-			return createTaskPromise(registeredTask);
+			return createTaskPromise(registeredTask, options?.signal);
 		};
 
 		// group() uses an explicit task creator callback instead of AsyncLocalStorage
@@ -330,7 +377,7 @@ export const createTasuku = ({
 			createTasks,
 			options,
 		) => {
-			const taskList = taskContext.getStore() ?? rootTaskList;
+			const taskList = taskContext.getStore()?.children ?? rootTaskList;
 			const tasksQueue = createTasks((
 				title,
 				taskFunction,
@@ -350,19 +397,54 @@ export const createTasuku = ({
 				? T
 				: never;
 
+			// Create internal AbortController for auto-abort on failure.
+			// Forward external signal to groupController instead of using
+			// AbortSignal.any() to allow cleanup after group completes.
+			const groupController = new AbortController();
+			const externalGroupSignal = options?.signal;
+			const forwardGroupAbort = function (this: AbortSignal) {
+				groupController.abort(this.reason);
+			};
+			if (externalGroupSignal) {
+				if (externalGroupSignal.aborted) {
+					groupController.abort(externalGroupSignal.reason);
+				} else {
+					externalGroupSignal.addEventListener('abort', forwardGroupAbort);
+				}
+			}
+			const combinedSignal = groupController.signal;
+
+			const stopOnError = options?.stopOnError !== false;
+
 			// pMap doesn't preserve tuple types, so we cast the result.
 			// Safe because pMap preserves array order/length and each
 			// [runSymbol]() returns the corresponding T from RegisteredTask<T>.
 			const promise = pMap(
 				tasksQueue,
-				async registeredTask => registeredTask[runSymbol](),
+				async (registeredTask) => {
+					try {
+						return await registeredTask[runSymbol](combinedSignal);
+					} catch (error) {
+						if (stopOnError) {
+							groupController.abort(error);
+						}
+						throw error;
+					}
+				},
 				{
 					concurrency: 1,
 					...options,
 				},
 			) as Promise<unknown> as Promise<TaskGroupResults<TasksQueueType>>;
 
-			const groupPromise = promise as unknown as TaskGroupPromise<TaskGroupResults<TasksQueueType>>;
+			// Clean up forwarding listener when group settles
+			const settled = promise.finally(() => {
+				if (externalGroupSignal) {
+					externalGroupSignal.removeEventListener('abort', forwardGroupAbort);
+				}
+			}) as Promise<TaskGroupResults<TasksQueueType>>;
+
+			const groupPromise = settled as unknown as TaskGroupPromise<TaskGroupResults<TasksQueueType>>;
 
 			const clearAll = () => {
 				for (const registeredTask of tasksQueue) {
