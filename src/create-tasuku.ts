@@ -1,115 +1,24 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { Writable } from 'node:stream';
 import pMap from 'p-map';
 import { reactive } from './reactive.ts';
 import { isTerminalState } from './utils/task-list.ts';
-import {
-	type Renderer,
-	type TaskList,
-	type TaskObject,
-	type Task,
-	type TaskPromise,
-	type TaskInnerAPI,
-	type TaskGroupPromise,
-	type TaskGroupResults,
-	type TaskFunction,
-	type TaskGroup,
-	type TaskOptions,
-	type RegisteredTask,
-	type StreamPreview,
-	type CreateTasukuOptions,
-	runSymbol,
+import { createStreamPreview, defaultPreviewLines } from './utils/stream-preview.ts';
+import type {
+	Renderer,
+	TaskList,
+	TaskObject,
+	Task,
+	TaskPromise,
+	TaskInnerAPI,
+	TaskGroupPromise,
+	TaskGroupResults,
+	TaskFunction,
+	TaskGroup,
+	TaskOptions,
+	RegisteredTask,
+	StreamPreview,
+	CreateTasukuOptions,
 } from './types.ts';
-
-const defaultPreviewLines = 5;
-
-const createStreamPreview = (
-	taskState: TaskObject,
-	maxLines: number,
-): StreamPreview => {
-	const lines: string[] = [];
-	let totalLines = 0;
-	let partialLine = '';
-
-	// Resolve \r within a string: keep content after the last \r.
-	// For trailing \r (nothing after), keep the last non-empty segment.
-	const resolveCarriageReturn = (text: string) => {
-		const segments = text.split('\r');
-		return segments.reverse().find(Boolean) ?? '';
-	};
-
-	const flush = () => {
-		const displayPartial = partialLine.includes('\r')
-			? resolveCarriageReturn(partialLine)
-			: partialLine;
-		const output = displayPartial
-			? [...lines, displayPartial].join('\n')
-			: lines.join('\n');
-		taskState.streamOutput = output;
-		taskState.streamTruncatedLines = Math.max(0, totalLines - maxLines);
-	};
-
-	const writable = new Writable({
-		write(chunk: Buffer, _encoding, callback) {
-			const text = partialLine + chunk.toString();
-			const parts = text.split(/\r?\n/);
-
-			// Last element is either empty (if chunk ended with \n) or a partial line
-			partialLine = parts.pop()!;
-
-			for (const rawLine of parts) {
-				// Handle \r (carriage return) — keep content after last \r
-				const line = rawLine.includes('\r')
-					? resolveCarriageReturn(rawLine)
-					: rawLine;
-				lines.push(line);
-				totalLines += 1;
-				if (lines.length > maxLines) {
-					lines.shift();
-				}
-			}
-
-			// Trim accumulated \r segments to prevent unbounded growth
-			if (partialLine.includes('\r')) {
-				const resolved = resolveCarriageReturn(partialLine);
-				// Keep trailing \r as boundary marker for next chunk
-				partialLine = partialLine.endsWith('\r')
-					? `${resolved}\r`
-					: resolved;
-			}
-
-			if (parts.length > 0 || partialLine) {
-				flush();
-			}
-
-			callback();
-		},
-
-		final(callback) {
-			// Flush any remaining partial line
-			if (partialLine) {
-				const line = partialLine.includes('\r')
-					? resolveCarriageReturn(partialLine)
-					: partialLine;
-				lines.push(line);
-				totalLines += 1;
-				if (lines.length > maxLines) {
-					lines.shift();
-				}
-				partialLine = '';
-				flush();
-			}
-			callback();
-		},
-	}) as StreamPreview;
-
-	writable.clear = () => {
-		taskState.streamOutput = undefined;
-		taskState.streamTruncatedLines = undefined;
-	};
-
-	return writable;
-};
 
 export const createTasuku = ({
 	theme,
@@ -192,8 +101,15 @@ export const createTasuku = ({
 		};
 		return {
 			api,
-			destroyStream: () => stream?.destroy(),
+			dispose: () => stream?.destroy(),
 		};
+	};
+
+	const ensureRenderer = (taskList: TaskList) => {
+		if (!renderer) {
+			renderer = rendererFactory(taskList, outputStream ?? process.stderr, theme);
+			taskList.isRoot = true;
+		}
 	};
 
 	const registerTask = <T>(
@@ -202,11 +118,6 @@ export const createTasuku = ({
 		taskFunction: TaskFunction<T>,
 		options?: TaskOptions,
 	): RegisteredTask<T> => {
-		if (!renderer) {
-			renderer = rendererFactory(taskList, outputStream ?? process.stderr, theme);
-			taskList.isRoot = true;
-		}
-
 		const task = reactive<TaskObject>({
 			title: taskTitle,
 			state: 'pending',
@@ -216,7 +127,7 @@ export const createTasuku = ({
 
 		return {
 			task,
-			[runSymbol]: async (groupSignal?: AbortSignal) => {
+			run: async (groupSignal?: AbortSignal) => {
 				// Collect all signal sources: group, per-task option, parent context
 				const parentSignal = taskContext.getStore()?.abortController.signal;
 				const childController = new AbortController();
@@ -247,7 +158,7 @@ export const createTasuku = ({
 				};
 
 				const { signal } = childController;
-				const { api, destroyStream } = createTaskInnerApi(task, signal, options);
+				const { api, dispose } = createTaskInnerApi(task, signal, options);
 
 				task.state = 'loading';
 
@@ -271,7 +182,7 @@ export const createTasuku = ({
 					// Auto-stop timer on error
 					api.stopTime();
 					api.setError(error as Error);
-					destroyStream();
+					dispose();
 					cleanupSignalListeners();
 					// Flush render before throwing to prevent overwriting subsequent output
 					renderer?.flushRender();
@@ -280,7 +191,7 @@ export const createTasuku = ({
 
 				// Auto-stop timer on completion
 				api.stopTime();
-				destroyStream();
+				dispose();
 				cleanupSignalListeners();
 
 				if (task.state === 'loading') {
@@ -315,9 +226,8 @@ export const createTasuku = ({
 
 	const createTaskPromise = <T>(
 		registeredTask: RegisteredTask<T>,
-		signal?: AbortSignal,
 	): TaskPromise<T> => {
-		const promise = registeredTask[runSymbol](signal);
+		const promise = registeredTask.run();
 
 		const taskPromise = promise as TaskPromise<T>;
 
@@ -365,8 +275,9 @@ export const createTasuku = ({
 			options,
 		) => {
 			const taskList = taskContext.getStore()?.children ?? rootTaskList;
+			ensureRenderer(taskList);
 			const registeredTask = registerTask(taskList, title, taskFunction, options);
-			return createTaskPromise(registeredTask, options?.signal);
+			return createTaskPromise(registeredTask);
 		};
 
 		// group() uses an explicit task creator callback instead of AsyncLocalStorage
@@ -378,6 +289,7 @@ export const createTasuku = ({
 			options,
 		) => {
 			const taskList = taskContext.getStore()?.children ?? rootTaskList;
+			ensureRenderer(taskList);
 			const tasksQueue = createTasks((
 				title,
 				taskFunction,
@@ -418,12 +330,12 @@ export const createTasuku = ({
 
 			// pMap doesn't preserve tuple types, so we cast the result.
 			// Safe because pMap preserves array order/length and each
-			// [runSymbol]() returns the corresponding T from RegisteredTask<T>.
+			// run() returns the corresponding T from RegisteredTask<T>.
 			const promise = pMap(
 				tasksQueue,
 				async (registeredTask) => {
 					try {
-						return await registeredTask[runSymbol](combinedSignal);
+						return await registeredTask.run(combinedSignal);
 					} catch (error) {
 						if (stopOnError) {
 							groupController.abort(error);

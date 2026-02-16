@@ -1,5 +1,4 @@
 import type { Writable } from 'node:stream';
-import type { Options as PMapOptions } from 'p-map';
 
 export type State = 'pending' | 'loading' | 'error' | 'warning' | 'success';
 
@@ -12,7 +11,7 @@ export type TaskGroupOptions = {
 	 *
 	 * @default 1
 	 */
-	concurrency?: PMapOptions['concurrency'];
+	concurrency?: number;
 
 	/**
 	 * When `true`, the first task rejection will be rejected back to the consumer.
@@ -22,12 +21,12 @@ export type TaskGroupOptions = {
 	 *
 	 * @default true
 	 */
-	stopOnError?: PMapOptions['stopOnError'];
+	stopOnError?: boolean;
 
 	/**
 	 * Abort signal to cancel pending tasks.
 	 */
-	signal?: PMapOptions['signal'];
+	signal?: AbortSignal;
 
 	/**
 	 * Maximum number of lines to display in the task list.
@@ -81,10 +80,8 @@ export type TaskInnerAPI = {
 
 export type TaskFunction<T> = (innerApi: TaskInnerAPI) => Promise<T>;
 
-export const runSymbol: unique symbol = Symbol('run');
-
 export type RegisteredTask<T = unknown> = {
-	[runSymbol]: (signal?: AbortSignal) => Promise<T>;
+	run: (signal?: AbortSignal) => Promise<T>;
 	task: TaskObject;
 	clear: () => void;
 };
