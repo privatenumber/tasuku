@@ -36,8 +36,8 @@ importers:
         specifier: ^1.26.1
         version: 1.28.1(@types/estree@1.0.8)(@typescript-eslint/utils@8.50.1(eslint@9.39.2)(typescript@5.9.3))(jsonc-eslint-parser@2.4.1)(typescript@5.9.3)
       manten:
-        specifier: 2.0.0-beta.2
-        version: 2.0.0-beta.2
+        specifier: 2.0.0
+        version: 2.0.0
       nano-spawn:
         specifier: ^2.0.0
         version: 2.0.0
@@ -2012,8 +2012,8 @@ packages:
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
 
-  manten@2.0.0-beta.2:
-    resolution: {integrity: sha512-sr4epsS6WG7oikdmEE+53IMWCMex8DN/57JY0NLfb0b0rruwz61ai3X0gK0gntL3b632v1vSZseBv7aAA27qAw==}
+  manten@2.0.0:
+    resolution: {integrity: sha512-JjNQq4uObh4oAYvibb8j2IPzg/6Sy8ynvVVQ2rIlOKEF5eCL74bh0uu2pA/nZ36V9ihErgGZgJPE9IaeQhXW5A==}
     engines: {node: '>=20.20.0'}
 
   markdown-table@3.0.4:
@@ -4806,7 +4806,7 @@ snapshots:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  manten@2.0.0-beta.2:
+  manten@2.0.0:
     dependencies:
       expect: 30.2.0
 
