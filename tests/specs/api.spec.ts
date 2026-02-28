@@ -69,6 +69,26 @@ describe('API', () => {
 		expect(p.error).toBeUndefined();
 	});
 
+	test('setWarning with Error object extracts message', async () => {
+		const p = task('Warn task', async ({ setWarning }) => {
+			setWarning(new Error('warning from error'));
+		});
+		await p;
+
+		expect(p.state).toBe('warning');
+		expect(p.warning).toBe('warning from error');
+	});
+
+	test('setError with Error object extracts message', async () => {
+		const p = task('Error task', async ({ setError }) => {
+			setError(new Error('error from Error'));
+		});
+		await p;
+
+		expect(p.state).toBe('error');
+		expect(p.error).toBe('error from Error');
+	});
+
 	describe('clear()', () => {
 		test('chained - resolves to task result', async () => {
 			const result = await task('Some task', async () => {
