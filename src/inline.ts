@@ -1,5 +1,5 @@
 import { createTasuku as createTasukuRaw } from './create-tasuku.ts';
-import { pinned } from './renderers/pinned.ts';
+import { inline } from './renderers/inline.ts';
 import { theme } from './themes/default.ts';
 import type { CreateTasukuOptions } from './types.ts';
 
@@ -8,13 +8,13 @@ export { theme } from './themes/default.ts';
 export const createTasuku = (
 	overrides?: Partial<CreateTasukuOptions>,
 ) => createTasukuRaw({
-	renderer: pinned,
+	renderer: inline,
 	theme,
 	...overrides,
 });
 
 export default createTasukuRaw({
-	renderer: pinned,
+	renderer: inline,
 	theme,
 });
 

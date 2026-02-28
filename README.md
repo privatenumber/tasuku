@@ -665,7 +665,7 @@ tasks.clear()
 
 ## Renderers
 
-Tasuku ships two renderers that control how task output appears in the terminal. The default export uses `pinned`, but you can switch to `inline` via `createTasuku`.
+Tasuku ships two renderers that control how task output appears in the terminal. The default export uses `pinned`, but you can switch to `inline` via `tasuku/inline`.
 
 ### Pinned (default)
 
@@ -696,12 +696,7 @@ Sleep 7s
 
 ```js
 import { setTimeout } from 'node:timers/promises'
-import { createTasuku, inline, theme } from 'tasuku'
-
-const task = createTasuku({
-    renderer: inline,
-    theme
-})
+import task from 'tasuku/inline'
 
 console.log('Starting build pipeline...')
 
@@ -766,7 +761,7 @@ await task('Building project', async ({ setTitle }) => {
 
 ### Claude
 
-Claude Code-inspired theme with truecolor palette, dingbat star spinner, and shimmer title animation. Import from `tasuku/claude`.
+Claude Code-inspired theme with truecolor palette, dingbat star spinner, and shimmer title animation. Import the theme from `tasuku/theme/claude`.
 
 <p align="center" demo>
 <img src=".github/media/theme-claude.gif" width="600" alt="Terminal showing the Claude theme with star spinner and shimmer animation">
@@ -784,7 +779,7 @@ Sleep 6s
 
 ```js
 import { setTimeout } from 'node:timers/promises'
-import task from 'tasuku/claude'
+import task from 'tasuku/theme/claude'
 
 await task('Building project', async ({ setTitle }) => {
     await setTimeout(5000)
@@ -797,7 +792,7 @@ await task('Building project', async ({ setTitle }) => {
 
 ### Blink
 
-Reduced-motion theme inspired by Claude Code's accessibility mode. The `⏺` indicator pulses between bright and dim on a 2-second cycle. Import from `tasuku/blink`.
+Reduced-motion theme inspired by Claude Code's accessibility mode. The `⏺` indicator pulses between bright and dim on a 2-second cycle. Import the theme from `tasuku/theme/blink`.
 
 <p align="center" demo>
 <img src=".github/media/theme-blink.gif" width="600" alt="Terminal showing the Blink reduced-motion theme with pulsing indicator">
@@ -815,7 +810,7 @@ Sleep 6s
 
 ```js
 import { setTimeout } from 'node:timers/promises'
-import task from 'tasuku/blink'
+import task from 'tasuku/theme/blink'
 
 await task('Building project', async ({ setTitle }) => {
     await setTimeout(5000)
@@ -828,7 +823,7 @@ await task('Building project', async ({ setTitle }) => {
 
 ### Codex
 
-OpenAI Codex CLI-inspired theme with cosine-based shimmer gradient and monochrome palette. Import from `tasuku/codex`.
+OpenAI Codex CLI-inspired theme with cosine-based shimmer gradient and monochrome palette. Import the theme from `tasuku/theme/codex`.
 
 <p align="center" demo>
 <img src=".github/media/theme-codex.gif" width="600" alt="Terminal showing the Codex theme with shimmer gradient">
@@ -846,7 +841,7 @@ Sleep 6s
 
 ```js
 import { setTimeout } from 'node:timers/promises'
-import task from 'tasuku/codex'
+import task from 'tasuku/theme/codex'
 
 await task('Building project', async ({ setTitle }) => {
     await setTimeout(5000)
@@ -861,11 +856,11 @@ await task('Building project', async ({ setTitle }) => {
 
 Create your own theme with `createTasuku()`. Each call returns an independent task runner with its own renderer.
 
-Every theme entry point exports `createTasuku` and `theme`, so you can use any built-in theme as a base. Import renderers from the main `'tasuku'` entry point:
+The `createTasuku` export from `tasuku` (or `tasuku/inline`) accepts partial overrides — renderer and theme default to the entry point's built-in values. You can also use any built-in theme as a base:
 
 ```ts
 import { rgb } from 'ansis'
-import { createTasuku, pinned, theme } from 'tasuku'
+import { createTasuku, theme } from 'tasuku'
 
 const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 const rainbow = frames.map((frame, i) => {
@@ -875,7 +870,6 @@ const rainbow = frames.map((frame, i) => {
 })
 
 const task = createTasuku({
-    renderer: pinned,
     theme: {
         ...theme,
         spinner: rainbow
@@ -884,6 +878,18 @@ const task = createTasuku({
 
 await task('Custom task', async () => {
     await someAsyncTask()
+})
+```
+
+For full control over both renderer and theme, use the raw factory from `tasuku/create`:
+
+```ts
+import { createTasuku, pinned } from 'tasuku/create'
+import { theme } from 'tasuku/theme/claude'
+
+const task = createTasuku({
+    renderer: pinned,
+    theme
 })
 ```
 
@@ -915,7 +921,7 @@ The `title` color function receives the task state and animation frame counter, 
 
 Type: `RendererFactory`
 
-Required. The [renderer](#renderers) to use. Import `pinned` or `inline` from any entry point.
+Required. The [renderer](#renderers) to use. Import `pinned` or `inline` from `tasuku/create`.
 
 #### outputStream
 

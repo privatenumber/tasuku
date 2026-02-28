@@ -11,7 +11,8 @@ describe('inline renderer', () => {
 		test('success state shows green checkmark', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				const task = createTasuku({ renderer: inline, theme });
 
 				await task('Install deps', async () => {});
@@ -28,7 +29,8 @@ describe('inline renderer', () => {
 		test('error state shows red X with message', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				const task = createTasuku({ renderer: inline, theme });
 
 				await task('Error task', async ({ setError }) => {
@@ -48,7 +50,8 @@ describe('inline renderer', () => {
 		test('warning state shows yellow warning with message', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				const task = createTasuku({ renderer: inline, theme });
 
 				await task('Warning task', async ({ setWarning }) => {
@@ -71,7 +74,8 @@ describe('inline renderer', () => {
 		test('setError output is not lost to state-change race', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				const task = createTasuku({ renderer: inline, theme });
 
 				await task('Task A', async ({ setError }) => {
@@ -93,7 +97,8 @@ describe('inline renderer', () => {
 		test('setWarning output is not lost to state-change race', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				const task = createTasuku({ renderer: inline, theme });
 
 				await task('Task', async ({ setWarning }) => {
@@ -111,7 +116,8 @@ describe('inline renderer', () => {
 		test('setTitle updates task title', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				const task = createTasuku({ renderer: inline, theme });
 
 				await task('Original title', async ({ setTitle }) => {
@@ -130,7 +136,8 @@ describe('inline renderer', () => {
 		test('setStatus shows status in brackets', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				const task = createTasuku({ renderer: inline, theme });
 
 				await task('Task', async ({ setStatus }) => {
@@ -149,7 +156,8 @@ describe('inline renderer', () => {
 		test('setOutput shows output below task on completion', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				const task = createTasuku({ renderer: inline, theme });
 
 				await task('Task with output', async ({ setOutput }) => {
@@ -167,7 +175,8 @@ describe('inline renderer', () => {
 		test('task function throws error', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				const task = createTasuku({ renderer: inline, theme });
 
 				try {
@@ -190,7 +199,8 @@ describe('inline renderer', () => {
 		test('console.log after task appears below task', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				const task = createTasuku({ renderer: inline, theme });
 
 				await task('My task', async () => {});
@@ -211,7 +221,8 @@ describe('inline renderer', () => {
 		test('console.log between tasks appears in order', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				const task = createTasuku({ renderer: inline, theme });
 
 				console.log('Before any tasks');
@@ -240,7 +251,8 @@ describe('inline renderer', () => {
 		test('console.log inside task does not get reordered', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				const task = createTasuku({ renderer: inline, theme });
 
 				await task('Task A', async () => {
@@ -268,7 +280,8 @@ describe('inline renderer', () => {
 		test('console.log during active spinner does not corrupt output', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				import { setTimeout } from 'node:timers/promises';
 				const task = createTasuku({ renderer: inline, theme });
 
@@ -311,7 +324,8 @@ describe('inline renderer', () => {
 		test('nested tasks render with indentation', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				const task = createTasuku({ renderer: inline, theme });
 
 				await task('Parent', async () => {
@@ -335,7 +349,8 @@ describe('inline renderer', () => {
 		test('child task appears after parent, not after sibling tasks', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				import { setTimeout } from 'node:timers/promises';
 				const task = createTasuku({ renderer: inline, theme });
 
@@ -399,7 +414,8 @@ describe('inline renderer', () => {
 		test('group tasks render and complete', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				const task = createTasuku({ renderer: inline, theme });
 
 				const results = await task.group(task => [
@@ -424,7 +440,8 @@ describe('inline renderer', () => {
 		test('concurrent group tasks complete correctly', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				import { setTimeout } from 'node:timers/promises';
 				const task = createTasuku({ renderer: inline, theme });
 
@@ -453,7 +470,8 @@ describe('inline renderer', () => {
 		test('non-TTY output has no ANSI cursor sequences', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				const task = createTasuku({ renderer: inline, theme });
 
 				await task('Piped task', async () => {});
@@ -480,7 +498,8 @@ describe('inline renderer', () => {
 		test('inline renderer does not use cursor save/restore', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				const task = createTasuku({ renderer: inline, theme });
 
 				await task('Simple task', async () => {});
@@ -500,7 +519,8 @@ describe('inline renderer', () => {
 		test('showTime option displays elapsed time', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				import { setTimeout } from 'node:timers/promises';
 				const task = createTasuku({ renderer: inline, theme });
 
@@ -522,7 +542,8 @@ describe('inline renderer', () => {
 		test('clear removes task from list but does not erase output', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				const task = createTasuku({ renderer: inline, theme });
 
 				const t = task('Clearable task', async () => {});
@@ -547,7 +568,8 @@ describe('inline renderer', () => {
 		test('streamPreview output shown on completion', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': String.raw`
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				const task = createTasuku({ renderer: inline, theme });
 
 				await task('Preview task', async ({ streamPreview }) => {
@@ -573,7 +595,8 @@ describe('inline renderer', () => {
 		test('console.log(i) + task(i) produces interleaved output', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				import { setTimeout } from 'node:timers/promises';
 				const task = createTasuku({ renderer: inline, theme });
 
@@ -639,7 +662,8 @@ describe('inline renderer', () => {
 		test('cursor-up never exceeds terminal rows', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				import { setTimeout } from 'node:timers/promises';
 				const task = createTasuku({ renderer: inline, theme });
 
@@ -672,7 +696,8 @@ describe('inline renderer', () => {
 		test('setError(false) reverts task to loading then completes as success', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				import { setTimeout } from 'node:timers/promises';
 				const task = createTasuku({ renderer: inline, theme });
 
@@ -703,7 +728,8 @@ describe('inline renderer', () => {
 		test('setWarning(false) reverts task to loading then completes as success', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				import { setTimeout } from 'node:timers/promises';
 				const task = createTasuku({ renderer: inline, theme });
 
@@ -736,7 +762,8 @@ describe('inline renderer', () => {
 		test('CI=1 produces append-only output with no cursor sequences', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				import { setTimeout } from 'node:timers/promises';
 				const task = createTasuku({ renderer: inline, theme });
 
@@ -786,7 +813,8 @@ describe('inline renderer', () => {
 		test('setOutput and streamPreview appear in piped output', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': String.raw`
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				const task = createTasuku({ renderer: inline, theme });
 
 				await task('Single output', async ({ setOutput }) => {
@@ -830,7 +858,8 @@ describe('inline renderer', () => {
 		test('multi-newline console.log does not corrupt task updates', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': String.raw`
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				import { setTimeout } from 'node:timers/promises';
 				const task = createTasuku({ renderer: inline, theme });
 
@@ -867,7 +896,8 @@ describe('inline renderer', () => {
 		test('defers tasks beyond maxVisible limit', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': String.raw`
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				import { setTimeout } from 'node:timers/promises';
 				const task = createTasuku({ renderer: inline, theme });
 
@@ -905,7 +935,8 @@ describe('inline renderer', () => {
 		test('deferred tasks appear after earlier tasks complete', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				import { setTimeout } from 'node:timers/promises';
 				const task = createTasuku({ renderer: inline, theme });
 
@@ -940,7 +971,8 @@ describe('inline renderer', () => {
 		test('works with createTasuku custom theme', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
-				import { createTasuku, inline, theme } from '#tasuku';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
 				const task = createTasuku({
 					renderer: inline,
 					theme: {

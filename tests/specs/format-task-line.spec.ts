@@ -89,7 +89,10 @@ describe('formatTaskLine', () => {
 			},
 		};
 
-		const task = createTask({ title: 'Test', state: 'loading' });
+		const task = createTask({
+			title: 'Test',
+			state: 'loading',
+		});
 		const result = formatTaskLine(task, '>', 0, themeWithTitle, 7);
 
 		expect(calls).toEqual([['Test', 'loading', 7]]);
@@ -102,7 +105,10 @@ describe('formatTaskLine', () => {
 	});
 
 	test('status and elapsed both present', () => {
-		const task = createTask({ status: 'step 2', elapsedMs: 3000 });
+		const task = createTask({
+			status: 'step 2',
+			elapsedMs: 3000,
+		});
 		const result = formatTaskLine(task, '>', 0, mockTheme, 0);
 		expect(result).toBe('> My Task [dim:[step 2]] [dim:(3s)]');
 	});

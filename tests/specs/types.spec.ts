@@ -1,7 +1,8 @@
 import { Writable } from 'node:stream';
 import { describe, test } from 'manten';
 import { expectTypeOf } from 'expect-type';
-import { createTasuku, pinned, theme } from '#tasuku';
+import { createTasuku, pinned } from '#tasuku/create';
+import { theme } from '#tasuku';
 
 const task = createTasuku({
 	renderer: pinned,

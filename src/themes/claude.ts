@@ -60,23 +60,6 @@ export const theme: TasukuTheme = {
 	},
 };
 
-export { createTasuku } from '../create-tasuku.ts';
+export default createTasuku({ renderer: pinned, theme });
 
-export default createTasuku({
-	renderer: pinned,
-	theme,
-});
-
-export type {
-	State,
-	Task,
-	TaskPromise,
-	TaskInnerAPI,
-	TaskFunction,
-	TaskGroupPromise,
-	TaskOptions,
-	TasukuTheme,
-	CreateTasukuOptions,
-	Renderer,
-	RendererFactory,
-} from '../types.ts';
+export type { TasukuTheme } from '../types.ts';

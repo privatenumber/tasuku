@@ -1,7 +1,8 @@
 import { setTimeout } from 'node:timers/promises';
 import { Writable } from 'node:stream';
 import { describe, test, expect } from 'manten';
-import { createTasuku, pinned, theme } from '#tasuku';
+import { createTasuku, pinned } from '#tasuku/create';
+import { theme } from '#tasuku';
 
 const task = createTasuku({
 	renderer: pinned,

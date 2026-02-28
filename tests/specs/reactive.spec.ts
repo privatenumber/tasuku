@@ -12,7 +12,10 @@ describe('reactive', () => {
 
 	test('multiple sets trigger multiple callbacks', () => {
 		let callCount = 0;
-		const proxy = reactive({ a: 0, b: 0 }, () => { callCount += 1; });
+		const proxy = reactive({
+			a: 0,
+			b: 0,
+		}, () => { callCount += 1; });
 
 		proxy.a = 1;
 		proxy.b = 2;
@@ -28,7 +31,10 @@ describe('reactive', () => {
 	});
 
 	test('initial properties are accessible', () => {
-		const proxy = reactive({ x: 10, y: 'hello' }, () => {});
+		const proxy = reactive({
+			x: 10,
+			y: 'hello',
+		}, () => {});
 
 		expect(proxy.x).toBe(10);
 		expect(proxy.y).toBe('hello');

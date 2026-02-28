@@ -69,13 +69,19 @@ describe('formatTaskOutput', () => {
 	});
 
 	test('streamTruncatedLines appends count indicator', () => {
-		const task = createTask({ streamOutput: 'visible', streamTruncatedLines: 5 });
+		const task = createTask({
+			streamOutput: 'visible',
+			streamTruncatedLines: 5,
+		});
 		const result = formatTaskOutput(task, 0, mockTheme);
 		expect(result).toContain('[(+ 5 lines)]');
 	});
 
 	test('streamTruncatedLines 0 omits indicator', () => {
-		const task = createTask({ streamOutput: 'visible', streamTruncatedLines: 0 });
+		const task = createTask({
+			streamOutput: 'visible',
+			streamTruncatedLines: 0,
+		});
 		const result = formatTaskOutput(task, 0, mockTheme);
 		expect(result).not.toContain('(+');
 	});
@@ -87,7 +93,10 @@ describe('formatTaskOutput', () => {
 	});
 
 	test('output and streamOutput both present, output first', () => {
-		const task = createTask({ output: 'static', streamOutput: 'stream' });
+		const task = createTask({
+			output: 'static',
+			streamOutput: 'stream',
+		});
 		const result = formatTaskOutput(task, 0, mockTheme);
 		const outputIndex = result.indexOf('\u2192 static');
 		const streamIndex = result.indexOf('\u23BF');
@@ -95,7 +104,10 @@ describe('formatTaskOutput', () => {
 	});
 
 	test('depth affects both output and stream indentation', () => {
-		const task = createTask({ output: 'out', streamOutput: 'str' });
+		const task = createTask({
+			output: 'out',
+			streamOutput: 'str',
+		});
 		const atDepth0 = formatTaskOutput(task, 0, mockTheme);
 		const atDepth2 = formatTaskOutput(task, 2, mockTheme);
 

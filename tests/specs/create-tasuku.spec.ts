@@ -9,7 +9,8 @@ describe('createTasuku', () => {
 	test('custom spinner frames appear in output', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
-			import { createTasuku, pinned, theme } from '#tasuku';
+			import { createTasuku, pinned } from '#tasuku/create';
+			import { theme } from '#tasuku';
 			import { setTimeout } from 'node:timers/promises';
 
 			const task = createTasuku({
@@ -39,7 +40,8 @@ describe('createTasuku', () => {
 	test('custom icons appear in output', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
-			import { createTasuku, pinned, theme } from '#tasuku';
+			import { createTasuku, pinned } from '#tasuku/create';
+			import { theme } from '#tasuku';
 
 			const task = createTasuku({
 				renderer: pinned,
@@ -64,7 +66,8 @@ describe('createTasuku', () => {
 	test('pre-colored icons applied in output', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
-			import { createTasuku, pinned, theme } from '#tasuku';
+			import { createTasuku, pinned } from '#tasuku/create';
+			import { theme } from '#tasuku';
 			import { blue } from 'ansis';
 
 			const task = createTasuku({
@@ -89,7 +92,8 @@ describe('createTasuku', () => {
 	test('custom parent icon', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
-			import { createTasuku, pinned, theme } from '#tasuku';
+			import { createTasuku, pinned } from '#tasuku/create';
+			import { theme } from '#tasuku';
 
 			const task = createTasuku({
 				renderer: pinned,
@@ -132,7 +136,8 @@ describe('createTasuku', () => {
 	test('independent instances do not interfere', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
-			import { createTasuku, pinned, theme } from '#tasuku';
+			import { createTasuku, pinned } from '#tasuku/create';
+			import { theme } from '#tasuku';
 			import { blue, magenta } from 'ansis';
 
 			const taskA = createTasuku({

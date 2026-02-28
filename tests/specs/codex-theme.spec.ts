@@ -8,8 +8,8 @@ describe('codex theme', () => {
 	test('uses bullet dot spinner instead of braille', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
-			import { pinned } from '#tasuku';
-			import { createTasuku, theme } from '#tasuku/codex';
+			import { createTasuku, pinned } from '#tasuku/create';
+			import { theme } from '#tasuku/theme/codex';
 			import { setTimeout } from 'node:timers/promises';
 
 			const task = createTasuku({ renderer: pinned, theme });
@@ -31,7 +31,7 @@ describe('codex theme', () => {
 	test('success icon uses green bold checkmark', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
-			import task from '#tasuku/codex';
+			import task from '#tasuku/theme/codex';
 
 			await task('Done', async () => {});
 			`,
@@ -50,7 +50,7 @@ describe('codex theme', () => {
 	test('error icon uses red bold cross', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
-			import task from '#tasuku/codex';
+			import task from '#tasuku/theme/codex';
 
 			await task('Error test', async ({ setError }) => {
 				setError('something broke');
@@ -68,8 +68,8 @@ describe('codex theme', () => {
 	test('spinner uses monochrome gray palette', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
-			import { pinned } from '#tasuku';
-			import { createTasuku, theme } from '#tasuku/codex';
+			import { createTasuku, pinned } from '#tasuku/create';
+			import { theme } from '#tasuku/theme/codex';
 			import { setTimeout } from 'node:timers/promises';
 
 			const task = createTasuku({ renderer: pinned, theme });
