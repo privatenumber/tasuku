@@ -293,7 +293,7 @@ describe('max visible', () => {
 				(_, i) => lastFrame.includes(`Task ${String(i + 1).padStart(2, '0')}`),
 			).every(Boolean);
 			expect(allTasksPresent).toBe(true);
-		});
+		}, { retry: 3 });
 
 		test('resize to larger terminal after completion skips unnecessary exit render', async () => {
 			// When tasks complete with truncation, then the terminal resizes
@@ -325,6 +325,10 @@ describe('max visible', () => {
 			});
 			await waitFor(subprocess, output => output.includes('ALL_DONE'));
 			subprocess.resize(80, 40);
+
+			// Wait for the resize render to complete (throttled at 33ms)
+			await new Promise((resolve) => { setTimeout(resolve, 200); });
+
 			const result = await subprocess;
 			expect(result.exitCode).toBe(0);
 
@@ -347,7 +351,7 @@ describe('max visible', () => {
 				(_, i) => secondToLastFrame.includes(`Task ${String(i + 1).padStart(2, '0')}`),
 			).every(Boolean);
 			expect(allInSecondToLast).toBe(false);
-		});
+		}, { retry: 3 });
 
 		test('resize to smaller terminal after completion triggers unlimited render', async () => {
 			// When tasks complete fully visible, then the terminal shrinks

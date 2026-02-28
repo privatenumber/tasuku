@@ -37,6 +37,9 @@ export const theme: TasukuTheme = {
 	},
 };
 
-export default createTasuku({ renderer: pinned, theme });
+export default createTasuku({
+	renderer: pinned,
+	theme,
+});
 
 export type { TasukuTheme } from '../types.ts';

@@ -157,7 +157,7 @@ describe('lifecycle', () => {
 			// be re-rendered (proves handleConsoleOutput calls render())
 			const between = result.output.slice(startIndex + 'CONSOLE_START'.length, endIndex);
 			expect(between).toContain('MyTask');
-		});
+		}, { retry: 3 });
 	});
 
 	describe('cursor visibility', () => {

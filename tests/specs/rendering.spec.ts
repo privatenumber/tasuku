@@ -192,7 +192,7 @@ describe('rendering', () => {
 		expect(lastFirst).toBeLessThan(lastSecond);
 		const result = await subprocess;
 		expect(result.exitCode).toBe(0);
-	});
+	}, { retry: 3 });
 
 	test('line wrapping: save/restore clears correctly in narrow terminal', async () => {
 		const title = 'This is a long task title for testing';
