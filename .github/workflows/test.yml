@@ -2,13 +2,13 @@ name: Test
 
 on:
   push:
-    branches: [master, beta]
   pull_request:
     branches: [master, beta]
 
 jobs:
   test:
     name: Test
+    if: github.repository_owner == 'privatenumber' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
