@@ -13,10 +13,16 @@ export const formatTaskOutput = (
 	let result = '';
 
 	if (task.output) {
+		const outputColor = (
+			task.state === 'error' && theme.colors.error
+		) || (
+			task.state === 'warning' && theme.colors.warning
+		) || theme.colors.secondary;
+
 		const lines = task.output.split('\n');
 		for (let i = 0; i < lines.length; i += 1) {
 			const prefix = i === 0 ? '→ ' : '';
-			result += `${outputIndent}${theme.colors.secondary(`${prefix}${lines[i]}`)}\n`;
+			result += `${outputIndent}${outputColor(`${prefix}${lines[i]}`)}\n`;
 		}
 	}
 

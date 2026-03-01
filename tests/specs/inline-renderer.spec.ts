@@ -44,7 +44,7 @@ describe('inline renderer', () => {
 
 			expect(result.stderr).toContain(ansis.red('✖'));
 			expect(result.stderr).toContain('Error task');
-			expect(result.stderr).toContain(ansis.gray('→ Something went wrong'));
+			expect(result.stderr).toContain(ansis.red.dim('→ Something went wrong'));
 		});
 
 		test('warning state shows yellow warning with message', async () => {
@@ -65,7 +65,7 @@ describe('inline renderer', () => {
 
 			expect(result.stderr).toContain(ansis.yellow('⚠'));
 			expect(result.stderr).toContain('Warning task');
-			expect(result.stderr).toContain(ansis.gray('→ Caution'));
+			expect(result.stderr).toContain(ansis.yellow.dim('→ Caution'));
 		});
 
 		// Regression: setOutput must run before state change in setError/setWarning.
@@ -90,8 +90,8 @@ describe('inline renderer', () => {
 			const result = await node(fixture.getPath('test.mjs'));
 			expect(result.stdout).toBe('');
 
-			expect(result.stderr).toContain(ansis.gray('→ error output must appear'));
-			expect(result.stderr).toContain(ansis.gray('→ error object must appear'));
+			expect(result.stderr).toContain(ansis.red.dim('→ error output must appear'));
+			expect(result.stderr).toContain(ansis.red.dim('→ error object must appear'));
 		});
 
 		test('setWarning output is not lost to state-change race', async () => {
@@ -110,7 +110,7 @@ describe('inline renderer', () => {
 			const result = await node(fixture.getPath('test.mjs'));
 			expect(result.stdout).toBe('');
 
-			expect(result.stderr).toContain(ansis.gray('→ warning output must appear'));
+			expect(result.stderr).toContain(ansis.yellow.dim('→ warning output must appear'));
 		});
 
 		test('setTitle updates task title', async () => {

@@ -167,6 +167,8 @@ export type TasukuColors = {
 	title?: (text: string, state: State, frame: number) => string;
 	dim: ColorFunction;
 	secondary: ColorFunction;
+	error?: ColorFunction;
+	warning?: ColorFunction;
 };
 
 export type TasukuTheme = {

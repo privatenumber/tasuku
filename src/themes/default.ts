@@ -16,5 +16,7 @@ export const theme: TasukuTheme = {
 	colors: {
 		dim,
 		secondary: gray,
+		error: red.dim,
+		warning: yellow.dim,
 	},
 };

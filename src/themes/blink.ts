@@ -34,6 +34,8 @@ export const theme: TasukuTheme = {
 		title: white,
 		dim: rgb(80, 80, 80),
 		secondary: rgb(153, 153, 153),
+		error: rgb(180, 75, 90),
+		warning: rgb(180, 136, 5),
 	},
 };
 

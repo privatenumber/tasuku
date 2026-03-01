@@ -57,6 +57,8 @@ export const theme: TasukuTheme = {
 		title: shimmerTitle,
 		dim: rgb(80, 80, 80), // "subtle" — dark gray
 		secondary: rgb(153, 153, 153), // "inactive" — mid gray
+		error: rgb(180, 75, 90), // dimmed pink-red
+		warning: rgb(180, 136, 5), // dimmed amber
 	},
 };
 

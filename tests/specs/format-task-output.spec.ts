@@ -118,4 +118,49 @@ describe('formatTaskOutput', () => {
 		const leadingSpaces = (line: string) => line.length - line.trimStart().length;
 		expect(leadingSpaces(lines2[0])).toBeGreaterThan(leadingSpaces(lines0[0]));
 	});
+
+	test('error state uses theme error color', () => {
+		const themeWithError: TasukuTheme = {
+			...mockTheme,
+			colors: {
+				...mockTheme.colors,
+				error: (text: string) => `{err:${text}}`,
+			},
+		};
+		const task = createTask({ output: 'broken', state: 'error' });
+		const result = formatTaskOutput(task, 0, themeWithError);
+		expect(result).toContain('{err:→ broken}');
+	});
+
+	test('warning state uses theme warning color', () => {
+		const themeWithWarning: TasukuTheme = {
+			...mockTheme,
+			colors: {
+				...mockTheme.colors,
+				warning: (text: string) => `{warn:${text}}`,
+			},
+		};
+		const task = createTask({ output: 'careful', state: 'warning' });
+		const result = formatTaskOutput(task, 0, themeWithWarning);
+		expect(result).toContain('{warn:→ careful}');
+	});
+
+	test('error state falls back to secondary when theme has no error color', () => {
+		const task = createTask({ output: 'broken', state: 'error' });
+		const result = formatTaskOutput(task, 0, mockTheme);
+		expect(result).toContain('[→ broken]');
+	});
+
+	test('success state uses secondary even when error color is defined', () => {
+		const themeWithError: TasukuTheme = {
+			...mockTheme,
+			colors: {
+				...mockTheme.colors,
+				error: (text: string) => `{err:${text}}`,
+			},
+		};
+		const task = createTask({ output: 'all good', state: 'success' });
+		const result = formatTaskOutput(task, 0, themeWithError);
+		expect(result).toContain('[→ all good]');
+	});
 });
