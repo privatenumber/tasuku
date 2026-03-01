@@ -40,11 +40,11 @@ describe('reactive', () => {
 		expect(proxy.y).toBe('hello');
 	});
 
-	test('setting same value still triggers onChange', () => {
+	test('setting same value does not trigger onChange', () => {
 		let callCount = 0;
 		const proxy = reactive({ value: 5 }, () => { callCount += 1; });
 
 		proxy.value = 5;
-		expect(callCount).toBe(1);
+		expect(callCount).toBe(0);
 	});
 });

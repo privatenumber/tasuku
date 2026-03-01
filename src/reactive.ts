@@ -7,8 +7,11 @@ export const reactive = <T extends object>(
 	onChange: () => void,
 ): T => new Proxy(target, {
 	set(object, prop, value) {
+		const previous = Reflect.get(object, prop);
 		Reflect.set(object, prop, value);
-		onChange();
+		if (previous !== value) {
+			onChange();
+		}
 		return true;
 	},
 });

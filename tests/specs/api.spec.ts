@@ -90,6 +90,43 @@ describe('API', () => {
 		expect(p.error).toBe('error from Error');
 	});
 
+	test('thrown string sets error state', async () => {
+		const p = task('Throws string', async () => {
+			// eslint-disable-next-line no-throw-literal
+			throw 'something broke';
+		});
+
+		try { await p; } catch {}
+
+		expect(p.state).toBe('error');
+		expect(p.error).toBe('something broke');
+	});
+
+	test('thrown object with message property extracts message', async () => {
+		const p = task('Throws object', async () => {
+			// eslint-disable-next-line no-throw-literal
+			throw { message: 'custom error' };
+		});
+
+		try { await p; } catch {}
+
+		expect(p.state).toBe('error');
+		expect(p.error).toBe('custom error');
+	});
+
+	test('thrown number does not cause internal TypeError', async () => {
+		const p = task('Throws number', async () => {
+			// eslint-disable-next-line no-throw-literal
+			throw 42;
+		});
+
+		let caughtError: unknown;
+		try { await p; } catch (error) { caughtError = error; }
+
+		expect(caughtError).toBe(42);
+		expect(p.state).toBe('error');
+	});
+
 	describe('skip()', () => {
 		test('sets state to skipped', async () => {
 			const p = task('Skippable', async ({ skip }) => {

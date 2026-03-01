@@ -1,5 +1,5 @@
 import {
-	cursorUp, cursorDown, cursorShow,
+	cursorUp, cursorDown,
 	cursorSavePosition, cursorRestorePosition, eraseDown,
 } from 'ansi-escapes';
 import stringWidth from 'string-width';
@@ -25,8 +25,8 @@ export const pinned: RendererFactory = (
 	let lastOutput = '';
 	let hasHiddenTasks = false;
 	let hasSavedPosition = false;
+	let suppressRerender = false;
 	let restoreConsole: (() => void) | undefined;
-	let cursorHidden = false;
 
 	const isTTY = outputStream.isTTY === true;
 	const isInteractive = isTTY && !isCI;
@@ -66,14 +66,6 @@ export const pinned: RendererFactory = (
 			return Math.max(1, limit);
 		}
 		return Math.max(5, terminalHeight - 2);
-	};
-
-	// Restore cursor - used by exit handlers and destroy()
-	const restoreCursor = () => {
-		if (cursorHidden) {
-			outputStream.write(cursorShow);
-			cursorHidden = false;
-		}
 	};
 
 	// Exit handler registered after render() is defined (see below)
@@ -116,9 +108,21 @@ export const pinned: RendererFactory = (
 			} else {
 				const maxLines = getVisibleLinesLimit();
 
-				// Sort by state only when truncation is needed — preserves
-				// insertion order so active tasks bubble up only when some
-				// tasks must be hidden.
+				// Render in insertion order first
+				const renderedTasks = tasks.map(task => renderTask(task, depth));
+				const totalLines = renderedTasks.reduce(
+					(count, output) => count + output.split('\n').length - 1,
+					0,
+				);
+
+				if (totalLines <= maxLines) {
+					// Everything fits — no truncation needed
+					hasHiddenTasks = false;
+					return renderedTasks.join('');
+				}
+
+				// Truncation needed — sort by state priority so active tasks
+				// bubble up and completed tasks are hidden first
 				const sortedTasks = [...tasks].sort(
 					(a, b) => getStatePriority(a.state) - getStatePriority(b.state),
 				);
@@ -129,14 +133,10 @@ export const pinned: RendererFactory = (
 
 				for (let i = 0; i < sortedTasks.length; i += 1) {
 					const taskOutput = renderTask(sortedTasks[i], depth);
-					const taskLines = taskOutput.split('\n').length - 1; // -1 because split creates extra empty element
+					const taskLines = taskOutput.split('\n').length - 1;
 					const hasMoreTasks = i < sortedTasks.length - 1;
-
-					// Reserve 1 line for the "(X more tasks)" summary if there are more
 					const reservedLines = hasMoreTasks ? 1 : 0;
 
-					// Check if adding this task would exceed the limit
-					// Always show at least one task
 					if (lineCount + taskLines + reservedLines > maxLines && renderedTaskCount > 0) {
 						break;
 					}
@@ -167,8 +167,9 @@ export const pinned: RendererFactory = (
 					if (pending > 0) { parts.push(`${pending} queued`); }
 					if (completed > 0) { parts.push(`${completed} completed`); }
 					output += `${theme.colors.dim(`(+ ${parts.join(', ')})`)}\n`;
-					return output;
 				}
+
+				return output;
 			}
 		}
 
@@ -190,7 +191,9 @@ export const pinned: RendererFactory = (
 		// Immediately re-render the task UI so it stays visible below
 		// the console output. Without this, the UI remains erased until
 		// the next spinner tick (up to ~113ms), causing visible flicker.
-		if (taskList.length > 0) {
+		// Skip if suppressed (all tasks done with truncation — exit handler
+		// will do the final unlimited render).
+		if (taskList.length > 0 && !suppressRerender) {
 			render();
 		}
 	};
@@ -224,7 +227,7 @@ export const pinned: RendererFactory = (
 		if (isCI && !final) {
 			// CI mode: only write final output when all tasks are done
 			// This produces clean append-only output without intermediate states
-			if (areAllTasksDone(taskList) && output !== lastOutput) {
+			if (allDone && output !== lastOutput) {
 				outputStream.write(output);
 				lastOutput = output;
 			}
@@ -303,7 +306,7 @@ export const pinned: RendererFactory = (
 		// prevent handleConsoleOutput from re-rendering the truncated list
 		// (the exit handler will do the final unlimited render instead).
 		if (areAllTasksDone(taskList) && hasHiddenTasks) {
-			lastOutput = '\n';
+			suppressRerender = true;
 		}
 	};
 
@@ -323,9 +326,6 @@ export const pinned: RendererFactory = (
 		// Clear all task output before destroying
 		clearRenderArea();
 		hasSavedPosition = false;
-
-		// Restore cursor
-		restoreCursor();
 	};
 
 	// On process exit: do a final unlimited render so the complete
@@ -340,7 +340,6 @@ export const pinned: RendererFactory = (
 			render();
 			isFinalRender = false;
 		}
-		restoreCursor();
 	};
 
 	// Register resize handler

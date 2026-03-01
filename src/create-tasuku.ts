@@ -57,15 +57,9 @@ export const createTasuku = ({
 				taskState.status = status;
 			},
 			setOutput(output) {
-				taskState.output = (
-					typeof output === 'string'
-						? output
-						: (
-							'message' in output
-								? output.message
-								: ''
-						)
-				);
+				taskState.output = typeof output === 'string'
+					? output
+					: output.message;
 			},
 			get streamPreview() {
 				if (!stream) {
@@ -204,7 +198,12 @@ export const createTasuku = ({
 					childController.abort(error);
 					// Auto-stop timer on error
 					api.stopTime();
-					api.setError(error as Error);
+					api.setError(
+						error instanceof Error
+							|| (typeof error === 'object' && error !== null && 'message' in error)
+							? (error as Error)
+							: String(error),
+					);
 					dispose();
 					cleanupSignalListeners();
 					// Force-flush render before throwing — the process may crash before

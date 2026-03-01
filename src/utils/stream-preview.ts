@@ -84,6 +84,9 @@ export const createStreamPreview = (
 	}) as StreamPreview;
 
 	writable.clear = () => {
+		lines.length = 0;
+		totalLines = 0;
+		partialLine = '';
 		taskState.streamOutput = undefined;
 		taskState.streamTruncatedLines = undefined;
 	};

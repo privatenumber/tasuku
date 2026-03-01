@@ -9,6 +9,16 @@ import { patchConsole } from '../utils/patch-console.ts';
 import { areAllTasksDone, isTerminalState } from '../utils/task-list.ts';
 import { truncateLine } from '../utils/truncate-line.ts';
 
+const countNewlines = (text: string): number => {
+	let count = 0;
+	for (let index = 0; index < text.length; index += 1) {
+		if (text[index] === '\n') {
+			count += 1;
+		}
+	}
+	return count;
+};
+
 type TrackedLine = {
 	offset: number; // 1-based: lines from cursor rest position
 	depth: number;
@@ -40,7 +50,7 @@ export const inline: RendererFactory = (
 		const output = formatTaskOutput(task, depth, theme);
 		if (output) {
 			outputStream.write(output);
-			return (output.match(/\n/g) || []).length;
+			return countNewlines(output);
 		}
 		return 0;
 	};
@@ -278,7 +288,7 @@ export const inline: RendererFactory = (
 
 		// Count newlines and increment all tracked offsets
 		if (isInteractive) {
-			const newlineCount = (data.match(/\n/g) || []).length;
+			const newlineCount = countNewlines(data);
 			if (newlineCount > 0) {
 				incrementOffsets(newlineCount);
 			}

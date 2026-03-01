@@ -24,13 +24,14 @@ export const node = (
 			env: {
 				// nano-spawn inherits the parent environment
 
-				// 1. Unset all controlled vars for a clean slate
-				FORCE_COLOR: undefined,
-				NO_COLOR: undefined,
-				CI: undefined,
-				GITHUB_ACTIONS: undefined,
-				CONTINUOUS_INTEGRATION: undefined,
-				BUILD_NUMBER: undefined,
+				// 1. Override controlled vars to prevent parent env leaking.
+				// Empty string is falsy for all of these, effectively disabling them.
+				// (undefined doesn't override inherited env vars in nano-spawn)
+				NO_COLOR: '',
+				CI: '',
+				GITHUB_ACTIONS: '',
+				CONTINUOUS_INTEGRATION: '',
+				BUILD_NUMBER: '',
 
 				// 2. Apply our test default to force color (unless test disables it)
 				...(!hasColorDisable && { FORCE_COLOR: '1' }),

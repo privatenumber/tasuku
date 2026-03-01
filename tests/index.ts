@@ -1,4 +1,10 @@
+// Force color output in the test runner so assertion builders (ansis.red, etc.)
+// always produce ANSI codes regardless of the parent environment.
+// Child processes manage their own color env via node() and nodePty() helpers.
 import { describe } from 'manten';
+
+delete process.env.NO_COLOR;
+process.env.FORCE_COLOR = '1';
 
 describe('tasuku', () => {
 	// Core API
@@ -39,4 +45,6 @@ describe('tasuku', () => {
 	import('./specs/claude-theme.spec.ts');
 	import('./specs/blink-theme.spec.ts');
 	import('./specs/codex-theme.spec.ts');
+
+	import('./specs/patch-console.spec.ts');
 });

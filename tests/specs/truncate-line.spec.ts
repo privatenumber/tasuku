@@ -80,4 +80,18 @@ describe('truncateLine', () => {
 		const apc = '\u001B_payload\u001B\\Hello';
 		expect(truncateLine(apc, 5)).toBe(apc);
 	});
+
+	test('does not split surrogate pairs', () => {
+		const line = 'A👍B';
+		// 'A' = width 1, '👍' = width 2 → exceeds limit of 2 → only 'A' fits
+		const result = truncateLine(line, 2);
+		expect(result).toBe('A');
+	});
+
+	test('multi-codepoint emoji does not produce broken output', () => {
+		const family = '👨‍👩‍👧‍👦';
+		const result = truncateLine(`A${family}B`, 2);
+		const roundtripped = Buffer.from(result).toString();
+		expect(roundtripped).toBe(result);
+	});
 });

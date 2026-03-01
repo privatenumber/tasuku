@@ -80,12 +80,25 @@ export const truncateLine = (line: string, columns: number): string => {
 				}
 			}
 		} else {
-			const charWidth = stringWidth(char);
+			// Consume surrogate pairs as a unit to avoid splitting them.
+			// charCodeAt is intentional — codePointAt decodes the pair,
+			// but we need the raw UTF-16 code unit to detect surrogates.
+			// eslint-disable-next-line unicorn/prefer-code-point
+			const code = char.charCodeAt(0);
+			const fullChar = (code >= 0xD8_00 && code <= 0xDB_FF && i + 1 < line.length)
+				? char + line[i + 1]
+				: char;
+
+			const charWidth = code < 0x80 ? 1 : stringWidth(fullChar);
 			if (visibleWidth + charWidth > columns) {
 				break;
 			}
-			result += char;
+			result += fullChar;
 			visibleWidth += charWidth;
+
+			if (fullChar.length === 2) {
+				i += 1;
+			}
 		}
 
 		i += 1;

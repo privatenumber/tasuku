@@ -1,7 +1,11 @@
-import { rgb, dim } from 'ansis';
+import { dim } from 'ansis';
 import { createTasuku } from '../create-tasuku.ts';
 import { pinned } from '../renderers/pinned.ts';
 import type { TasukuTheme } from '../types.ts';
+import {
+	terracotta, white, subtle, inactive, success, error, warning,
+	errorDim, warningDim,
+} from './claude-palette.ts';
 
 /**
  * Blink theme — ⏺ pulses between bright and dim during loading.
@@ -12,9 +16,6 @@ import type { TasukuTheme } from '../types.ts';
  *
  * Uses the same Claude Code color palette.
  */
-const terracotta = rgb(215, 119, 87);
-const white = rgb(255, 255, 255);
-
 const dot = process.platform === 'darwin' ? '⏺' : '●';
 
 export const theme: TasukuTheme = {
@@ -22,21 +23,21 @@ export const theme: TasukuTheme = {
 	spinnerInterval: 1000,
 
 	icons: {
-		pending: rgb(80, 80, 80)(dot),
-		success: rgb(78, 186, 101)(dot),
-		error: rgb(255, 107, 128)(dot),
-		warning: rgb(255, 193, 7)(dot),
-		skipped: rgb(80, 80, 80)(dot),
+		pending: subtle(dot),
+		success: success(dot),
+		error: error(dot),
+		warning: warning(dot),
+		skipped: subtle(dot),
 		parent: terracotta('❯'),
-		parentError: rgb(255, 107, 128)('❯'),
+		parentError: error('❯'),
 	},
 
 	colors: {
 		title: white,
-		dim: rgb(80, 80, 80),
-		secondary: rgb(153, 153, 153),
-		error: rgb(180, 75, 90),
-		warning: rgb(180, 136, 5),
+		dim: subtle,
+		secondary: inactive,
+		error: errorDim,
+		warning: warningDim,
 	},
 };
 

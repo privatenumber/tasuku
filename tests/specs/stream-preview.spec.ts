@@ -2,6 +2,8 @@ import { describe, test, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
 import ansiEscapes from 'ansi-escapes';
 import ansis from 'ansis';
+import { createStreamPreview } from '../../src/utils/stream-preview.ts';
+import type { TaskObject } from '../../src/types.ts';
 import { node } from '../utils/node.ts';
 import { nodePty } from '../utils/pty.ts';
 import { tempDir } from '../utils/temp-dir.ts';
@@ -418,5 +420,40 @@ describe('stream preview', () => {
 		expect(result.stderr).toContain(`\u23BF  ${ansis.gray('line 4')}`);
 		expect(result.stderr).toContain(ansis.gray('line 8'));
 		expect(result.stderr).toContain(ansis.gray('(+ 3 lines)'));
+	});
+
+	describe('clear() resets internal state', () => {
+		const createTask = (): TaskObject => ({
+			title: 'test',
+			state: 'loading',
+			children: [],
+		});
+
+		test('writing after clear() does not include old lines', () => {
+			const taskObject = createTask();
+			const stream = createStreamPreview(taskObject, 3);
+
+			stream.write('line1\nline2\nline3\nline4\nline5\n');
+			expect(taskObject.streamTruncatedLines).toBe(2);
+
+			stream.clear();
+			stream.write('fresh\n');
+
+			expect(taskObject.streamOutput).toBe('fresh');
+			expect(taskObject.streamTruncatedLines).toBe(0);
+		});
+
+		test('truncation count resets after clear()', () => {
+			const taskObject = createTask();
+			const stream = createStreamPreview(taskObject, 2);
+
+			stream.write('a\nb\nc\nd\n');
+			expect(taskObject.streamTruncatedLines).toBe(2);
+
+			stream.clear();
+			stream.write('x\n');
+
+			expect(taskObject.streamTruncatedLines).toBe(0);
+		});
 	});
 });

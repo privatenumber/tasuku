@@ -35,6 +35,7 @@ export const nodePty = (
 		cwd: process.cwd(),
 		env: {
 			...process.env,
+			NO_COLOR: '',
 			FORCE_COLOR: '1',
 			COLORTERM: 'truecolor',
 			TERM: 'xterm-256color',

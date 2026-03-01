@@ -2,6 +2,10 @@ import { rgb } from 'ansis';
 import { createTasuku } from '../create-tasuku.ts';
 import { pinned } from '../renderers/pinned.ts';
 import type { State, TasukuTheme } from '../types.ts';
+import {
+	terracotta, white, subtle, inactive, success, error, warning,
+	errorDim, warningDim,
+} from './claude-palette.ts';
 
 /**
  * Claude Code theme.
@@ -12,8 +16,6 @@ import type { State, TasukuTheme } from '../types.ts';
  * Extracted from Claude Code CLI v2.1.37 binary via `strings`.
  * @see https://docs.anthropic.com/en/docs/claude-code
  */
-const terracotta = rgb(215, 119, 87);
-const white = rgb(255, 255, 255);
 const claudeShimmer = rgb(245, 149, 117);
 
 const shimmerTitle = (text: string, state: State, frame: number): string => {
@@ -44,22 +46,21 @@ export const theme: TasukuTheme = {
 	spinnerInterval: 200,
 
 	icons: {
-		pending: rgb(80, 80, 80)('◼'),
-		success: rgb(78, 186, 101)('✔'),
-		error: rgb(255, 107, 128)('✖'),
-		warning: rgb(255, 193, 7)('⚠'),
-		skipped: rgb(80, 80, 80)('⊘'),
+		pending: subtle('◼'),
+		success: success('✔'),
+		error: error('✖'),
+		warning: warning('⚠'),
+		skipped: subtle('⊘'),
 		parent: terracotta('❯'),
-		parentError: rgb(255, 107, 128)('❯'),
+		parentError: error('❯'),
 	},
 
-	// Dark theme color palette (wkD) from Claude Code binary
 	colors: {
 		title: shimmerTitle,
-		dim: rgb(80, 80, 80), // "subtle" — dark gray
-		secondary: rgb(153, 153, 153), // "inactive" — mid gray
-		error: rgb(180, 75, 90), // dimmed pink-red
-		warning: rgb(180, 136, 5), // dimmed amber
+		dim: subtle,
+		secondary: inactive,
+		error: errorDim,
+		warning: warningDim,
 	},
 };
 
