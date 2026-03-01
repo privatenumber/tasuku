@@ -100,6 +100,12 @@ await task.group(
 					String.raw`clear && printf '\e[?25l' && node ${jsFileName} && sleep 10`,
 				);
 
+				// Wait for clear/printf to execute before recording starts
+				vhsBodyResolved = vhsBodyResolved.replace(
+					'Enter\nShow',
+					'Enter\nSleep 500ms\nShow',
+				);
+
 				// VHS requires an Output directive (always a GIF)
 				const gifPath = extension === '.gif' ? block.imgSrc : `${path.dirname(block.imgSrc)}/${baseName}.gif`;
 

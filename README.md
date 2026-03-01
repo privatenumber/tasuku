@@ -87,7 +87,7 @@ Hide
 Type "node {file}"
 Enter
 Show
-Sleep 3s
+Sleep 4s
 -->
 
 ```js
