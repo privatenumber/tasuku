@@ -1,7 +1,7 @@
 import type { State, TaskList } from '../types.ts';
 
 export const isTerminalState = (state: State): boolean => (
-	state === 'success' || state === 'error' || state === 'warning'
+	state === 'success' || state === 'error' || state === 'warning' || state === 'skipped'
 );
 
 export const areAllTasksDone = (tasks: TaskList): boolean => {

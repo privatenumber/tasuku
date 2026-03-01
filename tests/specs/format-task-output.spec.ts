@@ -9,6 +9,7 @@ const mockTheme: TasukuTheme = {
 		success: 'OK',
 		error: 'ERR',
 		warning: 'WARN',
+		skipped: 'SKIP',
 		parent: 'PAR',
 		parentError: 'PERR',
 	},
@@ -127,7 +128,10 @@ describe('formatTaskOutput', () => {
 				error: (text: string) => `{err:${text}}`,
 			},
 		};
-		const task = createTask({ output: 'broken', state: 'error' });
+		const task = createTask({
+			output: 'broken',
+			state: 'error',
+		});
 		const result = formatTaskOutput(task, 0, themeWithError);
 		expect(result).toContain('{err:→ broken}');
 	});
@@ -140,13 +144,19 @@ describe('formatTaskOutput', () => {
 				warning: (text: string) => `{warn:${text}}`,
 			},
 		};
-		const task = createTask({ output: 'careful', state: 'warning' });
+		const task = createTask({
+			output: 'careful',
+			state: 'warning',
+		});
 		const result = formatTaskOutput(task, 0, themeWithWarning);
 		expect(result).toContain('{warn:→ careful}');
 	});
 
 	test('error state falls back to secondary when theme has no error color', () => {
-		const task = createTask({ output: 'broken', state: 'error' });
+		const task = createTask({
+			output: 'broken',
+			state: 'error',
+		});
 		const result = formatTaskOutput(task, 0, mockTheme);
 		expect(result).toContain('[→ broken]');
 	});
@@ -159,7 +169,10 @@ describe('formatTaskOutput', () => {
 				error: (text: string) => `{err:${text}}`,
 			},
 		};
-		const task = createTask({ output: 'all good', state: 'success' });
+		const task = createTask({
+			output: 'all good',
+			state: 'success',
+		});
 		const result = formatTaskOutput(task, 0, themeWithError);
 		expect(result).toContain('[→ all good]');
 	});

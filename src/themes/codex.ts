@@ -91,6 +91,7 @@ export const theme: TasukuTheme = {
 		success: green.bold('\u2713'),
 		error: red.bold('\u2717'),
 		warning: yellow('\u26A0'),
+		skipped: dim('\u2298'),
 		parent: gray('\u276F'),
 		parentError: red.bold('\u276F'),
 	},

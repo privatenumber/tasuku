@@ -97,7 +97,7 @@ export const pinned: RendererFactory = (
 	const getStatePriority = (state: TaskList[number]['state']): number => {
 		if (state === 'loading') { return 0; }
 		if (state === 'pending') { return 1; }
-		return 2; // success, error, warning
+		return 2; // success, error, warning, skipped
 	};
 
 	let isFinalRender = false;

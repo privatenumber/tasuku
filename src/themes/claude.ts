@@ -48,6 +48,7 @@ export const theme: TasukuTheme = {
 		success: rgb(78, 186, 101)('✔'),
 		error: rgb(255, 107, 128)('✖'),
 		warning: rgb(255, 193, 7)('⚠'),
+		skipped: rgb(80, 80, 80)('⊘'),
 		parent: terracotta('❯'),
 		parentError: rgb(255, 107, 128)('❯'),
 	},

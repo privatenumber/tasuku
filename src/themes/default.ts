@@ -10,6 +10,7 @@ export const theme: TasukuTheme = {
 		success: green('✔'),
 		error: red('✖'),
 		warning: yellow('⚠'),
+		skipped: gray('⊘'),
 		parent: yellow('❯'),
 		parentError: red('❯'),
 	},

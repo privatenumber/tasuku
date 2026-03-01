@@ -1,6 +1,6 @@
 import type { Writable } from 'node:stream';
 
-export type State = 'pending' | 'loading' | 'error' | 'warning' | 'success';
+export type State = 'pending' | 'loading' | 'error' | 'warning' | 'success' | 'skipped';
 
 export type TaskGroupOptions = {
 
@@ -73,6 +73,7 @@ export type TaskInnerAPI = {
 	setWarning(warning?: Error | string | false | null): void;
 	setError(error?: Error | string | false | null): void;
 	setOutput(output: string | { message: string }): void;
+	skip(message?: string): never;
 	streamPreview: StreamPreview;
 	startTime(): void;
 	stopTime(): number;
@@ -90,6 +91,7 @@ export type TaskPromise<T = unknown> = Promise<T> & {
 	state: State;
 	warning: string | undefined;
 	error: string | undefined;
+	skipped: string | undefined;
 	clear: () => TaskPromise<T>;
 };
 
@@ -159,6 +161,7 @@ export type TasukuIcons = {
 	success: string;
 	error: string;
 	warning: string;
+	skipped: string;
 	parent: string;
 	parentError: string;
 };

@@ -15,6 +15,8 @@ export const getIcon = (
 		}
 		case 'warning': { return theme.icons.warning;
 		}
+		case 'skipped': { return theme.icons.skipped;
+		}
 		default: { return theme.icons.pending;
 		}
 	}

@@ -1,9 +1,9 @@
 import { describe, test, expect } from 'manten';
 import { areAllTasksDone } from '../../src/utils/task-list.ts';
-import type { TaskList } from '../../src/types.ts';
+import type { State, TaskList } from '../../src/types.ts';
 
 const createTask = (
-	state: 'pending' | 'loading' | 'success' | 'error' | 'warning',
+	state: State,
 	children: TaskList = [],
 ): TaskList[number] => ({
 	title: 'test',
@@ -35,6 +35,13 @@ describe('areAllTasksDone', () => {
 	test('warning state counts as done', () => {
 		const tasks: TaskList = [
 			createTask('warning'),
+		];
+		expect(areAllTasksDone(tasks)).toBe(true);
+	});
+
+	test('skipped state counts as done', () => {
+		const tasks: TaskList = [
+			createTask('skipped'),
 		];
 		expect(areAllTasksDone(tasks)).toBe(true);
 	});

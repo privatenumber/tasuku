@@ -67,6 +67,24 @@ describe('task states', () => {
 		expect(result.stderr).toContain(ansis.yellow.dim('→ Warning message'));
 	});
 
+	test('skip state shows gray circle-slash with message', async () => {
+		await using fixture = await createFixture({
+			'test.mjs': `
+				import task from '#tasuku';
+
+				await task('Optional step', async ({ skip }) => {
+					skip('not needed');
+				});
+			`,
+		}, { tempDir });
+
+		const result = await node(fixture.getPath('test.mjs'));
+		expect(result.stdout).toBe('');
+
+		expect(result.stderr).toContain(`${ansis.gray('⊘')} Optional step`);
+		expect(result.stderr).toContain(ansis.gray('→ not needed'));
+	});
+
 	test('pending state shows square symbol', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `

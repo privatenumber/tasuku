@@ -9,6 +9,7 @@ const mockTheme: TasukuTheme = {
 		success: 'SUCCESS',
 		error: 'ERROR',
 		warning: 'WARNING',
+		skipped: 'SKIPPED',
 		parent: 'PARENT',
 		parentError: 'PARENT_ERROR',
 	},
@@ -47,6 +48,11 @@ describe('getIcon', () => {
 	test('warning returns warning icon regardless of children', () => {
 		expect(getIcon('warning', false, mockTheme, 0)).toBe('WARNING');
 		expect(getIcon('warning', true, mockTheme, 0)).toBe('WARNING');
+	});
+
+	test('skipped returns skipped icon regardless of children', () => {
+		expect(getIcon('skipped', false, mockTheme, 0)).toBe('SKIPPED');
+		expect(getIcon('skipped', true, mockTheme, 0)).toBe('SKIPPED');
 	});
 
 	test('pending returns pending icon regardless of children', () => {

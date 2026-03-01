@@ -9,6 +9,7 @@ const mockTheme: TasukuTheme = {
 		success: 'OK',
 		error: 'ERR',
 		warning: 'WARN',
+		skipped: 'SKIP',
 		parent: 'PAR',
 		parentError: 'PERR',
 	},

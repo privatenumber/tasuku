@@ -90,6 +90,72 @@ describe('API', () => {
 		expect(p.error).toBe('error from Error');
 	});
 
+	describe('skip()', () => {
+		test('sets state to skipped', async () => {
+			const p = task('Skippable', async ({ skip }) => {
+				skip();
+			});
+			await p;
+
+			expect(p.state).toBe('skipped');
+			expect(p.skipped).toBeUndefined();
+		});
+
+		test('skip with message exposes reason via skipped property', async () => {
+			const p = task('Skippable', async ({ skip }) => {
+				skip('cache hit');
+			});
+			await p;
+
+			expect(p.state).toBe('skipped');
+			expect(p.skipped).toBe('cache hit');
+		});
+
+		test('does not throw to caller', async () => {
+			const result = await task('Skippable', async ({ skip }) => {
+				skip('not needed');
+				// unreachable — skip() throws internally
+			});
+
+			expect(result).toBeUndefined();
+		});
+
+		test('skip does not execute code after it', async () => {
+			let afterSkip = false;
+			await task('Skippable', async ({ skip }) => {
+				skip();
+				afterSkip = true;
+			});
+
+			expect(afterSkip).toBe(false);
+		});
+
+		test('skip in group resolves with undefined for skipped task', async () => {
+			const results = await task.group(task => [
+				task('First', async () => 'a'),
+				task('Skippable', async ({ skip }) => { skip('not needed'); }),
+				task('Last', async () => 'c'),
+			]);
+
+			expect(results[0]).toBe('a');
+			expect(results[1]).toBeUndefined();
+			expect(results[2]).toBe('c');
+		});
+
+		test('nested skip does not affect parent', async () => {
+			const p = task('Parent', async () => {
+				const child = task('Child', async ({ skip }) => { skip(); });
+				await child;
+				expect(child.state).toBe('skipped');
+				return 'parent done';
+			});
+			const result = await p;
+
+			expect(result).toBe('parent done');
+			expect(p.state).toBe('success');
+		});
+	});
+
 	describe('clear()', () => {
 		test('chained - resolves to task result', async () => {
 			const result = await task('Some task', async () => {

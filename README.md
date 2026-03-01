@@ -58,7 +58,7 @@ npm i tasuku
 
 ## Quick start
 
-タスク (Tasuku) is a minimal task runner for Node.js. Call `task()` from anywhere to display loading, success, and error states in the terminal:
+タスク (Tasuku) is a minimal task runner for Node.js. Call `task()` from anywhere to display loading, success, error, and skipped states in the terminal:
 
 ```ts
 import task from 'tasuku'
@@ -220,13 +220,16 @@ Returns a `TaskPromise<T>` — a Promise that resolves to `T` (the task function
 ```ts
 type TaskPromise<T> = Promise<T> & {
     // State of the task
-    state: 'loading' | 'error' | 'warning' | 'success'
+    state: 'loading' | 'error' | 'warning' | 'success' | 'skipped'
 
     // Warning message if state is 'warning', otherwise undefined
     warning: string | undefined
 
     // Error message if state is 'error', otherwise undefined
     error: string | undefined
+
+    // Skip message if state is 'skipped', otherwise undefined
+    skipped: string | undefined
 
     // Clear the task from the terminal. Returns the promise for chaining.
     // If the task is still running, clears automatically on completion.
@@ -257,6 +260,7 @@ type TaskFunction = (api: {
     setOutput(output: string | { message: string }): void
     setWarning(warning?: Error | string | false | null): void
     setError(error?: Error | string | false | null): void
+    skip(message?: string): never
     streamPreview: Writable & { clear(): void }
     startTime(): void
     stopTime(): number
@@ -409,6 +413,29 @@ Call with a string or Error to put the task in a warning state. Call with no arg
 #### setError()
 
 Call with a string or Error to put the task in an error state. Call with no argument (or a falsy value) to revert to loading state. Tasks automatically enter error state when an uncaught error is thrown.
+
+#### skip()
+
+Skip the task entirely. Throws internally so no `return` is needed — code after `skip()` is unreachable. The task transitions to skipped state and the promise resolves with `undefined`.
+
+```ts
+await task('Compile', async ({ skip }) => {
+    if (cacheValid) { skip('cache hit') }
+    await compile()
+})
+```
+
+Pass an optional message to explain why the task was skipped. The message is accessible via the `skipped` property on the returned promise:
+
+```ts
+const p = task('Deploy', async ({ skip }) => {
+    if (!hasChanges) { skip('no changes') }
+    await deploy()
+})
+await p
+
+console.log(p.skipped) // 'no changes'
+```
 
 #### startTime()
 
@@ -608,14 +635,15 @@ await task('my title', async ({ setTitle, setStatus, setOutput }) => {
 | Success | ✔ | Completed without error |
 | Warning | ⚠ | Completed with a warning |
 | Error | ✖ | Exited with an error |
+| Skipped | ⊘ | Intentionally skipped |
 
 <p align="center" demo>
-<img src=".github/media/task-states.gif" width="600" alt="Terminal showing all five task states: success, warning, error, loading, and pending">
+<img src=".github/media/task-states.gif" width="600" alt="Terminal showing all six task states: success, warning, error, skipped, loading, and pending">
 <details>
 <summary>View code</summary>
 
 <!-- @vhs
-Set Height 480
+Set Height 560
 Set TypingSpeed 0
 Hide
 Type "node {file}"
@@ -642,6 +670,10 @@ const tasks = task.group(task => [
     task('Error task', async ({ setError }) => {
         await setTimeout(100)
         setError(new Error('Something went wrong'))
+    }),
+
+    task('Skipped task', async ({ skip }) => {
+        skip('Not needed')
     }),
 
     task('Loading task', async () => {
@@ -904,6 +936,7 @@ type TasukuTheme = {
         success: string
         error: string
         warning: string
+        skipped: string
         parent: string // Parent task with children
         parentError: string // Parent task in error state
     }
@@ -911,6 +944,8 @@ type TasukuTheme = {
         title?: (text: string, state: State, frame: number) => string
         dim: (text: string) => string // Status, elapsed time
         secondary: (text: string) => string // Output text, stream preview
+        error?: (text: string) => string // Error output message
+        warning?: (text: string) => string // Warning output message
     }
 }
 ```

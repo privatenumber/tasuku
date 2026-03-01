@@ -20,6 +20,14 @@ import type {
 	CreateTasukuOptions,
 } from './types.ts';
 
+class TaskSkipError {
+	message: string;
+
+	constructor(message?: string) {
+		this.message = message ?? '';
+	}
+}
+
 export const createTasuku = ({
 	theme,
 	renderer: rendererFactory,
@@ -85,6 +93,9 @@ export const createTasuku = ({
 					taskState.state = 'loading';
 					taskState.output = undefined;
 				}
+			},
+			skip(message?: string): never {
+				throw new TaskSkipError(message);
 			},
 			startTime: () => {
 				taskState.startedAt = Date.now();
@@ -177,6 +188,18 @@ export const createTasuku = ({
 						() => taskFunction(api),
 					);
 				} catch (error) {
+					if (error instanceof TaskSkipError) {
+						api.stopTime();
+						if (error.message) {
+							task.output = error.message;
+						}
+						task.state = 'skipped';
+						dispose();
+						cleanupSignalListeners();
+						renderer?.flushRender();
+						return undefined as T;
+					}
+
 					// Abort child tasks when parent fails — pass the error as reason
 					childController.abort(error);
 					// Auto-stop timer on error
@@ -246,6 +269,11 @@ export const createTasuku = ({
 			},
 			error: {
 				get: () => (registeredTask.task.state === 'error' ? registeredTask.task.output : undefined),
+				enumerable: true,
+				configurable: true,
+			},
+			skipped: {
+				get: () => (registeredTask.task.state === 'skipped' ? registeredTask.task.output : undefined),
 				enumerable: true,
 				configurable: true,
 			},
