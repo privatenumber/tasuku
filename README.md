@@ -125,8 +125,8 @@ export const seed = (count: number) => task('Seeding data', async () => {
 ```
 ```ts
 // deploy.ts
-import { migrate, seed } from './db.js'
 import task from 'tasuku'
+import { migrate, seed } from './db.js'
 
 await task('Deploy', async () => {
     await migrate('./migrations') // automatically nested under "Deploy"

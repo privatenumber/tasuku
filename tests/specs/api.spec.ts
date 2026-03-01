@@ -418,10 +418,12 @@ describe('API', () => {
 				task('two', async () => {
 					throw new Error('error 2');
 				}),
-			], { stopOnError: false }).catch((caughtError: Error) => caughtError);
+			], { stopOnError: false }).catch((caughtError: unknown) => caughtError);
 
-			expect((error as Error).message).toContain('error 1');
-			expect((error as Error).message).toContain('error 2');
+			expect(error).toBeInstanceOf(AggregateError);
+			const messages = (error as AggregateError).errors.map((element: Error) => element.message);
+			expect(messages).toContain('error 1');
+			expect(messages).toContain('error 2');
 		});
 
 		test('stopOnError - true (default) stops on first error', async () => {
