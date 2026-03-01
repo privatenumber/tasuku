@@ -200,7 +200,7 @@ export const createTasuku = ({
 					api.stopTime();
 					api.setError(
 						error instanceof Error
-							|| (typeof error === 'object' && error !== null && 'message' in error)
+							|| (typeof error === 'object' && error !== null && 'message' in error && typeof (error as { message: unknown }).message === 'string')
 							? (error as Error)
 							: String(error),
 					);
@@ -372,8 +372,9 @@ export const createTasuku = ({
 					}
 				},
 				{
-					concurrency: 1,
-					...options,
+					concurrency: options?.concurrency ?? 1,
+					stopOnError,
+					signal: combinedSignal,
 				},
 			) as Promise<unknown> as Promise<TaskGroupResults<TasksQueueType>>;
 

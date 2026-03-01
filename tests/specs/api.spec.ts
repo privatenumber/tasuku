@@ -114,6 +114,18 @@ describe('API', () => {
 		expect(p.error).toBe('custom error');
 	});
 
+	test('thrown object with non-string message falls back to String()', async () => {
+		const p = task('Throws bad message', async () => {
+			// eslint-disable-next-line no-throw-literal
+			throw { message: 42 };
+		});
+
+		try { await p; } catch {}
+
+		expect(p.state).toBe('error');
+		expect(typeof p.error).toBe('string');
+	});
+
 	test('thrown number does not cause internal TypeError', async () => {
 		const p = task('Throws number', async () => {
 			// eslint-disable-next-line no-throw-literal
