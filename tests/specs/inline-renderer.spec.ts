@@ -839,10 +839,10 @@ describe('inline renderer', () => {
 			// Single-line output with → prefix
 			expect(result.stderr).toContain(ansis.gray('→ Build: 3 files'));
 
-			// Multi-line output: first line gets → prefix, subsequent don't
+			// Multi-line output: first line gets → prefix, continuation lines align
 			expect(result.stderr).toContain(ansis.gray('→ line A'));
-			expect(result.stderr).toContain(ansis.gray('line B'));
-			expect(result.stderr).toContain(ansis.gray('line C'));
+			expect(result.stderr).toContain(ansis.gray('  line B'));
+			expect(result.stderr).toContain(ansis.gray('  line C'));
 
 			// Stream output: first line gets ⎿ prefix
 			expect(result.stderr).toContain(ansis.gray('stream 1'));

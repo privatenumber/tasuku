@@ -37,14 +37,24 @@ describe('formatTaskOutput', () => {
 		expect(result).toBe('  [\u2192 hello]\n');
 	});
 
-	test('multi-line output: first line gets arrow, rest do not', () => {
+	test('multi-line output: continuation lines align with first line text', () => {
 		const task = createTask({ output: 'line1\nline2\nline3' });
 		const result = formatTaskOutput(task, 0, mockTheme);
 		const lines = result.split('\n');
-		// 3 content lines + trailing empty from final \n
+		// First line: indent + "→ " prefix
+		// Continuation lines: indent + "  " (same width as "→ ") for alignment
 		expect(lines[0]).toBe('  [\u2192 line1]');
-		expect(lines[1]).toBe('  [line2]');
-		expect(lines[2]).toBe('  [line3]');
+		expect(lines[1]).toBe('  [  line2]');
+		expect(lines[2]).toBe('  [  line3]');
+	});
+
+	test('multi-line output: empty lines get continuation padding', () => {
+		const task = createTask({ output: 'line1\n\nline3' });
+		const result = formatTaskOutput(task, 0, mockTheme);
+		const lines = result.split('\n');
+		expect(lines[0]).toBe('  [\u2192 line1]');
+		expect(lines[1]).toBe('  [  ]');
+		expect(lines[2]).toBe('  [  line3]');
 	});
 
 	test('depth 1 increases output indent', () => {

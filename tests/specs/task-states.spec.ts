@@ -170,8 +170,8 @@ describe('task states', () => {
 		expect(result.stdout).toBe('');
 
 		expect(result.stderr).toContain(`\n  ${ansis.gray('→ line 1')}`);
-		expect(result.stderr).toContain(`\n  ${ansis.gray('line 2')}`);
-		expect(result.stderr).toContain(`\n  ${ansis.gray('line 3')}`);
+		expect(result.stderr).toContain(`\n  ${ansis.gray('  line 2')}`);
+		expect(result.stderr).toContain(`\n  ${ansis.gray('  line 3')}`);
 	});
 
 	test('setTitle updates task title dynamically', async () => {
