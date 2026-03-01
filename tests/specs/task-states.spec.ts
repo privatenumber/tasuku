@@ -30,6 +30,23 @@ describe('task states', () => {
 		expect(result.stderr).toContain(ansis.gray('→ Something went wrong'));
 	});
 
+	test('thrown error renders error icon in non-TTY output', async () => {
+		await using fixture = await createFixture({
+			'test.mjs': `
+				import task from '#tasuku';
+
+				await task('Throwing task', async () => {
+					throw new Error('it broke');
+				});
+			`,
+		}, { tempDir });
+
+		const result = await node(fixture.getPath('test.mjs'));
+
+		expect(result.stderr).toContain(`${ansis.red('✖')} Throwing task`);
+		expect(result.stderr).toContain(ansis.gray('→ it broke'));
+	});
+
 	test('warning state shows yellow warning with gray message', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `

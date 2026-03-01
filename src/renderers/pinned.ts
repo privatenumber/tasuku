@@ -284,12 +284,13 @@ export const pinned: RendererFactory = (
 		}, 33);
 	};
 
-	const flushRender = () => {
-		// Clear any pending throttled render and render immediately
-		// Used when task reaches terminal state to prevent overwriting
-		// subsequent output writes
-		// Only needed in interactive mode (TTY with ANSI clearing)
-		if (!isInteractive) {
+	const flushRender = (force = false) => {
+		// Clear any pending throttled render and render immediately.
+		// In non-interactive mode (piped output, CI), intermediate renders are
+		// unnecessary — the deferred scheduleRender handles output. However,
+		// when force=true (error about to be re-thrown), the process may exit
+		// before the deferred render fires, so we must render synchronously.
+		if (!force && !isInteractive) {
 			return;
 		}
 		if (renderTimeout) {

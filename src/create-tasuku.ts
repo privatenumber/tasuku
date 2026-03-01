@@ -184,8 +184,9 @@ export const createTasuku = ({
 					api.setError(error as Error);
 					dispose();
 					cleanupSignalListeners();
-					// Flush render before throwing to prevent overwriting subsequent output
-					renderer?.flushRender();
+					// Force-flush render before throwing — the process may crash before
+					// the deferred 33ms render fires, leaving error state invisible
+					renderer?.flushRender(true);
 					throw error;
 				}
 

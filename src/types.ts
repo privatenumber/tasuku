@@ -178,7 +178,7 @@ export type TasukuTheme = {
 
 export type Renderer = {
 	triggerRender: () => void;
-	flushRender: () => void;
+	flushRender: (force?: boolean) => void;
 	renderFinal: () => void;
 	destroy: () => void;
 	setMaxVisible: (limit?: number | ((terminalHeight: number) => number)) => void;
