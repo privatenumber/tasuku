@@ -123,7 +123,7 @@ describe('environment', () => {
 
 			expect(result.stderr).toBe(
 				`${ansis.red('✖')} Error task\n`
-				+ `  ${ansis.red.dim('→ Something failed')}`,
+				+ `  ${ansis.gray('→')} ${ansis.red('Something failed')}`,
 			);
 		});
 
@@ -147,7 +147,7 @@ describe('environment', () => {
 
 			expect(result.stderr).toBe(
 				`${ansis.yellow('⚠')} Warning task\n`
-				+ `  ${ansis.yellow.dim('→ Warning message')}`,
+				+ `  ${ansis.gray('→')} ${ansis.yellow('Warning message')}`,
 			);
 		});
 
@@ -179,7 +179,7 @@ describe('environment', () => {
 				`${ansis.yellow('❯')} Parent task\n`
 				+ `  ${ansis.green('✔')} Child 1\n`
 				+ `  ${ansis.yellow('⚠')} Child 2\n`
-				+ `    ${ansis.yellow.dim('→ Child warning')}`,
+				+ `    ${ansis.gray('→')} ${ansis.yellow('Child warning')}`,
 			);
 		});
 
@@ -252,7 +252,7 @@ describe('environment', () => {
 
 			expect(result.stderr).toBe(
 				`${ansis.green('✔')} Task with output\n`
-				+ `  ${ansis.gray('→ Some output text')}`,
+				+ `  ${ansis.gray('→')} ${ansis.gray('Some output text')}`,
 			);
 		});
 	});
@@ -335,7 +335,7 @@ describe('environment', () => {
 			expect(result.stderr).toBe(
 				`${ansiEscapes.cursorSavePosition}${ansis.yellow('⠋')} Error task\n`
 				+ `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}${ansis.red('✖')} Error task\n`
-				+ `  ${ansis.red.dim('→ Something failed')}`,
+				+ `  ${ansis.gray('→')} ${ansis.red('Something failed')}`,
 			);
 		});
 

@@ -4,7 +4,6 @@ import { pinned } from '../renderers/pinned.ts';
 import type { State, TasukuTheme } from '../types.ts';
 import {
 	terracotta, white, subtle, inactive, success, error, warning,
-	errorDim, warningDim,
 } from './claude-palette.ts';
 
 /**
@@ -59,8 +58,8 @@ export const theme: TasukuTheme = {
 		title: shimmerTitle,
 		dim: subtle,
 		secondary: inactive,
-		error: errorDim,
-		warning: warningDim,
+		error,
+		warning,
 	},
 };
 

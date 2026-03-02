@@ -10,7 +10,7 @@ import { tempDir } from '../utils/temp-dir.ts';
 import { hasSpinner } from '../utils/spinner-frames.ts';
 
 describe('task states', () => {
-	test('error state shows red X with dimmed red message', async () => {
+	test('error state shows red X with red message', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
 				import task from '#tasuku';
@@ -27,7 +27,7 @@ describe('task states', () => {
 
 		expect(result.stderr).toContain('Error task');
 		expect(result.stderr).toContain(ansis.red('✖'));
-		expect(result.stderr).toContain(ansis.red.dim('→ Something went wrong'));
+		expect(result.stderr).toContain(ansis.red('Something went wrong'));
 	});
 
 	test('thrown error renders error icon in non-TTY output', async () => {
@@ -44,10 +44,10 @@ describe('task states', () => {
 		const result = await node(fixture.getPath('test.mjs'));
 
 		expect(result.stderr).toContain(`${ansis.red('✖')} Throwing task`);
-		expect(result.stderr).toContain(ansis.red.dim('→ it broke'));
+		expect(result.stderr).toContain(ansis.red('it broke'));
 	});
 
-	test('warning state shows yellow warning with dimmed yellow message', async () => {
+	test('warning state shows yellow warning with yellow message', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
 				import task from '#tasuku';
@@ -64,7 +64,7 @@ describe('task states', () => {
 
 		expect(result.stderr).toContain('Warning task');
 		expect(result.stderr).toContain(ansis.yellow('⚠'));
-		expect(result.stderr).toContain(ansis.yellow.dim('→ Warning message'));
+		expect(result.stderr).toContain(ansis.yellow('Warning message'));
 	});
 
 	test('skip state shows gray circle-slash with message', async () => {
@@ -82,7 +82,7 @@ describe('task states', () => {
 		expect(result.stdout).toBe('');
 
 		expect(result.stderr).toContain(`${ansis.gray('⊘')} Optional step`);
-		expect(result.stderr).toContain(ansis.gray('→ not needed'));
+		expect(result.stderr).toContain(ansis.gray('not needed'));
 	});
 
 	test('pending state shows square symbol', async () => {
@@ -169,9 +169,9 @@ describe('task states', () => {
 		const result = await node(fixture.getPath('test.mjs'));
 		expect(result.stdout).toBe('');
 
-		expect(result.stderr).toContain(`\n  ${ansis.gray('→ line 1')}`);
-		expect(result.stderr).toContain(`\n  ${ansis.gray('  line 2')}`);
-		expect(result.stderr).toContain(`\n  ${ansis.gray('  line 3')}`);
+		expect(result.stderr).toContain(`${ansis.gray('→')} ${ansis.gray('line 1')}`);
+		expect(result.stderr).toContain(`  ${ansis.gray('line 2')}`);
+		expect(result.stderr).toContain(`  ${ansis.gray('line 3')}`);
 	});
 
 	test('setTitle updates task title dynamically', async () => {
@@ -223,7 +223,7 @@ describe('task states', () => {
 
 		expect(result.stderr).toContain('Error object message');
 		expect(result.stderr).toContain(ansis.red('✖'));
-		expect(result.stderr).toContain(ansis.red.dim('→ Error object message'));
+		expect(result.stderr).toContain(ansis.red('Error object message'));
 	});
 
 	test('task function throws error', async () => {
@@ -245,7 +245,7 @@ describe('task states', () => {
 
 		expect(result.stdout).toContain('Caught: Task failed');
 		expect(result.stderr).toContain(ansis.red('✖'));
-		expect(result.stderr).toContain(ansis.red.dim('→ Task failed'));
+		expect(result.stderr).toContain(ansis.red('Task failed'));
 	});
 
 	test('clear method removes single task', async () => {

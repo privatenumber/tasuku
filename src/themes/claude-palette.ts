@@ -13,5 +13,3 @@ export const inactive = rgb(153, 153, 153);
 export const success = rgb(78, 186, 101);
 export const error = rgb(255, 107, 128);
 export const warning = rgb(255, 193, 7);
-export const errorDim = rgb(180, 75, 90);
-export const warningDim = rgb(180, 136, 5);

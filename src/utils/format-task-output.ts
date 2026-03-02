@@ -21,8 +21,8 @@ export const formatTaskOutput = (
 
 		const lines = task.output.split('\n');
 		for (let i = 0; i < lines.length; i += 1) {
-			const prefix = i === 0 ? '→ ' : '  ';
-			result += `${outputIndent}${outputColor(`${prefix}${lines[i]}`)}\n`;
+			const prefix = i === 0 ? `${theme.colors.secondary('→')} ` : '  ';
+			result += `${outputIndent}${prefix}${outputColor(lines[i])}\n`;
 		}
 	}
 

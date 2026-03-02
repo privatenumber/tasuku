@@ -44,7 +44,7 @@ describe('inline renderer', () => {
 
 			expect(result.stderr).toContain(ansis.red('✖'));
 			expect(result.stderr).toContain('Error task');
-			expect(result.stderr).toContain(ansis.red.dim('→ Something went wrong'));
+			expect(result.stderr).toContain(ansis.red('Something went wrong'));
 		});
 
 		test('warning state shows yellow warning with message', async () => {
@@ -65,7 +65,7 @@ describe('inline renderer', () => {
 
 			expect(result.stderr).toContain(ansis.yellow('⚠'));
 			expect(result.stderr).toContain('Warning task');
-			expect(result.stderr).toContain(ansis.yellow.dim('→ Caution'));
+			expect(result.stderr).toContain(ansis.yellow('Caution'));
 		});
 
 		// Regression: setOutput must run before state change in setError/setWarning.
@@ -90,8 +90,8 @@ describe('inline renderer', () => {
 			const result = await node(fixture.getPath('test.mjs'));
 			expect(result.stdout).toBe('');
 
-			expect(result.stderr).toContain(ansis.red.dim('→ error output must appear'));
-			expect(result.stderr).toContain(ansis.red.dim('→ error object must appear'));
+			expect(result.stderr).toContain(ansis.red('error output must appear'));
+			expect(result.stderr).toContain(ansis.red('error object must appear'));
 		});
 
 		test('setWarning output is not lost to state-change race', async () => {
@@ -110,7 +110,7 @@ describe('inline renderer', () => {
 			const result = await node(fixture.getPath('test.mjs'));
 			expect(result.stdout).toBe('');
 
-			expect(result.stderr).toContain(ansis.yellow.dim('→ warning output must appear'));
+			expect(result.stderr).toContain(ansis.yellow('warning output must appear'));
 		});
 
 		test('setTitle updates task title', async () => {
@@ -169,7 +169,7 @@ describe('inline renderer', () => {
 			const result = await node(fixture.getPath('test.mjs'));
 			expect(result.stdout).toBe('');
 
-			expect(result.stderr).toContain(ansis.gray('→ Some output'));
+			expect(result.stderr).toContain(ansis.gray('Some output'));
 		});
 
 		test('task function throws error', async () => {
@@ -802,7 +802,7 @@ describe('inline renderer', () => {
 			expect(parentIndex).toBeLessThan(childIndex);
 
 			// setOutput content appears
-			expect(result.stderr).toContain(ansis.gray('→ some output'));
+			expect(result.stderr).toContain(ansis.gray('some output'));
 
 			// Nested indentation
 			expect(plain).toContain('  ✔ Child');
@@ -837,12 +837,12 @@ describe('inline renderer', () => {
 			expect(result.stdout).toBe('');
 
 			// Single-line output with → prefix
-			expect(result.stderr).toContain(ansis.gray('→ Build: 3 files'));
+			expect(result.stderr).toContain(ansis.gray('Build: 3 files'));
 
 			// Multi-line output: first line gets → prefix, continuation lines align
-			expect(result.stderr).toContain(ansis.gray('→ line A'));
-			expect(result.stderr).toContain(ansis.gray('  line B'));
-			expect(result.stderr).toContain(ansis.gray('  line C'));
+			expect(result.stderr).toContain(ansis.gray('line A'));
+			expect(result.stderr).toContain(ansis.gray('line B'));
+			expect(result.stderr).toContain(ansis.gray('line C'));
 
 			// Stream output: first line gets ⎿ prefix
 			expect(result.stderr).toContain(ansis.gray('stream 1'));

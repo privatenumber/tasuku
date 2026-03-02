@@ -100,8 +100,8 @@ export const theme: TasukuTheme = {
 		title: shimmerTitle,
 		dim: gray,
 		secondary: rgb(153, 153, 153),
-		error: red.dim,
-		warning: yellow.dim,
+		error: red,
+		warning: yellow,
 	},
 };
 

@@ -262,7 +262,7 @@ describe('stream preview', () => {
 		expect(result.stdout).toBe('');
 
 		// Both should be present: static output with → prefix, stream with ⎿ prefix
-		expect(result.stderr).toContain(ansis.gray('\u2192 static output'));
+		expect(result.stderr).toContain(ansis.gray('static output'));
 		expect(result.stderr).toContain(`\u23BF  ${ansis.gray('stream line 1')}`);
 		expect(result.stderr).toContain(ansis.gray('stream line 2'));
 

@@ -182,9 +182,9 @@ describe('console interleaving', () => {
 
 		expect(result.stderr).toContain(`${ansis.green('✔')} Success task`);
 		expect(result.stderr).toContain(`${ansis.yellow('⚠')} Warning task`);
-		expect(result.stderr).toContain(`${ansis.yellow.dim('→ This is a warning')}`);
+		expect(result.stderr).toContain(`${ansis.yellow('This is a warning')}`);
 		expect(result.stderr).toContain(`${ansis.red('✖')} Error task`);
-		expect(result.stderr).toContain(`${ansis.red.dim('→ Task failed')}`);
+		expect(result.stderr).toContain(`${ansis.red('Task failed')}`);
 	});
 
 	test('rapid console.logs during task execution', async () => {
