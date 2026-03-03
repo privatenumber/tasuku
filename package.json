@@ -17,7 +17,8 @@
 		"email": "hiroki.osame@gmail.com"
 	},
 	"files": [
-		"dist"
+		"dist",
+		"skills"
 	],
 	"type": "module",
 	"types": "./dist/index.d.mts",
