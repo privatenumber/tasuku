@@ -8,21 +8,28 @@ import type { State, TasukuTheme } from '../types.ts';
 /**
  * Codex (OpenAI CLI) theme.
  *
- * Shimmer: cosine-based intensity band sweeping right across text/spinner,
- * blending between terminal-default fg (fallback gray 128) and bg (fallback white 255)
- * at 0.9 max alpha. All shimmer text is bold.
+ * Derived from the open-source codex-rs Rust TUI codebase:
+ * https://github.com/openai/codex
  *
- * Parameters from codex-rs/tui/src/shimmer.rs:
- * - sweep period: 2 s
- * - padding: 10 chars on each side
- * - band half-width: 5 (cosine falloff)
+ * ## Source references
  *
- * Icons from codex-rs/tui/src/exec_cell/render.rs:
- * - spinner: shimmer_spans("•")
- * - success: "✓".green().bold()
- * - error: "✗".red().bold()
+ * Shimmer algorithm:
+ * https://github.com/openai/codex/blob/821024f/codex-rs/tui/src/shimmer.rs
+ * - shimmer_spans() sweeps a cosine-based intensity band left-to-right
+ * - padding=10, sweep_seconds=2.0, band_half_width=5.0, max_alpha=0.9
+ * - Blends between terminal fg/bg; fallbacks: fg=(128,128,128), bg=(255,255,255)
+ * - All shimmer text is bold
  *
- * @see https://github.com/openai/codex
+ * Icons:
+ * https://github.com/openai/codex/blob/821024f/codex-rs/tui/src/exec_cell/render.rs
+ * - Live TUI uses "•" for all states (shimmer when loading, colored when done)
+ * - Transcript mode uses "✓" green bold and "✗" red bold
+ * - We use transcript-style icons for readability in static output
+ *
+ * Terminal palette:
+ * https://github.com/openai/codex/blob/821024f/codex-rs/tui/src/terminal_palette.rs
+ * - Queries terminal for actual fg/bg via crossterm
+ * - Fallbacks: fg=(128,128,128) gray, bg=(255,255,255) white
  */
 
 // Shimmer parameters (shimmer.rs)
