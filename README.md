@@ -966,6 +966,24 @@ Default: `process.stderr`
 
 The stream to render task UI to. Defaults to stderr so that stdout stays clean for program output (e.g. `mytool | jq`). `console.log` output goes to stdout unaffected.
 
+#### Multiple instances
+
+Multiple `createTasuku()` instances can run concurrently when using the inline renderer:
+
+```ts
+import { createTasuku } from 'tasuku/inline'
+import { theme as claudeTheme } from 'tasuku/theme/claude'
+
+const defaultTask = createTasuku()
+const claudeTask = createTasuku({ theme: claudeTheme })
+
+defaultTask('Build', async () => { /* ... */ })
+claudeTask('Deploy', async () => { /* ... */ })
+```
+
+> [!NOTE]
+> Multiple pinned renderers on the same stream are not supported — they share a single cursor save/restore slot. Use the inline renderer for concurrent instances, or use separate output streams.
+
 ### Contributing a theme
 
 Have a theme you're proud of? We'd love to see it. Open a PR to add it as a built-in theme.

@@ -1,7 +1,7 @@
 import { Writable } from 'node:stream';
 
 /**
- * Intercept console methods so the renderer can coordinate output.
+ * Intercept console methods so renderers can coordinate output.
  *
  * The renderer uses ANSI cursor-save/restore to redraw the task UI in-place.
  * If user code calls console.log() while tasks are running, that output lands
@@ -10,10 +10,12 @@ import { Writable } from 'node:stream';
  * then re-save the cursor position and redraw — keeping both the user's
  * output and the task UI intact.
  *
- * Multiple renderers can patch simultaneously. A callback stack ensures
- * the most recently registered callback receives output, and restoring
- * one renderer does not break another. The original console methods are
- * only restored when the last callback is removed.
+ * Multiple renderers can patch simultaneously. On each console write:
+ * 1. All "before" hooks fire (e.g. pinned renderer clears its render area)
+ * 2. The data is written to the original stream (once)
+ * 3. All "after" hooks fire (e.g. renderers update offsets and redraw)
+ *
+ * The original console methods are only restored when the last hook is removed.
  */
 
 const consoleMethods = [
@@ -37,15 +39,41 @@ const consoleMethods = [
 	'warn',
 ] as const;
 
-type ConsoleCallback = (stream: 'stdout' | 'stderr', data: string) => void;
+export type ConsoleHooks = {
+	before?: (stream: 'stdout' | 'stderr', data: string) => void;
+	after?: (stream: 'stdout' | 'stderr', data: string) => void;
+};
 
-const callbackStack: ConsoleCallback[] = [];
+const hookSet: Set<ConsoleHooks> = new Set();
 const originals = new Map<string, unknown>();
 
-const installPatch = (callback: ConsoleCallback) => {
+// Saved references to the real stream write methods, captured before any
+// monkey-patching (e.g. by registerStreamListener in inline.ts).
+// Using these ensures console output is written exactly once, bypassing
+// any stream-level interception that would cause double offset counting.
+let originalStdoutWrite: typeof process.stdout.write | undefined;
+let originalStderrWrite: typeof process.stderr.write | undefined;
+
+const handleWrite = (stream: 'stdout' | 'stderr', data: string) => {
+	// Before: let renderers prepare (e.g. clear render area)
+	for (const hooks of hookSet) {
+		try { hooks.before?.(stream, data); } catch {}
+	}
+
+	// Write to the real stream, bypassing any monkey-patches
+	const write = stream === 'stderr' ? originalStderrWrite! : originalStdoutWrite!;
+	write(data);
+
+	// After: let renderers react (e.g. update offsets, redraw)
+	for (const hooks of hookSet) {
+		try { hooks.after?.(stream, data); } catch {}
+	}
+};
+
+const installPatch = () => {
 	const createStream = (name: 'stdout' | 'stderr') => new Writable({
-		write(chunk, _encoding, done) {
-			callback(name, String(chunk));
+		write: (chunk: Buffer, _encoding: string, done: () => void) => {
+			handleWrite(name, String(chunk));
 			done();
 		},
 	});
@@ -59,35 +87,31 @@ const installPatch = (callback: ConsoleCallback) => {
 };
 
 export const patchConsole = (
-	callback: ConsoleCallback,
+	hooks: ConsoleHooks,
 ): (() => void) => {
 	// Save originals on first patch
-	if (callbackStack.length === 0) {
+	if (hookSet.size === 0) {
 		for (const method of consoleMethods) {
 			originals.set(method, console[method]);
 		}
+		originalStdoutWrite = process.stdout.write.bind(process.stdout);
+		originalStderrWrite = process.stderr.write.bind(process.stderr);
+		installPatch();
 	}
 
-	callbackStack.push(callback);
-	installPatch(callback);
+	hookSet.add(hooks);
 
 	return () => {
-		const index = callbackStack.indexOf(callback);
-		if (index === -1) {
-			return;
-		}
-		callbackStack.splice(index, 1);
+		hookSet.delete(hooks);
 
-		if (callbackStack.length === 0) {
-			// Last callback removed — restore originals
+		if (hookSet.size === 0) {
 			for (const [method, function_] of originals) {
 				// @ts-expect-error Restoring original console methods
 				console[method] = function_;
 			}
 			originals.clear();
-		} else {
-			// Re-install the top of the stack
-			installPatch(callbackStack.at(-1)!);
+			originalStdoutWrite = undefined;
+			originalStderrWrite = undefined;
 		}
 	};
 };

@@ -4,6 +4,7 @@ import {
 import { createFixture } from 'fs-fixture';
 import ansiEscapes from 'ansi-escapes';
 import ansis from 'ansis';
+import stripAnsi from 'strip-ansi';
 import { node } from '../utils/node.ts';
 import { nodePty } from '../utils/pty.ts';
 import { tempDir } from '../utils/temp-dir.ts';
@@ -356,5 +357,57 @@ describe('console interleaving', () => {
 			expect(result.stdout).toContain('Should not get overwritten');
 			expect(result.stdout).not.toContain(ansiEscapes.eraseDown);
 		});
+	});
+
+	test('task UI redraws after console.log when frame is unchanged', async () => {
+		await using fixture = await createFixture({
+			'test.mjs': `
+			import task from '#tasuku';
+			import { setTimeout } from 'node:timers/promises';
+
+			await task('Completed task', async () => {
+				await setTimeout(50);
+			});
+
+			// Task completed, UI rendered. console.log clears + redraws.
+			// The redraw must happen even though the output is identical.
+			console.log('LOG_AFTER_COMPLETE');
+			await setTimeout(200);
+			`,
+		}, { tempDir });
+
+		// Must use PTY — the clear/redraw only happens in TTY mode
+		const result = await nodePty(fixture.getPath('test.mjs'));
+		expect(result.exitCode).toBe(0);
+
+		const plain = stripAnsi(result.output);
+		expect(plain).toContain('LOG_AFTER_COMPLETE');
+
+		// Task UI must be redrawn AFTER the console.log —
+		// the last occurrence of the task title should come after the log
+		const logIndex = plain.lastIndexOf('LOG_AFTER_COMPLETE');
+		const taskIndex = plain.lastIndexOf('Completed task');
+		expect(taskIndex).toBeGreaterThan(logIndex);
+	}, { retry: 3 });
+
+	test('direct process.stdout.write during pinned rendering is not overwritten', async () => {
+		await using fixture = await createFixture({
+			'test.mjs': String.raw`
+			import task from '#tasuku';
+			import { setTimeout } from 'node:timers/promises';
+
+			await task('Task', async () => {
+				await setTimeout(50);
+				process.stdout.write('DIRECT_STDOUT\n');
+				await setTimeout(100);
+			});
+			`,
+		}, { tempDir });
+
+		const result = await node(fixture.getPath('test.mjs'));
+
+		// Direct stdout writes should survive (not get erased by renderer)
+		expect(result.stdout).toContain('DIRECT_STDOUT');
+		expect(result.stderr).toContain('Task');
 	});
 });

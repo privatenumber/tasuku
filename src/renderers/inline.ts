@@ -19,6 +19,67 @@ const countNewlines = (text: string): number => {
 	return count;
 };
 
+// Global registry of offset-increment callbacks for multi-instance coordination.
+// When one inline renderer writes new lines to the output stream, all OTHER
+// renderers need their tracked offsets bumped so cursor-up distances stay correct.
+type OffsetListener = (newlineCount: number) => void;
+
+const streamListeners = new Map<NodeJS.WriteStream, {
+	listeners: Set<OffsetListener>;
+	originalWrite: NodeJS.WriteStream['write'];
+}>();
+
+const registerStreamListener = (
+	stream: NodeJS.WriteStream,
+	listener: OffsetListener,
+): (() => void) => {
+	let entry = streamListeners.get(stream);
+
+	if (!entry) {
+		entry = {
+			listeners: new Set(),
+			originalWrite: stream.write.bind(stream) as NodeJS.WriteStream['write'],
+		};
+		streamListeners.set(stream, entry);
+	}
+
+	entry.listeners.add(listener);
+
+	// Install monkey-patch on first listener. Tracks external writes
+	// (e.g. direct process.stderr.write) that shift cursor positions.
+	// The selfWriting flag in each renderer prevents self-notification.
+	if (entry.listeners.size === 1) {
+		const { originalWrite } = entry;
+		stream.write = (chunk, ...args) => {
+			// @ts-expect-error Forwarding to original write with spread args
+			const result = originalWrite(chunk, ...args);
+			let text;
+			if (typeof chunk === 'string') {
+				text = chunk;
+			} else if (Buffer.isBuffer(chunk) || chunk instanceof Uint8Array) {
+				text = Buffer.from(chunk).toString();
+			} else {
+				text = String(chunk);
+			}
+			const newlines = countNewlines(text);
+			if (newlines > 0) {
+				for (const callback of entry!.listeners) {
+					callback(newlines);
+				}
+			}
+			return result;
+		};
+	}
+
+	return () => {
+		entry!.listeners.delete(listener);
+		if (entry!.listeners.size === 0) {
+			stream.write = entry!.originalWrite;
+			streamListeners.delete(stream);
+		}
+	};
+};
+
 type TrackedLine = {
 	offset: number; // 1-based: lines from cursor rest position
 	depth: number;
@@ -37,7 +98,19 @@ export const inline: RendererFactory = (
 	let spinnerFrame = 0;
 	let spinnerInterval: NodeJS.Timeout | undefined;
 	let restoreConsole: (() => void) | undefined;
+	let removeStreamListener: (() => void) | undefined;
 	let maxVisibleLimit: number | undefined;
+
+	// Flag to suppress self-notification when this renderer writes
+	let selfWriting = false;
+	const writeOutput = (data: string) => {
+		selfWriting = true;
+		try {
+			outputStream.write(data);
+		} finally {
+			selfWriting = false;
+		}
+	};
 
 	// Each task line is tracked by its offset from the cursor rest position (1-based)
 	const trackedLines = new Map<TaskObject, TrackedLine>();
@@ -49,7 +122,7 @@ export const inline: RendererFactory = (
 	const writeTaskOutput = (task: TaskObject, depth: number): number => {
 		const output = formatTaskOutput(task, depth, theme);
 		if (output) {
-			outputStream.write(output);
+			writeOutput(output);
 			return countNewlines(output);
 		}
 		return 0;
@@ -75,7 +148,7 @@ export const inline: RendererFactory = (
 	const appendLineAtRest = (task: TaskObject, depth: number) => {
 		const columns = outputStream.columns || 80;
 		incrementOffsets(1);
-		outputStream.write(`${truncateLine(getLine(task, depth), columns - 1)}\n`);
+		writeOutput(`${truncateLine(getLine(task, depth), columns - 1)}\n`);
 		trackedLines.set(task, {
 			offset: 1,
 			depth,
@@ -113,7 +186,7 @@ export const inline: RendererFactory = (
 		}
 		buffer += `\u001B[L${truncated}\u001B[${afterOffset}B\r`;
 
-		outputStream.write(buffer);
+		writeOutput(buffer);
 		trackedLines.set(task, {
 			offset: afterOffset,
 			depth,
@@ -128,7 +201,7 @@ export const inline: RendererFactory = (
 			// Task scrolled off screen — can't reach it
 			return;
 		}
-		outputStream.write(`\u001B[${tracked.offset}A\r\u001B[2K${content}\u001B[${tracked.offset}B\r`);
+		writeOutput(`\u001B[${tracked.offset}A\r\u001B[2K${content}\u001B[${tracked.offset}B\r`);
 	};
 
 	// Count tasks that are actively displayed (tracked but not yet completed)
@@ -235,7 +308,7 @@ export const inline: RendererFactory = (
 		}
 
 		if (buffer) {
-			outputStream.write(buffer);
+			writeOutput(buffer);
 		}
 	};
 
@@ -259,7 +332,7 @@ export const inline: RendererFactory = (
 			committedTasks.add(task);
 
 			// No truncation — piped/CI output should not be clipped to terminal width
-			outputStream.write(`${getLine(task, depth)}\n`);
+			writeOutput(`${getLine(task, depth)}\n`);
 
 			// Children
 			if (task.children.length > 0) {
@@ -282,20 +355,38 @@ export const inline: RendererFactory = (
 
 	// --- Console output handler ---
 
-	const handleConsoleOutput = (stream: 'stdout' | 'stderr', data: string) => {
-		const target = stream === 'stderr' ? process.stderr : process.stdout;
-		target.write(data);
+	// Determine when console writes affect the same terminal cursor.
+	// In a normal TTY, stdout and stderr share the cursor — count everything.
+	// With redirection (e.g. 1>file), only the renderer's stream matters.
+	const isStderr = outputStream === process.stderr
+		|| ('fd' in outputStream && outputStream.fd === 2);
+	const consoleStreamName = isStderr ? 'stderr' : 'stdout';
+	const bothStreamsTTY = process.stdout.isTTY === true && process.stderr.isTTY === true;
 
-		// Count newlines and increment all tracked offsets
-		if (isInteractive) {
-			const newlineCount = countNewlines(data);
-			if (newlineCount > 0) {
+	restoreConsole = patchConsole({
+		after: (stream, data) => {
+			// Count newlines when the write affects our terminal cursor:
+			// - same stream: always affects our cursor
+			// - both TTY: shared terminal, any write moves the cursor
+			if (isInteractive && (stream === consoleStreamName || bothStreamsTTY)) {
+				const newlineCount = countNewlines(data);
+				if (newlineCount > 0) {
+					incrementOffsets(newlineCount);
+				}
+			}
+		},
+	});
+
+	// Register stream listener for multi-instance coordination.
+	// When another inline renderer writes new lines to the same stream,
+	// our tracked offsets need bumping so cursor-up distances stay correct.
+	if (isInteractive) {
+		removeStreamListener = registerStreamListener(outputStream, (newlineCount) => {
+			if (!selfWriting) {
 				incrementOffsets(newlineCount);
 			}
-		}
-	};
-
-	restoreConsole = patchConsole(handleConsoleOutput);
+		});
+	}
 
 	// --- Spinner ---
 
@@ -327,6 +418,8 @@ export const inline: RendererFactory = (
 		spinnerInterval = undefined;
 		restoreConsole?.();
 		restoreConsole = undefined;
+		removeStreamListener?.();
+		removeStreamListener = undefined;
 		trackedLines.clear();
 	};
 

@@ -110,6 +110,7 @@ export const pinned: RendererFactory = (
 
 				// Render in insertion order first
 				const renderedTasks = tasks.map(task => renderTask(task, depth));
+				const totalOutput = renderedTasks.join('');
 				const totalLines = renderedTasks.reduce(
 					(count, output) => count + output.split('\n').length - 1,
 					0,
@@ -118,7 +119,7 @@ export const pinned: RendererFactory = (
 				if (totalLines <= maxLines) {
 					// Everything fits — no truncation needed
 					hasHiddenTasks = false;
-					return renderedTasks.join('');
+					return totalOutput;
 				}
 
 				// Truncation needed — sort by state priority so active tasks
@@ -176,26 +177,28 @@ export const pinned: RendererFactory = (
 		return tasks.map(task => renderTask(task, depth)).join('');
 	};
 
-	const handleConsoleOutput = (stream: 'stdout' | 'stderr', data: string) => {
-		// Clear task UI from saved position
-		clearRenderArea();
+	const consoleHooks = {
+		before: () => {
+			// Clear task UI from saved position.
+			// Must react to ALL console writes (both stdout and stderr)
+			// because in a TTY they share the same screen.
+			clearRenderArea();
+			// Force next render to redraw even if output is identical
+			lastOutput = '';
+		},
+		after: () => {
+			// Save new position — render area moves below console output
+			savePosition();
 
-		// Write to the original stream (not the renderer's output stream)
-		// so console.log → stdout and console.error → stderr
-		const target = stream === 'stderr' ? process.stderr : process.stdout;
-		target.write(data);
-
-		// Save new position — render area moves below console output
-		savePosition();
-
-		// Immediately re-render the task UI so it stays visible below
-		// the console output. Without this, the UI remains erased until
-		// the next spinner tick (up to ~113ms), causing visible flicker.
-		// Skip if suppressed (all tasks done with truncation — exit handler
-		// will do the final unlimited render).
-		if (taskList.length > 0 && !suppressRerender) {
-			render();
-		}
+			// Immediately re-render the task UI so it stays visible below
+			// the console output. Without this, the UI remains erased until
+			// the next spinner tick (up to ~113ms), causing visible flicker.
+			// Skip if suppressed (all tasks done with truncation — exit handler
+			// will do the final unlimited render).
+			if (taskList.length > 0 && !suppressRerender) {
+				render();
+			}
+		},
 	};
 
 	const startSpinner = () => {
@@ -234,20 +237,23 @@ export const pinned: RendererFactory = (
 			return;
 		}
 
+		// Skip redraw if output is identical to last frame
+		if (output === lastOutput) {
+			return;
+		}
+
 		clearRenderArea();
 
 		if (!hasSavedPosition) {
 			savePosition();
 		}
 
-		// Write new output
-		outputStream.write(output);
 		lastOutput = output;
 
-		// Re-anchor: the output above may have caused the terminal to
-		// scroll, shifting the saved position off-screen.  Cursor-up is
-		// relative and immune to scroll, so we move back to the start of
-		// the render area, re-save, then return to the end.
+		// Re-anchor: the output may cause the terminal to scroll, shifting
+		// the saved position off-screen. Cursor-up is relative and immune
+		// to scroll, so we move back to the start of the render area,
+		// re-save, then return to the end.
 		//
 		// Must count VISUAL lines (accounting for line wraps) not just \n
 		// characters — a logical line wider than the terminal wraps to
@@ -255,7 +261,6 @@ export const pinned: RendererFactory = (
 		if (isTTY) {
 			const columns = outputStream.columns || 80;
 			let visualLineCount = 0;
-			// Split on \n; the trailing \n produces an empty last element — skip it
 			const lines = output.split('\n');
 			for (let i = 0; i < lines.length - 1; i += 1) {
 				const width = stringWidth(lines[i]);
@@ -263,11 +268,17 @@ export const pinned: RendererFactory = (
 					? 1
 					: Math.ceil(width / columns);
 			}
+			// Batch: output + re-anchor (cursor-up + save + cursor-down) in one write
 			if (visualLineCount > 0) {
-				outputStream.write(cursorUp(visualLineCount));
-				savePosition();
-				outputStream.write(cursorDown(visualLineCount));
+				outputStream.write(
+					output + cursorUp(visualLineCount) + cursorSavePosition + cursorDown(visualLineCount),
+				);
+				hasSavedPosition = true;
+			} else {
+				outputStream.write(output);
 			}
+		} else {
+			outputStream.write(output);
 		}
 	};
 
@@ -313,6 +324,9 @@ export const pinned: RendererFactory = (
 	// Handle terminal resize: update cached height and re-render
 	const handleResize = () => {
 		terminalHeight = outputStream.rows || 24;
+		// Force redraw — column changes affect visual line wrapping
+		// even when the rendered text is identical
+		lastOutput = '';
 		scheduleRender();
 	};
 
@@ -355,7 +369,7 @@ export const pinned: RendererFactory = (
 	// Initialize
 	if (!isCI) {
 		// Patch console to intercept output (even in non-TTY mode for testing/piping)
-		restoreConsole = patchConsole(handleConsoleOutput);
+		restoreConsole = patchConsole(consoleHooks);
 
 		// Start spinner animation
 		startSpinner();

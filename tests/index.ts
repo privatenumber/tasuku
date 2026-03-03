@@ -36,6 +36,7 @@ describe('tasuku', () => {
 	import('./specs/reactive.spec.ts');
 	import('./specs/format-task-line.spec.ts');
 	import('./specs/format-task-output.spec.ts');
+	import('./specs/ansi-terminal.spec.ts');
 
 	// Inline renderer
 	import('./specs/inline-renderer.spec.ts');

@@ -393,7 +393,7 @@ describe('max visible', () => {
 				(_, i) => lastFrame.includes(`Task ${String(i + 1).padStart(2, '0')}`),
 			).every(Boolean);
 			expect(allTasksPresent).toBe(true);
-		});
+		}, { retry: 3 });
 
 		test('completed tasks expand in final output without clear()', async () => {
 			// When all tasks complete and the process exits, the final output

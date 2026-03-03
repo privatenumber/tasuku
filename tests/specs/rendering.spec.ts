@@ -256,4 +256,42 @@ describe('rendering', () => {
 			expect(value).toBeGreaterThanOrEqual(expectedVisualLines);
 		}
 	}, { retry: 3 });
+
+	test('final grid shows correct layout for nested tasks', async () => {
+		await using fixture = await createFixture({
+			'test.mjs': `
+			import task from '#tasuku';
+			import { setTimeout } from 'node:timers/promises';
+
+			await task('Parent', async () => {
+				await task('Child A', async () => { await setTimeout(50); });
+				await task('Child B', async () => { await setTimeout(50); });
+			});
+			`,
+		}, { tempDir });
+
+		const result = await nodePty(fixture.getPath('test.mjs'));
+		expect(result.exitCode).toBe(0);
+
+		const { getTerminalGrid } = await import('../utils/ansi-terminal.ts');
+		const grid = getTerminalGrid(result.output);
+		// Final grid should show parent with both children
+		const parentRow = grid.find(row => row.includes('Parent'));
+		const childARow = grid.find(row => row.includes('Child A'));
+		const childBRow = grid.find(row => row.includes('Child B'));
+
+		expect(parentRow).toContain('❯');
+		expect(parentRow).toContain('Parent');
+		expect(childARow).toContain('✔');
+		expect(childARow).toContain('Child A');
+		expect(childBRow).toContain('✔');
+		expect(childBRow).toContain('Child B');
+
+		// Parent should be above children
+		const parentIndex = grid.indexOf(parentRow!);
+		const childAIndex = grid.indexOf(childARow!);
+		const childBIndex = grid.indexOf(childBRow!);
+		expect(parentIndex).toBeLessThan(childAIndex);
+		expect(childAIndex).toBeLessThan(childBIndex);
+	}, { retry: 3 });
 });

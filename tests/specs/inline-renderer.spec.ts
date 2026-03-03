@@ -967,6 +967,232 @@ describe('inline renderer', () => {
 		}, { retry: 3 });
 	});
 
+	describe('multiple instances', () => {
+		test('concurrent inline renderers do not corrupt each other\'s rows', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+				import { setTimeout } from 'node:timers/promises';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
+
+				const theme2 = { ...theme, icons: { ...theme.icons, success: '✓' } };
+				const theme3 = { ...theme, icons: { ...theme.icons, success: '●' } };
+
+				const task1 = createTasuku({ renderer: inline, theme });
+				const task2 = createTasuku({ renderer: inline, theme: theme2 });
+				const task3 = createTasuku({ renderer: inline, theme: theme3 });
+
+				task1('Task A', async () => { await setTimeout(100); });
+				task2('Task B', async () => { await setTimeout(100); });
+				task3('Task C', async () => { await setTimeout(100); });
+
+				await setTimeout(500);
+				`,
+			}, { tempDir });
+
+			const result = await nodePty(fixture.getPath('test.mjs'));
+			expect(result.exitCode).toBe(0);
+
+			// Parse the raw ANSI output through a virtual terminal to check
+			// that no task title ends up on a row belonging to another task
+			const { checkRowOwnership } = await import('../utils/ansi-terminal.ts');
+			const check = checkRowOwnership(result.output, ['Task A', 'Task B', 'Task C']);
+			expect(check.violation).toBeUndefined();
+
+			// Verify all tasks completed with their unique success icons
+			const plain = stripAnsi(result.output);
+			expect(plain).toContain('Task A');
+			expect(plain).toContain('Task B');
+			expect(plain).toContain('Task C');
+		}, { retry: 3 });
+
+		test('console.error during concurrent rendering does not corrupt offsets', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+				import { setTimeout } from 'node:timers/promises';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
+
+				const task1 = createTasuku({ renderer: inline, theme });
+				const task2 = createTasuku({ renderer: inline, theme });
+
+				task1('Task A', async () => {
+					await setTimeout(50);
+					console.error('stderr output');
+					await setTimeout(100);
+				});
+				task2('Task B', async () => { await setTimeout(200); });
+
+				await setTimeout(400);
+				`,
+			}, { tempDir });
+
+			const result = await nodePty(fixture.getPath('test.mjs'));
+			expect(result.exitCode).toBe(0);
+
+			const { checkRowOwnership } = await import('../utils/ansi-terminal.ts');
+			const check = checkRowOwnership(result.output, ['Task A', 'Task B']);
+			expect(check.violation).toBeUndefined();
+		}, { retry: 3 });
+
+		test('concurrent task.group() across multiple instances', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+				import { setTimeout } from 'node:timers/promises';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
+
+				const task1 = createTasuku({ renderer: inline, theme });
+				const task2 = createTasuku({ renderer: inline, theme });
+
+				const group1 = task1.group(task => [
+					task('Group1 A', async () => { await setTimeout(50); }),
+					task('Group1 B', async () => { await setTimeout(80); }),
+				], { concurrency: 2 });
+
+				const group2 = task2.group(task => [
+					task('Group2 X', async () => { await setTimeout(60); }),
+					task('Group2 Y', async () => { await setTimeout(70); }),
+				], { concurrency: 2 });
+
+				await Promise.all([group1, group2]);
+				`,
+			}, { tempDir });
+
+			const result = await nodePty(fixture.getPath('test.mjs'));
+			expect(result.exitCode).toBe(0);
+
+			const { checkRowOwnership } = await import('../utils/ansi-terminal.ts');
+			const check = checkRowOwnership(
+				result.output,
+				['Group1 A', 'Group1 B', 'Group2 X', 'Group2 Y'],
+			);
+			expect(check.violation).toBeUndefined();
+
+			const plain = stripAnsi(result.output);
+			expect(plain).toContain('Group1 A');
+			expect(plain).toContain('Group1 B');
+			expect(plain).toContain('Group2 X');
+			expect(plain).toContain('Group2 Y');
+		}, { retry: 3 });
+
+		test('direct stderr.write during single-instance rendering does not corrupt offsets', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': String.raw`
+				import { setTimeout } from 'node:timers/promises';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
+
+				const task = createTasuku({ renderer: inline, theme });
+
+				task('Task A', async () => {
+					await setTimeout(50);
+					process.stderr.write('DIRECT_WRITE\n');
+					await setTimeout(100);
+				});
+
+				task('Task B', async () => { await setTimeout(200); });
+
+				await setTimeout(400);
+				`,
+			}, { tempDir });
+
+			const result = await nodePty(fixture.getPath('test.mjs'));
+			expect(result.exitCode).toBe(0);
+
+			const { checkRowOwnership } = await import('../utils/ansi-terminal.ts');
+			const check = checkRowOwnership(result.output, ['Task A', 'Task B']);
+			expect(check.violation).toBeUndefined();
+		}, { retry: 3 });
+	});
+
+	describe('cross-stream console interleaving', () => {
+		test('console.log during inline rendering does not lose task output', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+				import { setTimeout } from 'node:timers/promises';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
+
+				const task = createTasuku({ renderer: inline, theme });
+
+				task('Task A', async () => {
+					for (let i = 0; i < 5; i++) {
+						console.log('log ' + i);
+						await setTimeout(20);
+					}
+				});
+
+				task('Task B', async () => { await setTimeout(200); });
+
+				await setTimeout(400);
+				`,
+			}, { tempDir });
+
+			const result = await nodePty(fixture.getPath('test.mjs'));
+			expect(result.exitCode).toBe(0);
+
+			// Both tasks should complete successfully — console.log output
+			// should not cause task lines to be lost or corrupted
+			const plain = stripAnsi(result.output);
+			expect(plain).toContain('Task A');
+			expect(plain).toContain('Task B');
+		}, { retry: 3 });
+
+		test('console.log with stdout redirected does not inflate stderr offsets', async () => {
+			await using fixture = await createFixture({
+				'test.mjs': `
+				import fs from 'node:fs';
+				import { setTimeout } from 'node:timers/promises';
+				import { createTasuku, inline } from '#tasuku/create';
+				import { theme } from '#tasuku';
+
+				// Redirect stdout to a file — stderr stays on the terminal.
+				// This makes process.stdout.isTTY become false.
+				const devNull = fs.openSync('/dev/null', 'w');
+				const origWrite = process.stdout.write.bind(process.stdout);
+				Object.defineProperty(process.stdout, 'isTTY', { value: false });
+				process.stdout.write = (chunk, ...args) => {
+					fs.writeSync(devNull, typeof chunk === 'string' ? chunk : chunk.toString());
+					return true;
+				};
+
+				const task = createTasuku({ renderer: inline, theme });
+
+				task('Task A', async () => {
+					for (let i = 0; i < 10; i++) {
+						console.log('redirected ' + i);
+						await setTimeout(10);
+					}
+				});
+
+				task('Task B', async () => { await setTimeout(200); });
+
+				await setTimeout(400);
+				fs.closeSync(devNull);
+				`,
+			}, { tempDir });
+
+			const result = await nodePty(fixture.getPath('test.mjs'));
+			expect(result.exitCode).toBe(0);
+
+			// With stdout redirected (not TTY), console.log should NOT affect
+			// stderr cursor offsets. Cursor-up should stay <= task count (2).
+			// eslint-disable-next-line no-control-regex -- matching ANSI cursor-up
+			const cursorUpValues = [...result.output.matchAll(/\u001B\[(\d+)A/g)]
+				.map(match => Number(match[1]));
+
+			for (const value of cursorUpValues) {
+				expect(value).toBeLessThanOrEqual(2);
+			}
+
+			// Tasks should still complete correctly
+			const plain = stripAnsi(result.output);
+			expect(plain).toContain('Task A');
+			expect(plain).toContain('Task B');
+		}, { retry: 3 });
+	});
+
 	describe('custom theme', () => {
 		test('works with createTasuku custom theme', async () => {
 			await using fixture = await createFixture({
