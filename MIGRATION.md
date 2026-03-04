@@ -6,9 +6,9 @@
 
 ```diff
 - await task('Parent', async ({ task }) => {
--     await task('Child', async () => { ... })
+-     await task('Child', async () => { /* ... */ })
 + await task('Parent', async () => {
-+     await task('Child', async () => { ... })
++     await task('Child', async () => { /* ... */ })
   })
 ```
 
@@ -91,11 +91,11 @@ The default import is unchanged. New subpath exports were added:
 import task from 'tasuku'
 
 // New entry points
-import task from 'tasuku/inline'          // inline renderer
-import task from 'tasuku/theme/claude'    // Claude Code theme
-import task from 'tasuku/theme/blink'     // reduced-motion theme
-import task from 'tasuku/theme/codex'     // OpenAI Codex theme
-import { createTasuku, pinned, inline } from 'tasuku/create'  // raw factory
+import task from 'tasuku/inline' // inline renderer
+import task from 'tasuku/theme/claude' // Claude Code theme
+import task from 'tasuku/theme/blink' // reduced-motion theme
+import task from 'tasuku/theme/codex' // OpenAI Codex theme
+import { createTasuku, pinned, inline } from 'tasuku/create' // raw factory
 ```
 
 <details>
@@ -114,7 +114,7 @@ Skip a task intentionally. Throws internally so no `return` is needed:
 
 ```ts
 await task('Deploy', async ({ skip }) => {
-    if (!hasChanges) skip('no changes')
+    if (!hasChanges) { skip('no changes') }
     await deploy()
 })
 ```
@@ -142,9 +142,9 @@ Sequential output — `console.log` appears exactly where you'd expect:
 ```ts
 import task from 'tasuku/inline'
 
-await task('Step 1', async () => { ... })
+await task('Step 1', async () => { /* ... */ })
 console.log('Between tasks')
-await task('Step 2', async () => { ... })
+await task('Step 2', async () => { /* ... */ })
 ```
 
 ### Themes
@@ -152,9 +152,9 @@ await task('Step 2', async () => { ... })
 Built-in themes with custom spinners, colors, and shimmer effects:
 
 ```ts
-import task from 'tasuku/theme/claude'  // Claude Code look
-import task from 'tasuku/theme/blink'   // reduced-motion
-import task from 'tasuku/theme/codex'   // OpenAI Codex look
+import task from 'tasuku/theme/claude' // Claude Code look
+import task from 'tasuku/theme/blink' // reduced-motion
+import task from 'tasuku/theme/codex' // OpenAI Codex look
 ```
 
 ### Task promise properties
@@ -164,8 +164,8 @@ import task from 'tasuku/theme/codex'   // OpenAI Codex look
 ```ts
 const p = task('Deploy', async () => { throw new Error('fail') })
 try { await p } catch {}
-p.state   // 'error'
-p.error   // 'fail'
+p.state // 'error'
+p.error // 'fail'
 p.clear() // remove from UI even after error
 ```
 
