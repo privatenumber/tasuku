@@ -49,7 +49,13 @@ Nesting now works automatically via async context tracking (Node.js `AsyncLocalS
 <details>
 <summary>Why this changed</summary>
 
-In v2, you couldn't access `state` or `clear()` if the task threw — the promise rejected and you never got the `TaskAPI` object. Moving these onto the promise means they're accessible regardless of success or failure, which is needed for error handling patterns like clearing a failed task from the UI.
+Two reasons:
+
+1. **Frictionless by default.** In v2, every `await task(...)` returned a `TaskAPI` wrapper, forcing you to destructure `{ result }` even if you just wanted the return value. Most scripts don't need `state` or `clear()` — they just want the result. Now `task()` returns your value directly, as if the wrapper isn't there.
+
+2. **Error handling.** In v2, you couldn't access `state` or `clear()` if the task threw — the promise rejected and you never got the `TaskAPI` object. Moving these onto the promise means they're always accessible, which enables patterns like clearing a failed task from the UI.
+
+The task API is still there when you need it (`p.state`, `p.clear()`, `p.error`) — it's just not in the way when you don't.
 </details>
 
 ### 3. Group return type changed
