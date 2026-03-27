@@ -28,18 +28,30 @@ class TaskSkipError {
 	}
 }
 
+type RenderCallbacks = {
+	triggerRender: () => void;
+	flushRender: (force?: boolean) => void;
+};
+
+type TaskContext = RenderCallbacks & {
+	children: TaskList;
+	abortController: AbortController;
+};
+
+// Module-level ALS shared across all createTasuku instances.
+// This enables cross-instance nesting: taskB called inside taskA's
+// callback will correctly nest as a child of taskA's task.
+const taskContext = new AsyncLocalStorage<TaskContext>();
+
 export const createTasuku = ({
 	theme,
 	renderer: rendererFactory,
 	outputStream,
 }: CreateTasukuOptions): Task => {
-	type TaskContext = {
-		children: TaskList;
-		abortController: AbortController;
-	};
-	const taskContext = new AsyncLocalStorage<TaskContext>();
 	let renderer: Renderer | undefined;
 	const triggerRender = () => { renderer?.triggerRender(); };
+	const flushRender = (force?: boolean) => { renderer?.flushRender(force); };
+	const rootRenderCallbacks: RenderCallbacks = { triggerRender, flushRender };
 
 	const createTaskInnerApi = (
 		taskState: TaskObject,
@@ -121,13 +133,14 @@ export const createTasuku = ({
 		taskList: TaskList,
 		taskTitle: string,
 		taskFunction: TaskFunction<T>,
-		options?: TaskOptions,
+		options: TaskOptions | undefined,
+		renderCallbacks: RenderCallbacks,
 	): RegisteredTask<T> => {
 		const task = reactive<TaskObject>({
 			title: taskTitle,
 			state: 'pending',
 			children: [],
-		}, triggerRender);
+		}, renderCallbacks.triggerRender);
 		taskList.push(task);
 
 		return {
@@ -178,6 +191,8 @@ export const createTasuku = ({
 						{
 							children: task.children,
 							abortController: childController,
+							triggerRender: renderCallbacks.triggerRender,
+							flushRender: renderCallbacks.flushRender,
 						},
 						() => taskFunction(api),
 					);
@@ -190,7 +205,7 @@ export const createTasuku = ({
 						task.state = 'skipped';
 						dispose();
 						cleanupSignalListeners();
-						renderer?.flushRender();
+						renderCallbacks.flushRender();
 						return undefined as T;
 					}
 
@@ -208,7 +223,7 @@ export const createTasuku = ({
 					cleanupSignalListeners();
 					// Force-flush render before throwing — the process may crash before
 					// the deferred 33ms render fires, leaving error state invisible
-					renderer?.flushRender(true);
+					renderCallbacks.flushRender(true);
 					throw error;
 				}
 
@@ -222,7 +237,7 @@ export const createTasuku = ({
 				}
 
 				// Flush render before returning to prevent overwriting subsequent output
-				renderer?.flushRender();
+				renderCallbacks.flushRender();
 
 				return taskResult;
 			},
@@ -232,16 +247,15 @@ export const createTasuku = ({
 					taskList.splice(index, 1);
 				}
 
-				if (renderer) {
-					if (taskList.isRoot && taskList.length === 0) {
-						// Final render to clear output before destroying
-						renderer.renderFinal();
-						renderer.destroy();
-						renderer = undefined;
-					} else {
-						// Normal render for non-final clear
-						renderer.triggerRender();
-					}
+				if (renderer && taskList.isRoot && taskList.length === 0) {
+					// Final render to clear output before destroying
+					renderer.renderFinal();
+					renderer.destroy();
+					renderer = undefined;
+				} else {
+					// Trigger re-render via callbacks (works for both
+					// same-instance and cross-instance nested tasks)
+					renderCallbacks.triggerRender();
 				}
 			},
 		};
@@ -294,6 +308,28 @@ export const createTasuku = ({
 		return taskPromise;
 	};
 
+	// Resolve task list and render callbacks from ALS context.
+	// When nested inside another instance's task, uses the parent's
+	// children list and render callbacks. At root level, uses this
+	// instance's own task list and renderer.
+	const resolveContext = (rootTaskList: TaskList) => {
+		const parentContext = taskContext.getStore();
+		if (parentContext) {
+			return {
+				taskList: parentContext.children,
+				renderCallbacks: {
+					triggerRender: parentContext.triggerRender,
+					flushRender: parentContext.flushRender,
+				},
+			};
+		}
+		ensureRenderer(rootTaskList);
+		return {
+			taskList: rootTaskList,
+			renderCallbacks: rootRenderCallbacks,
+		};
+	};
+
 	const createTaskFunction = (
 		rootTaskList: TaskList,
 	): Task => {
@@ -302,9 +338,8 @@ export const createTasuku = ({
 			taskFunction,
 			options,
 		) => {
-			const taskList = taskContext.getStore()?.children ?? rootTaskList;
-			ensureRenderer(taskList);
-			const registeredTask = registerTask(taskList, title, taskFunction, options);
+			const { taskList, renderCallbacks } = resolveContext(rootTaskList);
+			const registeredTask = registerTask(taskList, title, taskFunction, options, renderCallbacks);
 			return createTaskPromise(registeredTask);
 		};
 
@@ -316,8 +351,7 @@ export const createTasuku = ({
 			createTasks,
 			options,
 		) => {
-			const taskList = taskContext.getStore()?.children ?? rootTaskList;
-			ensureRenderer(taskList);
+			const { taskList, renderCallbacks } = resolveContext(rootTaskList);
 			const tasksQueue = createTasks((
 				title,
 				taskFunction,
@@ -327,6 +361,7 @@ export const createTasuku = ({
 				title,
 				taskFunction,
 				taskOptions,
+				renderCallbacks,
 			));
 
 			if (options?.maxVisible !== undefined && renderer) {

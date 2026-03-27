@@ -43,6 +43,7 @@ describe('tasuku', () => {
 
 	// Factory
 	import('./specs/create-tasuku.spec.ts');
+	import('./specs/cross-instance-nesting.spec.ts');
 	import('./specs/claude-theme.spec.ts');
 	import('./specs/blink-theme.spec.ts');
 	import('./specs/codex-theme.spec.ts');
