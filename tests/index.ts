@@ -27,6 +27,7 @@ describe('tasuku', () => {
 
 	// Console & Lifecycle
 	import('./specs/console-interleave.spec.ts');
+	import('./specs/direct-write.spec.ts');
 	import('./specs/lifecycle.spec.ts');
 
 	// Unit tests
@@ -49,4 +50,5 @@ describe('tasuku', () => {
 	import('./specs/codex-theme.spec.ts');
 
 	import('./specs/patch-console.spec.ts');
+	import('./specs/intercept-stream.spec.ts');
 });

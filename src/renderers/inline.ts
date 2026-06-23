@@ -6,6 +6,8 @@ import { formatTaskOutput } from '../utils/format-task-output.ts';
 import { getIcon } from '../utils/get-icon.ts';
 import { isCI } from '../utils/is-ci.ts';
 import { patchConsole } from '../utils/patch-console.ts';
+import { interceptStream, type StreamController } from '../utils/intercept-stream.ts';
+import { getSiblingStream } from '../utils/sibling-stream.ts';
 import { areAllTasksDone, isTerminalState } from '../utils/task-list.ts';
 import { truncateLine } from '../utils/truncate-line.ts';
 
@@ -17,67 +19,6 @@ const countNewlines = (text: string): number => {
 		}
 	}
 	return count;
-};
-
-// Global registry of offset-increment callbacks for multi-instance coordination.
-// When one inline renderer writes new lines to the output stream, all OTHER
-// renderers need their tracked offsets bumped so cursor-up distances stay correct.
-type OffsetListener = (newlineCount: number) => void;
-
-const streamListeners = new Map<NodeJS.WriteStream, {
-	listeners: Set<OffsetListener>;
-	originalWrite: NodeJS.WriteStream['write'];
-}>();
-
-const registerStreamListener = (
-	stream: NodeJS.WriteStream,
-	listener: OffsetListener,
-): (() => void) => {
-	let entry = streamListeners.get(stream);
-
-	if (!entry) {
-		entry = {
-			listeners: new Set(),
-			originalWrite: stream.write.bind(stream) as NodeJS.WriteStream['write'],
-		};
-		streamListeners.set(stream, entry);
-	}
-
-	entry.listeners.add(listener);
-
-	// Install monkey-patch on first listener. Tracks external writes
-	// (e.g. direct process.stderr.write) that shift cursor positions.
-	// The selfWriting flag in each renderer prevents self-notification.
-	if (entry.listeners.size === 1) {
-		const { originalWrite } = entry;
-		stream.write = (chunk, ...args) => {
-			// @ts-expect-error Forwarding to original write with spread args
-			const result = originalWrite(chunk, ...args);
-			let text;
-			if (typeof chunk === 'string') {
-				text = chunk;
-			} else if (Buffer.isBuffer(chunk) || chunk instanceof Uint8Array) {
-				text = Buffer.from(chunk).toString();
-			} else {
-				text = String(chunk);
-			}
-			const newlines = countNewlines(text);
-			if (newlines > 0) {
-				for (const callback of entry!.listeners) {
-					callback(newlines);
-				}
-			}
-			return result;
-		};
-	}
-
-	return () => {
-		entry!.listeners.delete(listener);
-		if (entry!.listeners.size === 0) {
-			stream.write = entry!.originalWrite;
-			streamListeners.delete(stream);
-		}
-	};
 };
 
 type TrackedLine = {
@@ -98,17 +39,18 @@ export const inline: RendererFactory = (
 	let spinnerFrame = 0;
 	let spinnerInterval: NodeJS.Timeout | undefined;
 	let restoreConsole: (() => void) | undefined;
-	let removeStreamListener: (() => void) | undefined;
+	let streamController: StreamController | undefined;
+	let siblingController: StreamController | undefined;
 	let maxVisibleLimit: number | undefined;
 
-	// Flag to suppress self-notification when this renderer writes
-	let selfWriting = false;
+	// Write the renderer's own output. Through the controller it's marked as our
+	// own (so we don't count it as an external write), while other renderers on
+	// the same stream still see it and keep their offsets in sync.
 	const writeOutput = (data: string) => {
-		selfWriting = true;
-		try {
+		if (streamController) {
+			streamController.write(data);
+		} else {
 			outputStream.write(data);
-		} finally {
-			selfWriting = false;
 		}
 	};
 
@@ -353,39 +295,47 @@ export const inline: RendererFactory = (
 		}
 	};
 
-	// --- Console output handler ---
+	// --- Output coordination ---
 
-	// Determine when console writes affect the same terminal cursor.
-	// In a normal TTY, stdout and stderr share the cursor — count everything.
-	// With redirection (e.g. 1>file), only the renderer's stream matters.
-	const isStderr = outputStream === process.stderr
-		|| ('fd' in outputStream && outputStream.fd === 2);
-	const consoleStreamName = isStderr ? 'stderr' : 'stdout';
-	const bothStreamsTTY = process.stdout.isTTY === true && process.stderr.isTTY === true;
-
-	restoreConsole = patchConsole({
-		after: (stream, data) => {
-			// Count newlines when the write affects our terminal cursor:
-			// - same stream: always affects our cursor
-			// - both TTY: shared terminal, any write moves the cursor
-			if (isInteractive && (stream === consoleStreamName || bothStreamsTTY)) {
-				const newlineCount = countNewlines(data);
-				if (newlineCount > 0) {
-					incrementOffsets(newlineCount);
-				}
-			}
-		},
-	});
-
-	// Register stream listener for multi-instance coordination.
-	// When another inline renderer writes new lines to the same stream,
-	// our tracked offsets need bumping so cursor-up distances stay correct.
+	// Track external output so in-place line offsets stay correct. Only needed
+	// for TTY in-place rendering; non-TTY output is append-only.
+	//
+	// Two sources, matching how they reach the terminal:
+	// - console.* (patchConsole): may go to stdout or stderr. In a normal TTY
+	//   both share the cursor, so count either; with redirection only ours.
+	// - raw writes to our stream (interceptStream): always move our cursor, and
+	//   this is also how other renderers on the same stream notify us.
 	if (isInteractive) {
-		removeStreamListener = registerStreamListener(outputStream, (newlineCount) => {
-			if (!selfWriting) {
+		const isStderr = outputStream === process.stderr
+			|| ('fd' in outputStream && outputStream.fd === 2);
+		const ownStreamName = isStderr ? 'stderr' : 'stdout';
+		const bothStreamsTTY = process.stdout.isTTY === true && process.stderr.isTTY === true;
+
+		const countExternalLines = (data: string) => {
+			const newlineCount = countNewlines(data);
+			if (newlineCount > 0) {
 				incrementOffsets(newlineCount);
 			}
+		};
+
+		restoreConsole = patchConsole({
+			after: (stream, data) => {
+				if (stream === ownStreamName || bothStreamsTTY) {
+					countExternalLines(data);
+				}
+			},
 		});
+		streamController = interceptStream(outputStream, {
+			after: countExternalLines,
+		});
+
+		// Raw writes to the sibling stream shift our cursor in a shared TTY too.
+		const siblingStream = getSiblingStream(outputStream);
+		if (siblingStream) {
+			siblingController = interceptStream(siblingStream, {
+				after: countExternalLines,
+			});
+		}
 	}
 
 	// --- Spinner ---
@@ -416,10 +366,12 @@ export const inline: RendererFactory = (
 	const destroy = () => {
 		clearInterval(spinnerInterval);
 		spinnerInterval = undefined;
+		streamController?.restore();
+		streamController = undefined;
+		siblingController?.restore();
+		siblingController = undefined;
 		restoreConsole?.();
 		restoreConsole = undefined;
-		removeStreamListener?.();
-		removeStreamListener = undefined;
 		trackedLines.clear();
 	};
 

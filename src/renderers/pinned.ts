@@ -11,6 +11,8 @@ import { formatTaskOutput } from '../utils/format-task-output.ts';
 import { getIcon } from '../utils/get-icon.ts';
 import { isCI } from '../utils/is-ci.ts';
 import { patchConsole } from '../utils/patch-console.ts';
+import { interceptStream, type StreamController } from '../utils/intercept-stream.ts';
+import { getSiblingStream } from '../utils/sibling-stream.ts';
 import { areAllTasksDone } from '../utils/task-list.ts';
 
 export const pinned: RendererFactory = (
@@ -26,10 +28,27 @@ export const pinned: RendererFactory = (
 	let hasHiddenTasks = false;
 	let hasSavedPosition = false;
 	let suppressRerender = false;
-	let restoreConsole: (() => void) | undefined;
 
 	const isTTY = outputStream.isTTY === true;
 	const isInteractive = isTTY && !isCI;
+
+	// Coordinate the render area with other terminal output: console.* via
+	// patchConsole, raw stream writes via interceptStream. Registered in non-CI
+	// mode; in CI there's no pinned area to protect, so writes go direct.
+	let restoreConsole: (() => void) | undefined;
+	let streamController: StreamController | undefined;
+	let siblingController: StreamController | undefined;
+
+	// Write the renderer's own output. Through the controller it's marked as our
+	// own (so our hooks don't react to it), while any other renderer on the same
+	// stream still sees it.
+	const write = (data: string) => {
+		if (streamController) {
+			streamController.write(data);
+		} else {
+			outputStream.write(data);
+		}
+	};
 
 	// Save cursor position at the top of the render area.
 	// Called on first render and after each console.log insertion.
@@ -37,7 +56,7 @@ export const pinned: RendererFactory = (
 	// the old cursor-up clearing behavior which also ran in non-TTY mode.
 	const savePosition = () => {
 		if (!isCI) {
-			outputStream.write(cursorSavePosition);
+			write(cursorSavePosition);
 			hasSavedPosition = true;
 		}
 	};
@@ -46,7 +65,7 @@ export const pinned: RendererFactory = (
 	// Handles any extra lines (e.g. stdin echo) that appeared since last render.
 	const clearRenderArea = () => {
 		if (hasSavedPosition) {
-			outputStream.write(cursorRestorePosition + eraseDown);
+			write(cursorRestorePosition + eraseDown);
 		}
 	};
 
@@ -177,17 +196,18 @@ export const pinned: RendererFactory = (
 		return tasks.map(task => renderTask(task, depth)).join('');
 	};
 
-	const consoleHooks = {
+	const outputHooks = {
 		before: () => {
-			// Clear task UI from saved position.
-			// Must react to ALL console writes (both stdout and stderr)
-			// because in a TTY they share the same screen.
+			// Clear task UI from the saved position so other output (console.*,
+			// raw stream writes, child stdio) lands above the render area instead
+			// of being erased by the next redraw. Reacts to both streams because
+			// in a TTY they share the same screen.
 			clearRenderArea();
 			// Force next render to redraw even if output is identical
 			lastOutput = '';
 		},
 		after: () => {
-			// Save new position — render area moves below console output
+			// Save new position — render area moves below the other output
 			savePosition();
 
 			// Immediately re-render the task UI so it stays visible below
@@ -231,7 +251,7 @@ export const pinned: RendererFactory = (
 			// CI mode: only write final output when all tasks are done
 			// This produces clean append-only output without intermediate states
 			if (allDone && output !== lastOutput) {
-				outputStream.write(output);
+				write(output);
 				lastOutput = output;
 			}
 			return;
@@ -270,15 +290,15 @@ export const pinned: RendererFactory = (
 			}
 			// Batch: output + re-anchor (cursor-up + save + cursor-down) in one write
 			if (visualLineCount > 0) {
-				outputStream.write(
+				write(
 					output + cursorUp(visualLineCount) + cursorSavePosition + cursorDown(visualLineCount),
 				);
 				hasSavedPosition = true;
 			} else {
-				outputStream.write(output);
+				write(output);
 			}
 		} else {
-			outputStream.write(output);
+			write(output);
 		}
 	};
 
@@ -336,11 +356,18 @@ export const pinned: RendererFactory = (
 		outputStream.off('resize', handleResize);
 		clearInterval(spinnerInterval);
 		clearTimeout(renderTimeout);
-		restoreConsole?.();
 
-		// Clear all task output before destroying
+		// Clear all task output before destroying (while still registered, so
+		// any other renderer on the same stream sees it), then stop intercepting.
 		clearRenderArea();
 		hasSavedPosition = false;
+
+		streamController?.restore();
+		streamController = undefined;
+		siblingController?.restore();
+		siblingController = undefined;
+		restoreConsole?.();
+		restoreConsole = undefined;
 	};
 
 	// On process exit: do a final unlimited render so the complete
@@ -369,8 +396,37 @@ export const pinned: RendererFactory = (
 
 	// Initialize
 	if (!isCI) {
-		// Patch console to intercept output (even in non-TTY mode for testing/piping)
-		restoreConsole = patchConsole(consoleHooks);
+		// Coordinate console.* and raw stream writes with the pinned render area
+		// (even in non-TTY mode for testing/piping). patchConsole first, so its
+		// console output bypasses the raw interceptor wrapped below.
+		//
+		// console.* is always genuine external output, so react to all of it. For
+		// raw writes, react only to genuine external output (fromPeer false):
+		// re-rendering in response to another renderer's writes on a shared stream
+		// would cascade, and that scenario is unsupported anyway.
+		const rawHooks = {
+			before: (_data: string, fromPeer: boolean) => {
+				if (!fromPeer) {
+					outputHooks.before();
+				}
+			},
+			after: (_data: string, fromPeer: boolean) => {
+				if (!fromPeer) {
+					outputHooks.after();
+				}
+			},
+		};
+
+		restoreConsole = patchConsole(outputHooks);
+		streamController = interceptStream(outputStream, rawHooks);
+
+		// In a shared TTY, stdout and stderr move the same cursor, so a raw write
+		// to the sibling stream disturbs the render area too. Watch it the same way
+		// patchConsole already accounts for both streams.
+		const siblingStream = getSiblingStream(outputStream);
+		if (siblingStream) {
+			siblingController = interceptStream(siblingStream, rawHooks);
+		}
 
 		// Start spinner animation
 		startSpinner();
