@@ -76,6 +76,10 @@ await task('Title', async (api) => {
 | `startTime()` | Start/restart elapsed timer. Shown as `(Xs)`, `(Xm Ys)`, `(Xh Ym)`. Hidden if < 1s |
 | `stopTime()` | Stop timer, return elapsed ms. Display freezes at stopped value |
 
+State changes paint immediately, so the current state is visible before the next line runs (including before synchronous work).
+
+**Async-first / synchronous blocking:** the spinner animates between `await` points. Long synchronous (CPU-bound) work blocks the single thread, so the spinner can't animate during it — the pre-block state is painted, then the spinner freezes until the work finishes. Keep tasks async or offload heavy CPU work (e.g. a worker) to keep the UI live.
+
 ## Task Promise
 
 `task()` returns a `TaskPromise<T>` — a Promise with live properties:

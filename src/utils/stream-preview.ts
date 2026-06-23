@@ -6,6 +6,7 @@ export const defaultPreviewLines = 5;
 export const createStreamPreview = (
 	taskState: TaskObject,
 	maxLines: number,
+	onChange: () => void,
 ): StreamPreview => {
 	const lines: string[] = [];
 	let totalLines = 0;
@@ -27,6 +28,7 @@ export const createStreamPreview = (
 			: lines.join('\n');
 		taskState.streamOutput = output;
 		taskState.streamTruncatedLines = Math.max(0, totalLines - maxLines);
+		onChange();
 	};
 
 	const writable = new Writable({
@@ -89,6 +91,7 @@ export const createStreamPreview = (
 		partialLine = '';
 		taskState.streamOutput = undefined;
 		taskState.streamTruncatedLines = undefined;
+		onChange();
 	};
 
 	return writable;

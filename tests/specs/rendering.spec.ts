@@ -251,10 +251,13 @@ describe('rendering', () => {
 		const cursorUpValues = [...result.output.matchAll(/\u001B\[(\d+)A/g)]
 			.map(match => Number(match[1]));
 
+		// The task paints a title-only frame before the first setStatus, which
+		// wraps to fewer rows (a smaller cursorUp). Every frame that includes the
+		// multiline status must re-anchor the full wrapped height: assert the
+		// largest re-anchor equals the wrapped line count (catches under- and
+		// over-counting of the status frames).
 		expect(cursorUpValues.length).toBeGreaterThan(0);
-		for (const value of cursorUpValues) {
-			expect(value).toBeGreaterThanOrEqual(expectedVisualLines);
-		}
+		expect(Math.max(...cursorUpValues)).toBe(expectedVisualLines);
 	}, { retry: 3 });
 
 	test('final grid shows correct layout for nested tasks', async () => {

@@ -431,7 +431,7 @@ describe('stream preview', () => {
 
 		test('writing after clear() does not include old lines', () => {
 			const taskObject = createTask();
-			const stream = createStreamPreview(taskObject, 3);
+			const stream = createStreamPreview(taskObject, 3, () => {});
 
 			stream.write('line1\nline2\nline3\nline4\nline5\n');
 			expect(taskObject.streamTruncatedLines).toBe(2);
@@ -445,7 +445,7 @@ describe('stream preview', () => {
 
 		test('truncation count resets after clear()', () => {
 			const taskObject = createTask();
-			const stream = createStreamPreview(taskObject, 2);
+			const stream = createStreamPreview(taskObject, 2, () => {});
 
 			stream.write('a\nb\nc\nd\n');
 			expect(taskObject.streamTruncatedLines).toBe(2);

@@ -1,6 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import pMap from 'p-map';
-import { reactive } from './reactive.ts';
 import { isTerminalState } from './utils/task-list.ts';
 import { createStreamPreview, defaultPreviewLines } from './utils/stream-preview.ts';
 import type {
@@ -51,58 +50,88 @@ export const createTasuku = ({
 	let renderer: Renderer | undefined;
 	const triggerRender = () => { renderer?.triggerRender(); };
 	const flushRender = (force?: boolean) => { renderer?.flushRender(force); };
-	const rootRenderCallbacks: RenderCallbacks = { triggerRender, flushRender };
+	const rootRenderCallbacks: RenderCallbacks = {
+		triggerRender,
+		flushRender,
+	};
 
 	const createTaskInnerApi = (
 		taskState: TaskObject,
 		signal: AbortSignal,
-		options?: TaskOptions,
+		options: TaskOptions | undefined,
+		renderCallbacks: RenderCallbacks,
 	) => {
 		let stream: StreamPreview | undefined;
+
+		const toMessage = (output: string | { message: string }) => (
+			typeof output === 'string' ? output : output.message
+		);
 
 		const api: TaskInnerAPI = {
 			signal,
 			setTitle(title) {
+				if (taskState.title === title) {
+					return;
+				}
 				taskState.title = title;
+				renderCallbacks.flushRender();
 			},
 			setStatus(status) {
+				if (taskState.status === status) {
+					return;
+				}
 				taskState.status = status;
+				renderCallbacks.flushRender();
 			},
 			setOutput(output) {
-				taskState.output = typeof output === 'string'
-					? output
-					: output.message;
+				const message = toMessage(output);
+				if (taskState.output === message) {
+					return;
+				}
+				taskState.output = message;
+				renderCallbacks.flushRender();
 			},
 			get streamPreview() {
 				if (!stream) {
 					stream = createStreamPreview(
 						taskState,
 						Math.max(1, Math.trunc(options?.previewLines ?? defaultPreviewLines)),
+						// Stream output is high-frequency, so it renders on the
+						// throttled path rather than painting on every chunk.
+						renderCallbacks.triggerRender,
 					);
 				}
 				return stream;
 			},
+			// setWarning/setError change output and state together, so they mutate
+			// both then flush once — painting per-property would emit a transient
+			// frame (e.g. loading icon with the warning message under it).
 			setWarning(warning) {
 				if (warning) {
-					api.setOutput(warning);
+					taskState.output = toMessage(warning);
 					taskState.state = 'warning';
 				} else {
 					taskState.state = 'loading';
 					taskState.output = undefined;
 				}
+				renderCallbacks.flushRender();
 			},
 			setError(error) {
 				if (error) {
-					api.setOutput(error);
+					taskState.output = toMessage(error);
 					taskState.state = 'error';
 				} else {
 					taskState.state = 'loading';
 					taskState.output = undefined;
 				}
+				renderCallbacks.flushRender();
 			},
 			skip(message?: string): never {
 				throw new TaskSkipError(message);
 			},
+			// startTime/stopTime only mutate the timestamps. The elapsed display is
+			// driven by spinner-frame repaints (and the completion paint), so they
+			// don't force a render of their own.
 			startTime: () => {
 				taskState.startedAt = Date.now();
 				taskState.elapsedMs = undefined;
@@ -136,11 +165,11 @@ export const createTasuku = ({
 		options: TaskOptions | undefined,
 		renderCallbacks: RenderCallbacks,
 	): RegisteredTask<T> => {
-		const task = reactive<TaskObject>({
+		const task: TaskObject = {
 			title: taskTitle,
 			state: 'pending',
 			children: [],
-		}, renderCallbacks.triggerRender);
+		};
 		taskList.push(task);
 
 		return {
@@ -176,9 +205,17 @@ export const createTasuku = ({
 				};
 
 				const { signal } = childController;
-				const { api, dispose } = createTaskInnerApi(task, signal, options);
+				const { api, dispose } = createTaskInnerApi(
+					task,
+					signal,
+					options,
+					renderCallbacks,
+				);
 
 				task.state = 'loading';
+				// Paint immediately so the task is visible before the callback runs,
+				// even if the callback blocks the event loop with synchronous work.
+				renderCallbacks.flushRender();
 
 				// Auto-start timer if showTime option is set
 				if (options?.showTime) {

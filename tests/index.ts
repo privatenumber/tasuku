@@ -18,6 +18,7 @@ describe('tasuku', () => {
 
 	// Rendering
 	import('./specs/rendering.spec.ts');
+	import('./specs/sync-paint.spec.ts');
 	import('./specs/spinner-restart.spec.ts');
 	import('./specs/max-visible.spec.ts');
 
@@ -33,7 +34,6 @@ describe('tasuku', () => {
 	import('./specs/task-list.spec.ts');
 	import('./specs/truncate-line.spec.ts');
 	import('./specs/get-icon.spec.ts');
-	import('./specs/reactive.spec.ts');
 	import('./specs/format-task-line.spec.ts');
 	import('./specs/format-task-output.spec.ts');
 	import('./specs/ansi-terminal.spec.ts');

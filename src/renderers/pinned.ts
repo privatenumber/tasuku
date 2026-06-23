@@ -300,11 +300,12 @@ export const pinned: RendererFactory = (
 
 	const flushRender = (force = false) => {
 		// Clear any pending throttled render and render immediately.
-		// In non-interactive mode (piped output, CI), intermediate renders are
-		// unnecessary — the deferred scheduleRender handles output. However,
-		// when force=true (error about to be re-thrown), the process may exit
-		// before the deferred render fires, so we must render synchronously.
+		// In non-interactive mode (piped output, CI), don't paint synchronously
+		// per change — defer to the throttled render, which coalesces and (in CI)
+		// only writes the final state. `force` (error about to be re-thrown) still
+		// renders now, since the process may exit before the deferred render fires.
 		if (!force && !isInteractive) {
+			scheduleRender();
 			return;
 		}
 		if (renderTimeout) {

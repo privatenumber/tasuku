@@ -267,6 +267,11 @@ type TaskFunction = (api: {
 }) => Promise<unknown>
 ```
 
+State changes (`setTitle`, `setStatus`, `setOutput`, `setWarning`, `setError`) are painted as soon as you call them, so the task's current state is visible before the next line of your code runs — including before CPU-bound synchronous work.
+
+> [!NOTE]
+> tasuku is an async task runner: the spinner animates between `await` points. Long **synchronous** work blocks the single thread, so the spinner can't animate while it runs. The state you set right before the block is still painted (so the user sees what's happening), but the spinner freezes until the work finishes. Prefer keeping tasks async, or move heavy CPU work off the main thread (e.g. a worker), so the UI stays live.
+
 #### signal
 
 An `AbortSignal` that the task can use to respond to cancellation. The signal is cooperative — it only cancels work if you pass it to an API that respects it (like `fetch()`, streams, or `setTimeout` from `timers/promises`). Tasks that don't use the signal will continue running normally.
