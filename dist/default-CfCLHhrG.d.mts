@@ -1,4 +1,4 @@
-import { g as TasukuTheme } from './types-CHLyZVi8.mjs';
+import { b as TasukuTheme } from './types-Dq6gzoTH.mjs';
 
 declare const theme: TasukuTheme;
 

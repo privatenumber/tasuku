@@ -17,7 +17,8 @@
     "email": "hiroki.osame@gmail.com"
   },
   "files": [
-    "dist"
+    "dist",
+    "skills"
   ],
   "type": "module",
   "types": "./dist/index.d.mts",
@@ -33,50 +34,17 @@
     "./create": {
       "types": "./dist/create.d.mts",
       "default": "./dist/create.mjs"
-    },
-    "./theme/claude": {
-      "types": "./dist/themes/claude.d.mts",
-      "default": "./dist/themes/claude.mjs"
-    },
-    "./theme/blink": {
-      "types": "./dist/themes/blink.d.mts",
-      "default": "./dist/themes/blink.mjs"
-    },
-    "./theme/codex": {
-      "types": "./dist/themes/codex.d.mts",
-      "default": "./dist/themes/codex.mjs"
     }
   },
   "imports": {
     "#tasuku": {
-      "types": "./src/index.ts",
-      "development": "./src/index.ts",
       "default": "./dist/index.mjs"
     },
     "#tasuku/inline": {
-      "types": "./src/inline.ts",
-      "development": "./src/inline.ts",
       "default": "./dist/inline.mjs"
     },
     "#tasuku/create": {
-      "types": "./src/create.ts",
-      "development": "./src/create.ts",
       "default": "./dist/create.mjs"
-    },
-    "#tasuku/theme/claude": {
-      "types": "./src/themes/claude.ts",
-      "development": "./src/themes/claude.ts",
-      "default": "./dist/themes/claude.mjs"
-    },
-    "#tasuku/theme/blink": {
-      "types": "./src/themes/blink.ts",
-      "development": "./src/themes/blink.ts",
-      "default": "./dist/themes/blink.mjs"
-    },
-    "#tasuku/theme/codex": {
-      "types": "./src/themes/codex.ts",
-      "development": "./src/themes/codex.ts",
-      "default": "./dist/themes/codex.mjs"
     }
   },
   "engines": {

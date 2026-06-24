@@ -155,4 +155,4 @@ type CreateTasukuOptions = {
     outputStream?: NodeJS.WriteStream;
 };
 
-export type { CreateTasukuOptions as C, Renderer as R, State as S, Task as T, RendererFactory as a, TaskFunction as b, TaskGroupPromise as c, TaskInnerAPI as d, TaskOptions as e, TaskPromise as f, TasukuTheme as g };
+export type { CreateTasukuOptions as C, RendererFactory as R, State as S, Task as T, Renderer as a, TasukuTheme as b, TaskFunction as c, TaskGroupPromise as d, TaskInnerAPI as e, TaskOptions as f, TaskPromise as g };

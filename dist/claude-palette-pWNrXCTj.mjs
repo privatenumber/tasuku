@@ -1,1 +1,0 @@
-import{b as s}from"./index-D7F2xFGS.mjs";const t=s(215,119,87),a=s(255,255,255),o=s(80,80,80),c=s(153,153,153),n=s(78,186,101),r=s(255,107,128),e=s(255,193,7),i=s(180,75,90),b=s(180,136,5);export{n as a,b,i as c,a as d,r as e,c as i,o as s,t,e as w};
