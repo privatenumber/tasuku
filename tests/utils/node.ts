@@ -34,7 +34,7 @@ export const node = (
 				BUILD_NUMBER: '',
 
 				// 2. Apply our test default to force color (unless test disables it)
-				...(!hasColorDisable && { FORCE_COLOR: '1' }),
+				FORCE_COLOR: hasColorDisable ? '0' : '1',
 
 				// 3. Apply test-specific overrides (e.g., NO_COLOR: '1')
 				...env,
