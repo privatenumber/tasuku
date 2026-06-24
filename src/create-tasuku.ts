@@ -43,7 +43,6 @@ type TaskContext = RenderCallbacks & {
 const taskContext = new AsyncLocalStorage<TaskContext>();
 
 export const createTasuku = ({
-	theme,
 	renderer: rendererFactory,
 	outputStream,
 }: CreateTasukuOptions): Task => {
@@ -153,7 +152,7 @@ export const createTasuku = ({
 
 	const ensureRenderer = (taskList: TaskList) => {
 		if (!renderer) {
-			renderer = rendererFactory(taskList, outputStream ?? process.stderr, theme);
+			renderer = rendererFactory(taskList, outputStream ?? process.stderr);
 			taskList.isRoot = true;
 		}
 	};

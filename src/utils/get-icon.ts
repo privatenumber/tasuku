@@ -1,23 +1,23 @@
-import type { State, TasukuTheme } from '../types.ts';
+import type { State } from '../types.ts';
+import { icons, spinner } from '../style.ts';
 
 export const getIcon = (
 	state: State,
 	hasChildren: boolean,
-	theme: TasukuTheme,
 	spinnerFrame: number,
 ): string => {
 	switch (state) {
-		case 'loading': { return hasChildren ? theme.icons.parent : theme.spinner[spinnerFrame];
+		case 'loading': { return hasChildren ? icons.parent : spinner[spinnerFrame];
 		}
-		case 'success': { return hasChildren ? theme.icons.parent : theme.icons.success;
+		case 'success': { return hasChildren ? icons.parent : icons.success;
 		}
-		case 'error': { return hasChildren ? theme.icons.parentError : theme.icons.error;
+		case 'error': { return hasChildren ? icons.parentError : icons.error;
 		}
-		case 'warning': { return theme.icons.warning;
+		case 'warning': { return icons.warning;
 		}
-		case 'skipped': { return theme.icons.skipped;
+		case 'skipped': { return icons.skipped;
 		}
-		default: { return theme.icons.pending;
+		default: { return icons.pending;
 		}
 	}
 };

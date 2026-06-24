@@ -5,7 +5,7 @@ import {
 import { createFixture } from 'fs-fixture';
 import stripAnsi from 'strip-ansi';
 import { createTasuku } from '#tasuku/create';
-import { theme, type RendererFactory } from '#tasuku';
+import type { RendererFactory } from '#tasuku';
 import { nodePty } from '../utils/pty.ts';
 import { tempDir } from '../utils/temp-dir.ts';
 
@@ -142,7 +142,6 @@ describe('synchronous-first painting', () => {
 		const { counts, renderer } = countingRenderer();
 		const task = createTasuku({
 			renderer,
-			theme,
 			outputStream: nullStream(),
 		});
 
@@ -163,7 +162,6 @@ describe('synchronous-first painting', () => {
 		const { counts, renderer } = countingRenderer();
 		const task = createTasuku({
 			renderer,
-			theme,
 			outputStream: nullStream(),
 		});
 
@@ -186,7 +184,6 @@ describe('synchronous-first painting', () => {
 		const { counts, renderer } = countingRenderer();
 		const task = createTasuku({
 			renderer,
-			theme,
 			outputStream: nullStream(),
 		});
 

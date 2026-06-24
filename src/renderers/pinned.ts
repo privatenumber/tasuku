@@ -4,8 +4,9 @@ import {
 } from 'ansi-escapes';
 import { cachedStringWidth } from '../utils/cached-string-width.ts';
 import { countNewlines } from '../utils/count-newlines.ts';
+import { colors, spinner, spinnerInterval as spinnerIntervalMs } from '../style.ts';
 import type {
-	Renderer, RendererFactory, TaskList, TaskObject, TasukuTheme,
+	Renderer, RendererFactory, TaskList, TaskObject,
 } from '../types.ts';
 import { formatTaskLine } from '../utils/format-task-line.ts';
 import { formatTaskOutput } from '../utils/format-task-output.ts';
@@ -19,7 +20,6 @@ import { areAllTasksDone } from '../utils/task-list.ts';
 export const pinned: RendererFactory = (
 	taskList: TaskList,
 	outputStream: NodeJS.WriteStream,
-	theme: TasukuTheme,
 ): Renderer => {
 	let animationFrame = 0;
 	let spinnerFrame = 0;
@@ -92,10 +92,10 @@ export const pinned: RendererFactory = (
 
 	const renderTask = (task: TaskList[number], depth: number): string => {
 		const hasChildren = task.children && task.children.length > 0;
-		const icon = getIcon(task.state, hasChildren, theme, spinnerFrame);
+		const icon = getIcon(task.state, hasChildren, spinnerFrame);
 
-		let line = `${formatTaskLine(task, icon, depth, theme, animationFrame)}\n`;
-		line += formatTaskOutput(task, depth, theme);
+		let line = `${formatTaskLine(task, icon, depth)}\n`;
+		line += formatTaskOutput(task, depth);
 
 		// Render children recursively
 		if (hasChildren) {
@@ -201,7 +201,7 @@ export const pinned: RendererFactory = (
 					if (loading > 0) { parts.push(`${loading} loading`); }
 					if (pending > 0) { parts.push(`${pending} queued`); }
 					if (completed > 0) { parts.push(`${completed} completed`); }
-					output += `${theme.colors.dim(`(+ ${parts.join(', ')})`)}\n`;
+					output += `${colors.dim(`(+ ${parts.join(', ')})`)}\n`;
 				}
 
 				return output;
@@ -242,9 +242,9 @@ export const pinned: RendererFactory = (
 		}
 		spinnerInterval = setInterval(() => {
 			animationFrame += 1;
-			spinnerFrame = animationFrame % theme.spinner.length;
+			spinnerFrame = animationFrame % spinner.length;
 			scheduleRender();
-		}, theme.spinnerInterval ?? 80);
+		}, spinnerIntervalMs);
 		spinnerInterval.unref();
 	};
 

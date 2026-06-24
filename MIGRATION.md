@@ -98,16 +98,13 @@ import task from 'tasuku'
 
 // New entry points
 import task from 'tasuku/inline' // inline renderer
-import task from 'tasuku/theme/claude' // Claude Code theme
-import task from 'tasuku/theme/blink' // reduced-motion theme
-import task from 'tasuku/theme/codex' // OpenAI Codex theme
 import { createTasuku, pinned, inline } from 'tasuku/create' // raw factory
 ```
 
 <details>
 <summary>Why this changed</summary>
 
-v2 bundled everything (including the unused inline renderer) into a single entry point. Subpath exports let bundlers tree-shake unused renderers and themes. Each entry point loads only what it needs.
+v2 bundled everything (including the unused inline renderer) into a single entry point. Subpath exports let bundlers tree-shake the renderer they don't use. Each entry point loads only what it needs.
 </details>
 
 ## New Features
@@ -151,16 +148,6 @@ import task from 'tasuku/inline'
 await task('Step 1', async () => { /* ... */ })
 console.log('Between tasks')
 await task('Step 2', async () => { /* ... */ })
-```
-
-### Themes
-
-Built-in themes with custom spinners, colors, and shimmer effects:
-
-```ts
-import task from 'tasuku/theme/claude' // Claude Code look
-import task from 'tasuku/theme/blink' // reduced-motion
-import task from 'tasuku/theme/codex' // OpenAI Codex look
 ```
 
 ### Task promise properties

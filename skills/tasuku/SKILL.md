@@ -22,30 +22,24 @@ await task('Build project', async ({ setTitle }) => {
 
 | Import | Use |
 |--------|-----|
-| `tasuku` | Default (pinned renderer + default theme) |
+| `tasuku` | Default (pinned renderer) |
 | `tasuku/inline` | Inline renderer (sequential, no cursor manipulation) |
 | `tasuku/create` | Raw factory (`createTasuku`, `pinned`, `inline`) |
-| `tasuku/theme/claude` | Claude Code theme (shimmer + truecolor) |
-| `tasuku/theme/blink` | Reduced-motion theme (pulsing dot) |
-| `tasuku/theme/codex` | OpenAI Codex theme (cosine shimmer) |
-
-Theme entry points export both `{ theme }` (data) and a default export (pre-composed task runner).
 
 ## `createTasuku`
 
-The convenience `createTasuku` from `tasuku` or `tasuku/inline` accepts **partial** overrides — renderer and theme default to the entry point's built-in:
+The convenience `createTasuku` from `tasuku` or `tasuku/inline` accepts **partial** overrides — the renderer defaults to the entry point's built-in:
 
 ```ts
 import { createTasuku } from 'tasuku'
-import { theme } from 'tasuku/theme/claude'
-const task = createTasuku({ theme })  // renderer defaults to pinned
+const task = createTasuku({ outputStream: process.stdout })  // override stream, keep pinned renderer
 ```
 
-The raw `createTasuku` from `tasuku/create` requires all options:
+The raw `createTasuku` from `tasuku/create` requires the renderer explicitly:
 
 ```ts
 import { createTasuku, pinned } from 'tasuku/create'
-const task = createTasuku({ renderer: pinned, theme })
+const task = createTasuku({ renderer: pinned })
 ```
 
 ## Task Inner API
@@ -171,33 +165,6 @@ await task('Parent', async () => {
 - Running multiple `createTasuku()` instances concurrently
 
 Multiple inline renderers on the same stream are supported. Multiple pinned renderers are not (they share a cursor save/restore slot). Use separate output streams for concurrent pinned instances.
-
-## Theme Object
-
-```ts
-type TasukuTheme = {
-    spinner: string[]           // pre-colored frames, e.g. [yellow('⠋'), ...]
-    spinnerInterval?: number    // ms between frames (default: 80)
-    icons: {
-        pending: string         // all pre-colored
-        success: string
-        error: string
-        warning: string
-        skipped: string
-        parent: string          // parent task with children
-        parentError: string
-    }
-    colors: {
-        title?: (text: string, state: State, frame: number) => string
-        dim: (text: string) => string       // status, elapsed time
-        secondary: (text: string) => string // output text, stream preview
-        error?: (text: string) => string    // error output message
-        warning?: (text: string) => string  // warning output message
-    }
-}
-```
-
-The `title` color receives the animation frame counter — enables per-frame effects like shimmer.
 
 ## Options
 

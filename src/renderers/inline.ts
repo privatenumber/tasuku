@@ -1,5 +1,6 @@
+import { spinner, spinnerInterval as spinnerIntervalMs } from '../style.ts';
 import type {
-	Renderer, RendererFactory, TaskList, TaskObject, TasukuTheme,
+	Renderer, RendererFactory, TaskList, TaskObject,
 } from '../types.ts';
 import { formatTaskLine } from '../utils/format-task-line.ts';
 import { formatTaskOutput } from '../utils/format-task-output.ts';
@@ -21,7 +22,6 @@ type TrackedLine = {
 export const inline: RendererFactory = (
 	taskList: TaskList,
 	outputStream: NodeJS.WriteStream,
-	theme: TasukuTheme,
 ): Renderer => {
 	const isTTY = outputStream.isTTY === true;
 	const isInteractive = isTTY && !isCI;
@@ -53,7 +53,7 @@ export const inline: RendererFactory = (
 
 	// Write output/streamOutput for a completed task and return lines written.
 	const writeTaskOutput = (task: TaskObject, depth: number): number => {
-		const output = formatTaskOutput(task, depth, theme);
+		const output = formatTaskOutput(task, depth);
 		if (output) {
 			writeOutput(output);
 			return countNewlines(output);
@@ -64,8 +64,8 @@ export const inline: RendererFactory = (
 	// --- TTY: Individual line tracking ---
 
 	const getLine = (task: TaskObject, depth: number) => {
-		const icon = getIcon(task.state, task.children.length > 0, theme, spinnerFrame);
-		return formatTaskLine(task, icon, depth, theme, animationFrame);
+		const icon = getIcon(task.state, task.children.length > 0, spinnerFrame);
+		return formatTaskLine(task, icon, depth);
 	};
 
 	// Increment tracked offsets by count. Only offsets >= minOffset are affected.
@@ -337,9 +337,9 @@ export const inline: RendererFactory = (
 		}
 		spinnerInterval = setInterval(() => {
 			animationFrame += 1;
-			spinnerFrame = animationFrame % theme.spinner.length;
+			spinnerFrame = animationFrame % spinner.length;
 			renderSpinnerFrames();
-		}, theme.spinnerInterval ?? 80);
+		}, spinnerIntervalMs);
 		spinnerInterval.unref();
 	};
 

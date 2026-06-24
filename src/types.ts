@@ -154,33 +154,6 @@ export type TaskGroup = <
 	options?: TaskGroupOptions,
 ) => TaskGroupPromise<TaskGroupResults<RegisteredTasks>>;
 
-export type ColorFunction = (text: string) => string;
-
-export type TasukuIcons = {
-	pending: string;
-	success: string;
-	error: string;
-	warning: string;
-	skipped: string;
-	parent: string;
-	parentError: string;
-};
-
-export type TasukuColors = {
-	title?: (text: string, state: State, frame: number) => string;
-	dim: ColorFunction;
-	secondary: ColorFunction;
-	error?: ColorFunction;
-	warning?: ColorFunction;
-};
-
-export type TasukuTheme = {
-	spinner: string[];
-	spinnerInterval?: number;
-	icons: TasukuIcons;
-	colors: TasukuColors;
-};
-
 export type Renderer = {
 	triggerRender: () => void;
 	flushRender: (force?: boolean) => void;
@@ -192,11 +165,9 @@ export type Renderer = {
 export type RendererFactory = (
 	taskList: TaskList,
 	outputStream: NodeJS.WriteStream,
-	theme: TasukuTheme,
 ) => Renderer;
 
 export type CreateTasukuOptions = {
-	theme: TasukuTheme;
 	renderer: RendererFactory;
 	outputStream?: NodeJS.WriteStream;
 };

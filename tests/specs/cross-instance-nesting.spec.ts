@@ -3,7 +3,6 @@ import { Writable } from 'node:stream';
 import { describe, test, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
 import { createTasuku, pinned } from '#tasuku/create';
-import { theme } from '#tasuku';
 import { node } from '../utils/node.ts';
 import { tempDir } from '../utils/temp-dir.ts';
 
@@ -17,24 +16,9 @@ describe('cross-instance nesting', () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 				import { createTasuku, pinned } from '#tasuku/create';
-				import { theme } from '#tasuku';
-				import { blue, magenta } from 'ansis';
 
-				const taskA = createTasuku({
-					renderer: pinned,
-					theme: {
-						...theme,
-						icons: { ...theme.icons, success: blue('A') },
-					},
-				});
-
-				const taskB = createTasuku({
-					renderer: pinned,
-					theme: {
-						...theme,
-						icons: { ...theme.icons, success: magenta('B') },
-					},
-				});
+				const taskA = createTasuku({ renderer: pinned });
+				const taskB = createTasuku({ renderer: pinned });
 
 				await taskA('Parent', async () => {
 					await taskB('Child', async () => {});
@@ -56,13 +40,11 @@ describe('cross-instance nesting', () => {
 		test('cross-instance abort propagates from parent to child', async () => {
 			const taskA = createTasuku({
 				renderer: pinned,
-				theme,
 				outputStream: nullStream,
 			});
 
 			const taskB = createTasuku({
 				renderer: pinned,
-				theme,
 				outputStream: nullStream,
 			});
 
@@ -90,10 +72,9 @@ describe('cross-instance nesting', () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 				import { createTasuku, pinned, inline } from '#tasuku/create';
-				import { theme } from '#tasuku';
 
-				const pinnedTask = createTasuku({ renderer: pinned, theme });
-				const inlineTask = createTasuku({ renderer: inline, theme });
+				const pinnedTask = createTasuku({ renderer: pinned });
+				const inlineTask = createTasuku({ renderer: inline });
 
 				await pinnedTask('Parent', async () => {
 					await inlineTask('Child', async () => {});
@@ -116,10 +97,9 @@ describe('cross-instance nesting', () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
 				import { createTasuku, pinned, inline } from '#tasuku/create';
-				import { theme } from '#tasuku';
 
-				const inlineTask = createTasuku({ renderer: inline, theme });
-				const pinnedTask = createTasuku({ renderer: pinned, theme });
+				const inlineTask = createTasuku({ renderer: inline });
+				const pinnedTask = createTasuku({ renderer: pinned });
 
 				await inlineTask('Parent', async () => {
 					await pinnedTask('Child', async () => {});
@@ -145,13 +125,11 @@ describe('cross-instance nesting', () => {
 		test('clearing cross-instance child does not destroy parent renderer', async () => {
 			const taskA = createTasuku({
 				renderer: pinned,
-				theme,
 				outputStream: nullStream,
 			});
 
 			const taskB = createTasuku({
 				renderer: pinned,
-				theme,
 				outputStream: nullStream,
 			});
 
@@ -168,13 +146,11 @@ describe('cross-instance nesting', () => {
 		test('top-level tasks from different instances do not interfere', async () => {
 			const taskA = createTasuku({
 				renderer: pinned,
-				theme,
 				outputStream: nullStream,
 			});
 
 			const taskB = createTasuku({
 				renderer: pinned,
-				theme,
 				outputStream: nullStream,
 			});
 

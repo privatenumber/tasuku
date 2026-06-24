@@ -6,5 +6,4 @@ export type {
 	CreateTasukuOptions,
 	Renderer,
 	RendererFactory,
-	TasukuTheme,
 } from './types.ts';
