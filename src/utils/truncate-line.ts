@@ -1,4 +1,4 @@
-import stringWidth from 'string-width';
+import { cachedStringWidth } from './cached-string-width.ts';
 
 /**
  * Truncate a styled line to fit within a column limit.
@@ -89,7 +89,7 @@ export const truncateLine = (line: string, columns: number): string => {
 				? char + line[i + 1]
 				: char;
 
-			const charWidth = code < 0x80 ? 1 : stringWidth(fullChar);
+			const charWidth = code < 0x80 ? 1 : cachedStringWidth(fullChar);
 			if (visibleWidth + charWidth > columns) {
 				break;
 			}

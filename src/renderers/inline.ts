@@ -10,16 +10,7 @@ import { interceptStream, type StreamController } from '../utils/intercept-strea
 import { getSiblingStream } from '../utils/sibling-stream.ts';
 import { areAllTasksDone, isTerminalState } from '../utils/task-list.ts';
 import { truncateLine } from '../utils/truncate-line.ts';
-
-const countNewlines = (text: string): number => {
-	let count = 0;
-	for (let index = 0; index < text.length; index += 1) {
-		if (text[index] === '\n') {
-			count += 1;
-		}
-	}
-	return count;
-};
+import { countNewlines } from '../utils/count-newlines.ts';
 
 type TrackedLine = {
 	offset: number; // 1-based: lines from cursor rest position

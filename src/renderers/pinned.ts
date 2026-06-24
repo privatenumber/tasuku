@@ -2,7 +2,8 @@ import {
 	cursorUp, cursorDown,
 	cursorSavePosition, cursorRestorePosition, eraseDown,
 } from 'ansi-escapes';
-import stringWidth from 'string-width';
+import { cachedStringWidth } from '../utils/cached-string-width.ts';
+import { countNewlines } from '../utils/count-newlines.ts';
 import type {
 	Renderer, RendererFactory, TaskList, TasukuTheme,
 } from '../types.ts';
@@ -127,18 +128,25 @@ export const pinned: RendererFactory = (
 			} else {
 				const maxLines = getVisibleLinesLimit();
 
-				// Render in insertion order first
-				const renderedTasks = tasks.map(task => renderTask(task, depth));
-				const totalOutput = renderedTasks.join('');
-				const totalLines = renderedTasks.reduce(
-					(count, output) => count + output.split('\n').length - 1,
-					0,
-				);
+				// Render in insertion order, accumulating lines until the output
+				// either fits or exceeds the limit. On exceeding, stop early: the
+				// sorted pass below re-renders only the visible subset, so
+				// rendering (and joining) every remaining task here is wasted.
+				const renderedTasks: string[] = [];
+				let totalLines = 0;
+				for (const task of tasks) {
+					const taskOutput = renderTask(task, depth);
+					renderedTasks.push(taskOutput);
+					totalLines += countNewlines(taskOutput);
+					if (totalLines > maxLines) {
+						break;
+					}
+				}
 
 				if (totalLines <= maxLines) {
 					// Everything fits — no truncation needed
 					hasHiddenTasks = false;
-					return totalOutput;
+					return renderedTasks.join('');
 				}
 
 				// Truncation needed — sort by state priority so active tasks
@@ -153,7 +161,7 @@ export const pinned: RendererFactory = (
 
 				for (let i = 0; i < sortedTasks.length; i += 1) {
 					const taskOutput = renderTask(sortedTasks[i], depth);
-					const taskLines = taskOutput.split('\n').length - 1;
+					const taskLines = countNewlines(taskOutput);
 					const hasMoreTasks = i < sortedTasks.length - 1;
 					const reservedLines = hasMoreTasks ? 1 : 0;
 
@@ -283,7 +291,7 @@ export const pinned: RendererFactory = (
 			let visualLineCount = 0;
 			const lines = output.split('\n');
 			for (let i = 0; i < lines.length - 1; i += 1) {
-				const width = stringWidth(lines[i]);
+				const width = cachedStringWidth(lines[i]);
 				visualLineCount += width <= columns
 					? 1
 					: Math.ceil(width / columns);

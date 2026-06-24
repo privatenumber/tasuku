@@ -34,6 +34,8 @@ describe('tasuku', () => {
 	import('./specs/format-elapsed.spec.ts');
 	import('./specs/task-list.spec.ts');
 	import('./specs/truncate-line.spec.ts');
+	import('./specs/cached-string-width.spec.ts');
+	import('./specs/count-newlines.spec.ts');
 	import('./specs/get-icon.spec.ts');
 	import('./specs/format-task-line.spec.ts');
 	import('./specs/format-task-output.spec.ts');
