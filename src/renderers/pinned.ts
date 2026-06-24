@@ -5,7 +5,7 @@ import {
 import { cachedStringWidth } from '../utils/cached-string-width.ts';
 import { countNewlines } from '../utils/count-newlines.ts';
 import type {
-	Renderer, RendererFactory, TaskList, TasukuTheme,
+	Renderer, RendererFactory, TaskList, TaskObject, TasukuTheme,
 } from '../types.ts';
 import { formatTaskLine } from '../utils/format-task-line.ts';
 import { formatTaskOutput } from '../utils/format-task-output.ts';
@@ -105,13 +105,6 @@ export const pinned: RendererFactory = (
 		return line;
 	};
 
-	// Sort tasks by state priority: loading > pending > completed
-	const getStatePriority = (state: TaskList[number]['state']): number => {
-		if (state === 'loading') { return 0; }
-		if (state === 'pending') { return 1; }
-		return 2; // success, error, warning, skipped
-	};
-
 	let isFinalRender = false;
 
 	const renderTaskList = (tasks: TaskList, depth = 0): string => {
@@ -149,11 +142,25 @@ export const pinned: RendererFactory = (
 					return renderedTasks.join('');
 				}
 
-				// Truncation needed — sort by state priority so active tasks
-				// bubble up and completed tasks are hidden first
-				const sortedTasks = [...tasks].sort(
-					(a, b) => getStatePriority(a.state) - getStatePriority(b.state),
-				);
+				// Truncation needed — bring active tasks to the front so they
+				// stay visible and completed tasks are hidden first. Only three
+				// priority levels exist, so a single linear partition into buckets
+				// does this in O(n) instead of an O(n log n) sort; pushing in
+				// iteration order keeps each level stable, matching the previous
+				// stable sort's output exactly.
+				const loadingTasks: TaskObject[] = [];
+				const pendingTasks: TaskObject[] = [];
+				const completedTasks: TaskObject[] = [];
+				for (const task of tasks) {
+					if (task.state === 'loading') {
+						loadingTasks.push(task);
+					} else if (task.state === 'pending') {
+						pendingTasks.push(task);
+					} else {
+						completedTasks.push(task);
+					}
+				}
+				const sortedTasks = [...loadingTasks, ...pendingTasks, ...completedTasks];
 
 				let output = '';
 				let lineCount = 0;
