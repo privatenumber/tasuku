@@ -756,6 +756,8 @@ console.log('All checks passed — ready to deploy')
 
 On TTY, the inline renderer tracks each task line by its offset from the cursor and updates it in-place using `CSI n A` (cursor up) and `CSI n B` (cursor down). On non-TTY (piped output, CI), only the final state is written — no spinner frames or cursor sequences.
 
+In an interactive terminal, `.clear()` removes the task's visible rows, including descendants, output, and previews. Unrelated console output is preserved. Rows already in scrollback or invalidated by terminal-width reflow cannot be removed safely and remain visible. Subsequent task states are written at a safe position. In piped output and CI, `.clear()` leaves previously written output unchanged.
+
 > [!NOTE]
 > The inline renderer does not support `maxVisible` since tasks are written to scrollback immediately.
 

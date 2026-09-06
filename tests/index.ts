@@ -45,6 +45,7 @@ describe('tasuku', () => {
 
 	// Inline renderer
 	import('./specs/inline-renderer.spec.ts');
+	import('./specs/inline-clear.spec.ts');
 
 	// Factory
 	import('./specs/create-tasuku.spec.ts');

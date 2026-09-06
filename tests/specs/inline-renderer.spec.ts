@@ -7,7 +7,7 @@ import { nodePty, waitFor } from '../utils/pty.ts';
 import { tempDir } from '../utils/temp-dir.ts';
 
 describe('inline renderer', () => {
-	test('cleared children retain their display order', async () => {
+	test('cleared children do not displace later children', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
 			import { createTasuku, inline } from '#tasuku/create';
@@ -27,13 +27,11 @@ describe('inline renderer', () => {
 		expect(result.exitCode).toBe(0);
 		expect(result.screen).toBe([
 			'❯ Publishing source',
-			'  ✔ Creating temporary repositories',
-			'  ✔ Loading publish branch',
 			'  ✔ Packed package',
 		].join('\n'));
 	});
 
-	test('cleared subtrees stay before new siblings when earlier children remain', async () => {
+	test('cleared subtrees do not displace retained and new siblings', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
 			import { createTasuku, inline } from '#tasuku/create';
@@ -54,8 +52,6 @@ describe('inline renderer', () => {
 		expect(result.screen).toBe([
 			'❯ Parent',
 			'  ✔ Retained child',
-			'  ✔ Cleared child',
-			'    ✔ Cleared grandchild',
 			'  ✔ Last child',
 		].join('\n'));
 	});

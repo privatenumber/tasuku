@@ -1,4 +1,6 @@
+import { stripVTControlCharacters } from 'node:util';
 import { spinner, spinnerInterval as spinnerIntervalMs } from '../style.ts';
+import { cachedStringWidth } from '../utils/cached-string-width.ts';
 import type {
 	Renderer, RendererFactory, TaskList, TaskObject,
 } from '../types.ts';
@@ -13,10 +15,14 @@ import { areAllTasksDone, isTerminalState } from '../utils/task-list.ts';
 import { truncateLine } from '../utils/truncate-line.ts';
 import { countNewlines } from '../utils/count-newlines.ts';
 
+const segmenter = new Intl.Segmenter();
+
 type TrackedLine = {
 	offset: number; // 1-based: lines from cursor rest position
 	depth: number;
 	outputWritten: boolean;
+	outputRows?: number[];
+	layoutVersion: number;
 	subtreeBottom?: TrackedLine;
 };
 
@@ -34,16 +40,58 @@ export const inline: RendererFactory = (
 	let streamController: StreamController | undefined;
 	let siblingController: StreamController | undefined;
 	let maxVisibleLimit: number | undefined;
+	let outputColumn = 0;
+	let reachableRows = (outputStream.rows || 24) - 1;
+	let layoutVersion = 0;
+	let terminalColumns = outputStream.columns;
+
+	// Count physical rows, including automatic wrapping, across external writes.
+	const countOutputRows = (data: string) => {
+		const columns = outputStream.columns || 80;
+		let rows = 0;
+		for (const { segment } of segmenter.segment(stripVTControlCharacters(data))) {
+			switch (segment) {
+				case '\n':
+				case '\r\n': {
+					rows += 1;
+					outputColumn = 0;
+					break;
+				}
+				case '\r': {
+					outputColumn = 0;
+					break;
+				}
+				case '\t': {
+					outputColumn = Math.min(columns - 1, outputColumn + (8 - (outputColumn % 8)));
+					break;
+				}
+				case '\b': {
+					outputColumn = Math.max(0, outputColumn - 1);
+					break;
+				}
+				default: {
+					const width = cachedStringWidth(segment);
+					if (width > 0 && outputColumn + width > columns) {
+						rows += 1;
+						outputColumn = 0;
+					}
+					outputColumn += width;
+				}
+			}
+		}
+		return rows;
+	};
 
 	// Write the renderer's own output. Through the controller it's marked as our
 	// own (so we don't count it as an external write), while other renderers on
 	// the same stream still see it and keep their offsets in sync.
-	const writeOutput = (data: string) => {
+	const writeOutput = (data: string, rowCountChange?: number, minOffset?: number) => {
 		if (streamController) {
-			streamController.write(data);
+			streamController.write(data, rowCountChange, minOffset);
 		} else {
 			outputStream.write(data);
 		}
+		outputColumn = 0;
 	};
 
 	// Each task line is tracked by its offset from the cursor rest position (1-based)
@@ -56,8 +104,9 @@ export const inline: RendererFactory = (
 	const writeTaskOutput = (task: TaskObject, depth: number): number => {
 		const output = formatTaskOutput(task, depth);
 		if (output) {
+			const rows = isInteractive ? countOutputRows(output) : countNewlines(output);
 			writeOutput(output);
-			return countNewlines(output);
+			return rows;
 		}
 		return 0;
 	};
@@ -71,10 +120,65 @@ export const inline: RendererFactory = (
 
 	// Increment tracked offsets by count. Only offsets >= minOffset are affected.
 	const incrementOffsets = (count: number, minOffset = 1) => {
+		const viewportRows = (outputStream.rows || 24) - 1;
+		reachableRows = Math.min(viewportRows, Math.min(reachableRows, viewportRows) + count);
 		for (const [, tracked] of trackedLines) {
 			if (tracked.offset >= minOffset) {
 				tracked.offset += count;
 			}
+			if (tracked.outputRows) {
+				for (let index = 0; index < tracked.outputRows.length; index += 1) {
+					if (tracked.outputRows[index] >= minOffset) {
+						tracked.outputRows[index] += count;
+					}
+				}
+			}
+		}
+	};
+
+	const liveTasks = new Set<TaskObject>();
+	const collectLiveTasks = (tasks: TaskList) => {
+		for (const task of tasks) {
+			liveTasks.add(task);
+			collectLiveTasks(task.children);
+		}
+	};
+
+	const deleteRow = (offset: number) => {
+		// Cursor-up cannot reach scrollback. Leave those rows untouched.
+		if (offset > Math.min(reachableRows, (outputStream.rows || 24) - 1)) {
+			return;
+		}
+		writeOutput(`\u001B[${offset}A\r\u001B[M${offset > 1 ? `\u001B[${offset - 1}B` : ''}`, -1, offset + 1);
+		// Both the content below the deleted row and the rest position move up.
+		incrementOffsets(-1, offset + 1);
+	};
+
+	const removeClearedTasks = () => {
+		liveTasks.clear();
+		collectLiveTasks(taskList);
+		for (const [task, tracked] of trackedLines) {
+			tracked.subtreeBottom = undefined;
+			if (liveTasks.has(task)) {
+				continue;
+			}
+			if (tracked.layoutVersion === layoutVersion && tracked.outputRows) {
+				for (const offset of tracked.outputRows) {
+					deleteRow(offset);
+				}
+			}
+			if (tracked.layoutVersion === layoutVersion) {
+				deleteRow(tracked.offset);
+			}
+			trackedLines.delete(task);
+		}
+	};
+
+	const finishExternalLine = () => {
+		if (outputColumn > 0) {
+			// Keep partial console output on its own row before moving the cursor.
+			incrementOffsets(1);
+			writeOutput('\n');
 		}
 	};
 
@@ -87,6 +191,7 @@ export const inline: RendererFactory = (
 			offset: 1,
 			depth,
 			outputWritten: false,
+			layoutVersion,
 		});
 	};
 
@@ -99,10 +204,10 @@ export const inline: RendererFactory = (
 	//   - Cursor rest moves down 1 physical row
 	const insertLineAfterOffset = (task: TaskObject, depth: number, afterOffset: number) => {
 		const columns = outputStream.columns || 80;
-		const maxOffset = (outputStream.rows || 24) - 1;
+		const maxOffset = Math.min(reachableRows, (outputStream.rows || 24) - 1);
 
-		// If the insertion point is off-screen, fall back to append at rest
-		if (afterOffset - 1 > maxOffset) {
+		// Appending emits a newline, which scrolls when rest is at the bottom.
+		if (afterOffset === 1 || afterOffset > maxOffset) {
 			appendLineAtRest(task, depth);
 			return;
 		}
@@ -113,24 +218,34 @@ export const inline: RendererFactory = (
 		// CSI L inserts a blank line at cursor, pushing everything below down.
 		// Move up to the row below the reference (where the next sibling is),
 		// insert, write content, then return to the new rest position.
-		const moveUp = afterOffset - 1;
-		let buffer = '';
-		if (moveUp > 0) {
-			buffer += `\u001B[${moveUp}A`;
-		}
-		buffer += `\u001B[L${truncated}\u001B[${afterOffset}B\r`;
+		// Reserve a physical row before inserting so cursor-down cannot clamp.
+		const buffer = `\n\u001B[${afterOffset}A\r\u001B[L${truncated}\u001B[${afterOffset}B\r`;
 
-		writeOutput(buffer);
+		writeOutput(buffer, 1, afterOffset);
 		trackedLines.set(task, {
 			offset: afterOffset,
 			depth,
 			outputWritten: false,
+			layoutVersion,
 		});
+	};
+
+	const appendTrackedLineAtRest = (tracked: TrackedLine, content: string) => {
+		incrementOffsets(1);
+		writeOutput(`${content}\n`);
+		tracked.offset = 1;
+		tracked.layoutVersion = layoutVersion;
+		tracked.outputRows = undefined;
+		tracked.subtreeBottom = undefined;
 	};
 
 	// Update a tracked line in-place via cursor-up/down
 	const updateLineInPlace = (tracked: TrackedLine, content: string) => {
-		const maxOffset = (outputStream.rows || 24) - 1;
+		const maxOffset = Math.min(reachableRows, (outputStream.rows || 24) - 1);
+		if (tracked.layoutVersion !== layoutVersion) {
+			appendTrackedLineAtRest(tracked, content);
+			return;
+		}
 		if (tracked.offset > maxOffset) {
 			// Task scrolled off screen — can't reach it
 			return;
@@ -152,8 +267,7 @@ export const inline: RendererFactory = (
 	// Walk the task list, write initial lines for new loading tasks,
 	// and commit completed tasks.
 	//
-	// Keep the last displayed descendant even when clear() removes a child from
-	// the live list. References follow offset updates as other lines are inserted.
+	// References follow offset updates as other lines are inserted or deleted.
 	const processTaskList = (
 		tasks: TaskList | TaskObject[],
 		depth: number,
@@ -185,6 +299,9 @@ export const inline: RendererFactory = (
 				}
 				tracked = trackedLines.get(task)!;
 			}
+			if (tracked.layoutVersion !== layoutVersion) {
+				updateLineInPlace(tracked, truncateLine(getLine(task, tracked.depth), columns - 1));
+			}
 
 			// Process children — they insert after this task's line
 			if (task.children.length > 0) {
@@ -206,6 +323,10 @@ export const inline: RendererFactory = (
 				const linesWritten = writeTaskOutput(task, tracked.depth);
 				if (linesWritten > 0) {
 					incrementOffsets(linesWritten);
+					tracked.outputRows ??= [];
+					for (let offset = linesWritten; offset > 0; offset -= 1) {
+						tracked.outputRows.push(offset);
+					}
 				}
 				tracked.outputWritten = true;
 			} else if (!isDone && tracked.outputWritten) {
@@ -221,12 +342,18 @@ export const inline: RendererFactory = (
 
 	// Batched spinner frame update for all tracked loading tasks
 	const renderSpinnerFrames = () => {
+		finishExternalLine();
 		const columns = outputStream.columns || 80;
-		const maxOffset = (outputStream.rows || 24) - 1;
+		const maxOffset = Math.min(reachableRows, (outputStream.rows || 24) - 1);
 		let buffer = '';
 
 		for (const [task, tracked] of trackedLines) {
-			if (tracked.outputWritten || task.state !== 'loading' || tracked.offset > maxOffset) {
+			if (
+				tracked.layoutVersion !== layoutVersion
+				|| tracked.outputWritten
+				|| task.state !== 'loading'
+				|| tracked.offset > maxOffset
+			) {
 				continue;
 			}
 
@@ -240,6 +367,8 @@ export const inline: RendererFactory = (
 	};
 
 	const renderTTY = () => {
+		finishExternalLine();
+		removeClearedTasks();
 		processTaskList(taskList, 0);
 		renderSpinnerFrames();
 	};
@@ -296,8 +425,12 @@ export const inline: RendererFactory = (
 		const ownStreamName = isStderr ? 'stderr' : 'stdout';
 		const bothStreamsTTY = process.stdout.isTTY === true && process.stderr.isTTY === true;
 
-		const countExternalLines = (data: string) => {
-			const newlineCount = countNewlines(data);
+		const countExternalLines = (data: string, rowCountChange?: number, minOffset?: number) => {
+			if (rowCountChange !== undefined) {
+				incrementOffsets(rowCountChange, minOffset);
+				return;
+			}
+			const newlineCount = countOutputRows(data);
 			if (newlineCount > 0) {
 				incrementOffsets(newlineCount);
 			}
@@ -311,16 +444,30 @@ export const inline: RendererFactory = (
 			},
 		});
 		streamController = interceptStream(outputStream, {
-			after: countExternalLines,
+			after: (data, _fromPeer, rowCountChange, minOffset) => (
+				countExternalLines(data, rowCountChange, minOffset)
+			),
 		});
 
 		// Raw writes to the sibling stream shift our cursor in a shared TTY too.
 		const siblingStream = getSiblingStream(outputStream);
 		if (siblingStream) {
 			siblingController = interceptStream(siblingStream, {
-				after: countExternalLines,
+				after: (data, _fromPeer, rowCountChange, minOffset) => (
+					countExternalLines(data, rowCountChange, minOffset)
+				),
 			});
 		}
+	}
+
+	const handleResize = () => {
+		if (outputStream.columns !== terminalColumns) {
+			terminalColumns = outputStream.columns;
+			layoutVersion += 1;
+		}
+	};
+	if (isInteractive) {
+		outputStream.on('resize', handleResize);
 	}
 
 	// --- Spinner ---
@@ -349,6 +496,7 @@ export const inline: RendererFactory = (
 	};
 
 	const destroy = () => {
+		outputStream.off('resize', handleResize);
 		clearInterval(spinnerInterval);
 		spinnerInterval = undefined;
 		streamController?.restore();
@@ -358,6 +506,7 @@ export const inline: RendererFactory = (
 		restoreConsole?.();
 		restoreConsole = undefined;
 		trackedLines.clear();
+		liveTasks.clear();
 	};
 
 	return {

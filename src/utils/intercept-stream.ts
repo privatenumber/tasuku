@@ -19,11 +19,11 @@
 // to both.
 export type StreamHooks = {
 	before?: (data: string, fromPeer: boolean) => void;
-	after?: (data: string, fromPeer: boolean) => void;
+	after?: (data: string, fromPeer: boolean, rowCountChange?: number, minOffset?: number) => void;
 };
 
 export type StreamController = {
-	write: (data: string) => void;
+	write: (data: string, rowCountChange?: number, minOffset?: number) => void;
 	restore: () => void;
 };
 
@@ -38,6 +38,8 @@ type StreamEntry = {
 	// hook that itself writes) don't lose the outer writer. Scoped per stream so
 	// a write to one stream never misreports another stream's writes as peer.
 	writing?: StreamHooks;
+	rowCountChange?: number;
+	minOffset?: number;
 };
 
 const streams = new Map<NodeJS.WriteStream, StreamEntry>();
@@ -68,7 +70,9 @@ export const interceptStream = (
 
 		stream.write = ((chunk, ...args) => {
 			const data = toText(chunk);
-			const { writing } = newEntry;
+			const {
+				writing, rowCountChange, minOffset,
+			} = newEntry;
 			const fromPeer = writing !== undefined;
 
 			for (const registrant of newEntry.registrants) {
@@ -82,7 +86,7 @@ export const interceptStream = (
 
 			for (const registrant of newEntry.registrants) {
 				if (registrant !== writing) {
-					try { registrant.after?.(data, fromPeer); } catch {}
+					try { registrant.after?.(data, fromPeer, rowCountChange, minOffset); } catch {}
 				}
 			}
 
@@ -95,13 +99,19 @@ export const interceptStream = (
 	registrants.add(hooks);
 
 	return {
-		write: (data) => {
+		write: (data, rowCountChange, minOffset) => {
 			const previous = activeEntry.writing;
+			const previousRowCountChange = activeEntry.rowCountChange;
+			const previousMinOffset = activeEntry.minOffset;
 			activeEntry.writing = hooks;
+			activeEntry.rowCountChange = rowCountChange;
+			activeEntry.minOffset = minOffset;
 			try {
 				stream.write(data);
 			} finally {
 				activeEntry.writing = previous;
+				activeEntry.rowCountChange = previousRowCountChange;
+				activeEntry.minOffset = previousMinOffset;
 			}
 		},
 		restore: () => {
