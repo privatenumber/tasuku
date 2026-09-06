@@ -284,24 +284,24 @@ export default testSuite(({ describe }) => {
 
 			const pty = nodePty(fixture.getPath('test.mjs'));
 			for await (const _chunk of pty) {
-				if (pty.output.includes(ansis.red('✖'))) {
+				if (pty.rawOutput.includes(ansis.red('✖'))) {
 					break;
 				}
 			}
 
 			// Error state was shown
-			expect(pty.output).toContain(ansis.red('✖'));
-			expect(pty.output).toContain('Retry task');
+			expect(pty.rawOutput).toContain(ansis.red('✖'));
+			expect(pty.rawOutput).toContain('Retry task');
 
 			// Wait for recovery to loading state
 			for await (const _chunk of pty) {
-				if (hasSpinner(pty.output)) {
+				if (hasSpinner(pty.rawOutput)) {
 					break;
 				}
 			}
 
 			// Spinner returned after clearing error
-			expect(hasSpinner(pty.output)).toBe(true);
+			expect(hasSpinner(pty.rawOutput)).toBe(true);
 
 			const result = await pty;
 			expect(result.exitCode).toBe(0);
@@ -324,20 +324,20 @@ export default testSuite(({ describe }) => {
 
 			const pty = nodePty(fixture.getPath('test.mjs'));
 			for await (const _chunk of pty) {
-				if (pty.output.includes(ansis.red('✖'))) {
+				if (pty.rawOutput.includes(ansis.red('✖'))) {
 					break;
 				}
 			}
 
-			expect(pty.output).toContain(ansis.red('✖'));
+			expect(pty.rawOutput).toContain(ansis.red('✖'));
 
 			for await (const _chunk of pty) {
-				if (hasSpinner(pty.output)) {
+				if (hasSpinner(pty.rawOutput)) {
 					break;
 				}
 			}
 
-			expect(hasSpinner(pty.output)).toBe(true);
+			expect(hasSpinner(pty.rawOutput)).toBe(true);
 
 			const result = await pty;
 			expect(result.exitCode).toBe(0);
@@ -360,20 +360,20 @@ export default testSuite(({ describe }) => {
 
 			const pty = nodePty(fixture.getPath('test.mjs'));
 			for await (const _chunk of pty) {
-				if (pty.output.includes(ansis.red('✖'))) {
+				if (pty.rawOutput.includes(ansis.red('✖'))) {
 					break;
 				}
 			}
 
-			expect(pty.output).toContain(ansis.red('✖'));
+			expect(pty.rawOutput).toContain(ansis.red('✖'));
 
 			for await (const _chunk of pty) {
-				if (hasSpinner(pty.output)) {
+				if (hasSpinner(pty.rawOutput)) {
 					break;
 				}
 			}
 
-			expect(hasSpinner(pty.output)).toBe(true);
+			expect(hasSpinner(pty.rawOutput)).toBe(true);
 
 			const result = await pty;
 			expect(result.exitCode).toBe(0);
@@ -396,24 +396,24 @@ export default testSuite(({ describe }) => {
 
 			const pty = nodePty(fixture.getPath('test.mjs'));
 			for await (const _chunk of pty) {
-				if (pty.output.includes(ansis.yellow('⚠'))) {
+				if (pty.rawOutput.includes(ansis.yellow('⚠'))) {
 					break;
 				}
 			}
 
 			// Warning state was shown
-			expect(pty.output).toContain(ansis.yellow('⚠'));
-			expect(pty.output).toContain('Warn task');
+			expect(pty.rawOutput).toContain(ansis.yellow('⚠'));
+			expect(pty.rawOutput).toContain('Warn task');
 
 			// Wait for recovery to loading state
 			for await (const _chunk of pty) {
-				if (hasSpinner(pty.output)) {
+				if (hasSpinner(pty.rawOutput)) {
 					break;
 				}
 			}
 
 			// Spinner returned after clearing warning
-			expect(hasSpinner(pty.output)).toBe(true);
+			expect(hasSpinner(pty.rawOutput)).toBe(true);
 
 			const result = await pty;
 			expect(result.exitCode).toBe(0);

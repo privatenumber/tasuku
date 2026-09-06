@@ -4,10 +4,43 @@ import ansiEscapes from 'ansi-escapes';
 import ansis from 'ansis';
 import { node } from '../utils/node.js';
 import { tempDir } from '../utils/temp-dir.js';
+import { nodePty } from '../utils/pty.js';
 
 export default testSuite(({ describe }) => {
 	describe('lifecycle', ({ describe }) => {
 		describe('cleanup', ({ test }) => {
+			const clearOneTaskScript = `
+			import task from '#tasuku';
+			import { setTimeout } from 'node:timers/promises';
+
+			const task1 = await task('Task 1', async () => {
+				await setTimeout(50);
+			});
+
+			const task2 = await task('Task 2', async () => {
+				await setTimeout(50);
+			});
+
+			task1.clear();
+			console.log('FINAL_OUTPUT');
+			`;
+			const clearAllTasksScript = `
+			import task from '#tasuku';
+			import { setTimeout } from 'node:timers/promises';
+
+			const task1 = await task('Task 1', async () => {
+				await setTimeout(50);
+			});
+
+			const task2 = await task('Task 2', async () => {
+				await setTimeout(50);
+			});
+
+			task1.clear();
+			task2.clear();
+			console.log('After all cleared');
+			`;
+
 			test('throwing task - process exits cleanly', async () => {
 				await using fixture = await createFixture({
 					'test.mjs': `
@@ -52,75 +85,38 @@ export default testSuite(({ describe }) => {
 				expect(result.stdout).toContain('Task');
 			});
 
-			test('cleared task removed but other tasks remain', async ({ onTestFail }) => {
-				await using fixture = await createFixture({
-					'test.mjs': `
-					import task from '#tasuku';
-					import { setTimeout } from 'node:timers/promises';
-
-					const task1 = await task('Task 1', async () => {
-						await setTimeout(50);
-					});
-
-					const task2 = await task('Task 2', async () => {
-						await setTimeout(50);
-					});
-
-					task1.clear();
-
-					console.log('FINAL_OUTPUT');
-					`,
-				}, { tempDir });
-
-				const result = await node(fixture.getPath('test.mjs'));
+			test('cleared task is removed from the terminal', async ({ onTestFail }) => {
+				await using fixture = await createFixture({ 'test.mjs': clearOneTaskScript }, { tempDir });
+				const result = await nodePty(fixture.getPath('test.mjs'));
 				onTestFail(() => { console.log(result); });
-				expect(result.stderr).toBe('');
-
-				// Get the final rendered output (after all ANSI clearing)
-				const lines = result.stdout.split('\n').filter(line => line.trim());
-				const lastLine = lines.at(-1) || '';
-
-				// Task 1 should be cleared from final output
-				expect(lastLine).not.toContain('Task 1');
-
-				// Task 2 should still be present in final output
-				expect(lastLine).toContain('Task 2');
+				expect(result.exitCode).toBe(0);
+				expect(result.screen).toBe('FINAL_OUTPUT\n✔ Task 2');
 			});
 
-			test('all tasks cleared triggers renderer destroy', async () => {
-				await using fixture = await createFixture({
-					'test.mjs': `
-					import task from '#tasuku';
-					import { setTimeout } from 'node:timers/promises';
-
-					const task1 = await task('Task 1', async () => {
-						await setTimeout(50);
-					});
-
-					const task2 = await task('Task 2', async () => {
-						await setTimeout(50);
-					});
-
-					task1.clear();
-					task2.clear();
-
-					console.log('After all cleared');
-					`,
-				}, { tempDir });
-
+			test('cleared task is excluded from subsequent piped output', async () => {
+				await using fixture = await createFixture({ 'test.mjs': clearOneTaskScript }, { tempDir });
 				const result = await node(fixture.getPath('test.mjs'));
 				expect(result.stderr).toBe('');
+				const finalOutput = result.stdout.split('FINAL_OUTPUT').at(-1) || '';
+				expect(finalOutput).not.toContain('Task 1');
+				expect(finalOutput).toContain('Task 2');
+			});
 
-				// Check output after marker
-				const parts = result.stdout.split('After all cleared');
-				const afterMarker = parts[1] || '';
+			test('clearing all tasks removes the terminal output', async () => {
+				await using fixture = await createFixture({ 'test.mjs': clearAllTasksScript }, { tempDir });
+				const result = await nodePty(fixture.getPath('test.mjs'));
+				expect(result.exitCode).toBe(0);
+				expect(result.screen).toBe('After all cleared');
+			});
 
-				// Both tasks should be cleared from final output
-				expect(afterMarker).not.toContain('Task 1');
-				expect(afterMarker).not.toContain('Task 2');
-
-				// Console should work normally after renderer destroyed
+			test('clearing all tasks restores piped console output', async () => {
+				await using fixture = await createFixture({ 'test.mjs': clearAllTasksScript }, { tempDir });
+				const result = await node(fixture.getPath('test.mjs'));
+				expect(result.stderr).toBe('');
 				expect(result.stdout).toContain('After all cleared');
+				const finalOutput = result.stdout.split('After all cleared').at(-1) || '';
+				expect(finalOutput).not.toContain('Task 1');
+				expect(finalOutput).not.toContain('Task 2');
 			});
 		});
 

@@ -11,6 +11,9 @@ importers:
       '@types/node':
         specifier: ^24.10.9
         version: 24.10.9
+      '@xterm/headless':
+        specifier: ^6.0.0
+        version: 6.0.0
       ansi-escapes:
         specifier: ^7.2.0
         version: 7.2.0
@@ -1126,6 +1129,9 @@ packages:
     resolution: {integrity: sha512-lrW200hZdbfRtztbygyaq/6jP6AKE8qQN2KvPcJ+x7wiD038YtnYtZ82IMNJ69GJibV7bwL3y9FgK+5w/pYt6g==}
     cpu: [x64]
     os: [win32]
+
+  '@xterm/headless@6.0.0':
+    resolution: {integrity: sha512-5Yj1QINYCyzrZtf8OFIHi47iQtI+0qYFPHmouEfG8dHNxbZ9Tb9YGSuLcsEwj9Z+OL75GJqPyJbyoFer80a2Hw==}
 
   acorn-jsx@5.3.2:
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
@@ -3761,6 +3767,8 @@ snapshots:
 
   '@unrs/resolver-binding-win32-x64-msvc@1.11.1':
     optional: true
+
+  '@xterm/headless@6.0.0': {}
 
   acorn-jsx@5.3.2(acorn@8.15.0):
     dependencies:

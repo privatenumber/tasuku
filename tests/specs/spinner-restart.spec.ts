@@ -40,7 +40,7 @@ export default testSuite(({ describe }) => {
 			expect(result.exitCode).toBe(0);
 
 			// Multiple unique frames proves the spinner restarted (not a stale single frame)
-			const frameCount = countSpinnerFramesAfter(result.output, `${ansis.green('✔')} first-1`);
+			const frameCount = countSpinnerFramesAfter(result.rawOutput, `${ansis.green('✔')} first-1`);
 			expect(frameCount).toBeGreaterThanOrEqual(2);
 		});
 
@@ -58,7 +58,7 @@ export default testSuite(({ describe }) => {
 			const result = await nodePty(fixture.getPath('test.mjs'), { cols: 80 });
 			expect(result.exitCode).toBe(0);
 
-			const frameCount = countSpinnerFramesAfter(result.output, `${ansis.green('✔')} first`);
+			const frameCount = countSpinnerFramesAfter(result.rawOutput, `${ansis.green('✔')} first`);
 			expect(frameCount).toBeGreaterThanOrEqual(2);
 		});
 
@@ -80,7 +80,7 @@ export default testSuite(({ describe }) => {
 			const result = await nodePty(fixture.getPath('test.mjs'), { cols: 80 });
 			expect(result.exitCode).toBe(0);
 
-			const frameCount = countSpinnerFramesAfter(result.output, `${ansis.red('✖')} fails`);
+			const frameCount = countSpinnerFramesAfter(result.rawOutput, `${ansis.red('✖')} fails`);
 			expect(frameCount).toBeGreaterThanOrEqual(2);
 		});
 
@@ -102,7 +102,7 @@ export default testSuite(({ describe }) => {
 
 			// Count frames in entire output since first task was cleared
 			const framesInOutput = spinnerFrames.filter(
-				frame => result.output.includes(ansis.yellow(frame)),
+				frame => result.rawOutput.includes(ansis.yellow(frame)),
 			).length;
 			expect(framesInOutput).toBeGreaterThanOrEqual(2);
 		});

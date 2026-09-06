@@ -51,6 +51,7 @@
 	},
 	"devDependencies": {
 		"@types/node": "^24.10.9",
+		"@xterm/headless": "^6.0.0",
 		"ansi-escapes": "^7.2.0",
 		"ansi-regex": "^6.2.2",
 		"ansis": "^4.2.0",

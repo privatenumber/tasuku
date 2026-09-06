@@ -5,7 +5,7 @@
  * - EventEmitter with typed 'data' and 'exit' events
  * - AsyncIterable for streaming chunks
  * - Directly awaitable for final output + exit code
- * - Accumulated `.output` getter (lazy join)
+ * - Accumulated `.rawOutput` getter (lazy join)
  * - AbortSignal support for timeout and cancellation
  * - AsyncDisposable for `await using`
  */
@@ -13,7 +13,7 @@ import { EventEmitter, on } from 'node:events';
 import { spawn, type IPtyForkOptions } from 'node-pty';
 
 export type PtyResult = {
-	output: string;
+	rawOutput: string;
 	exitCode: number;
 };
 
@@ -25,8 +25,9 @@ type PtyEvents = {
 export type PtyProcess = EventEmitter<PtyEvents>
 	& AsyncIterable<string> & {
 		readonly pid: number;
-		readonly output: string;
+		readonly rawOutput: string;
 		then: Promise<PtyResult>['then'];
+		write: (data: string) => void;
 		resize: (cols: number, rows: number) => void;
 		kill: (signal?: string) => void;
 		[Symbol.asyncDispose]: () => Promise<void>;
@@ -102,14 +103,14 @@ export const nanoPty = (
 			reject(signal.reason ?? new Error('PTY aborted'));
 		} else {
 			resolve({
-				output: emitter.output,
+				rawOutput: emitter.rawOutput,
 				exitCode,
 			});
 		}
 	});
 
-	// output must use defineProperty — Object.assign snapshots getters
-	Object.defineProperty(emitter, 'output', {
+	// rawOutput must use defineProperty — Object.assign snapshots getters
+	Object.defineProperty(emitter, 'rawOutput', {
 		get: () => chunks.join(''),
 	});
 
@@ -117,6 +118,10 @@ export const nanoPty = (
 		pid: ptyProcess.pid,
 		// eslint-disable-next-line unicorn/no-thenable
 		then: promise.then.bind(promise),
+
+		write: (data: string) => {
+			ptyProcess.write(data);
+		},
 
 		resize: (cols: number, rows: number) => {
 			try { ptyProcess.resize(cols, rows); } catch {}

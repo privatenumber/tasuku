@@ -360,7 +360,7 @@ export default testSuite(({ describe }) => {
 
 			// With rows=10 and 3 tasks each having preview lines,
 			// some tasks should be hidden
-			expect(result.output).toMatch(/\(\+ \d+ (queued|completed|loading)/);
+			expect(result.rawOutput).toMatch(/\(\+ \d+ (queued|completed|loading)/);
 		});
 
 		test('CI mode shows final preview state', async () => {

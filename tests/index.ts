@@ -25,4 +25,7 @@ await describe('tasuku', ({ runTestSuite }) => {
 	// Unit tests
 	runTestSuite(import('./specs/format-elapsed.spec.js'));
 	runTestSuite(import('./specs/task-list.spec.js'));
-});
+	runTestSuite(import('./specs/terminal.spec.js'));
+	runTestSuite(import('./specs/pty.spec.js'));
+	// Bound top-level suites to reduce contention between PTY-heavy suites.
+}, { parallel: 'auto' });

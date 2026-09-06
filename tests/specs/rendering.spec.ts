@@ -60,40 +60,34 @@ export default testSuite(({ describe }) => {
 			expect(result.stdout).toContain(ansis.yellow('⠋'));
 		});
 
-		test('nested tasks render correctly on success', async () => {
-			await using fixture = await createFixture({
-				'test.mjs': `
+		for (const precedingLines of [0, 20]) {
+			test(`nested tasks render correctly after ${precedingLines} preceding lines`, async () => {
+				await using fixture = await createFixture({
+					'test.mjs': String.raw`
 				import task from '#tasuku';
 				import { setTimeout } from 'node:timers/promises';
 
+				process.stdout.write('history\n'.repeat(${precedingLines}));
 				await task('Parent', async ({ task }) => {
 					await task('Child', async () => {
 						await setTimeout(50);
 					});
 				});
 				`,
-			}, { tempDir });
+				}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
-
-			// Define the exact final lines we expect
-			const finalParentLine = `${ansis.yellow('❯')} Parent`;
-			const finalChildLine = `  ${ansis.green('✔')} Child`;
-
-			// Check that these lines exist in the output
-			expect(result.stdout).toContain(finalParentLine);
-			expect(result.stdout).toContain(finalChildLine);
-
-			// For a more robust check, verify they are the *last* two lines
-			const lines = result.stdout.split('\n').filter(line => line.trim());
-			const secondToLastLine = lines.at(-2);
-			const lastLine = lines.at(-1);
-
-			// Use .includes() because the line may have other ANSI codes (like clear)
-			expect(secondToLastLine).toContain(finalParentLine);
-			expect(lastLine).toContain(finalChildLine);
-		});
+				const result = await nodePty(fixture.getPath('test.mjs'), {
+					cols: 80,
+					rows: 8,
+				});
+				expect(result.exitCode).toBe(0);
+				expect(result.screen).toBe([
+					...Array.from({ length: precedingLines }, () => 'history'),
+					'❯ Parent',
+					'  ✔ Child',
+				].join('\n'));
+			});
+		}
 
 		test('parent task shows yellow pointer while loading child', async () => {
 			await using fixture = await createFixture({
@@ -187,55 +181,65 @@ export default testSuite(({ describe }) => {
 				});
 				// Second task starts — both visible, different states
 				await task('Second task', async () => {
-					await setTimeout(200);
+					process.stdin.setRawMode(true);
+					await new Promise(resolve => {
+						process.stdin.once('data', resolve);
+					});
+					process.stdin.pause();
 				});
 				`,
 			}, { tempDir });
 
-			// Use interactive PTY to observe intermediate render
-			const pty = nodePty(fixture.getPath('test.mjs'));
+			await using pty = nodePty(fixture.getPath('test.mjs'));
+			let observedLoading = false;
 			for await (const _chunk of pty) {
-				// Wait until second task is loading (spinner visible)
-				if (pty.output.includes('Second task') && pty.output.includes('First task')) {
-					const { output } = pty;
-					// Find the LAST render frame containing both tasks
-					// The completed "First task" should appear before the loading "Second task"
-					const lastFirst = output.lastIndexOf('First task');
-					const lastSecond = output.lastIndexOf('Second task');
-					expect(lastFirst).toBeLessThan(lastSecond);
+				const screen = await pty.getScreen();
+				const lines = screen.split('\n');
+				if (lines.some(line => /[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏] Second task/.test(line))) {
+					expect(lines).toStrictEqual([
+						'✔ First task',
+						expect.stringMatching(/^[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏] Second task$/),
+					]);
+					observedLoading = true;
+					pty.write('continue');
 					break;
 				}
 			}
 			const result = await pty;
 			expect(result.exitCode).toBe(0);
+			expect(observedLoading).toBe(true);
+			expect(result.screen).toBe('✔ First task\n✔ Second task');
 		});
 
-		test('line wrapping: save/restore clears correctly in narrow terminal', async () => {
-			const title = 'This is a long task title for testing';
-			const cols = 20;
+		for (const precedingLines of [0, 20]) {
+			test(`line wrapping preserves output after ${precedingLines} preceding lines`, async () => {
+				const title = 'This is a long task title for testing';
+				const cols = 20;
 
-			await using fixture = await createFixture({
-				'test.mjs': String.raw`
+				await using fixture = await createFixture({
+					'test.mjs': String.raw`
 				import task from '#tasuku';
 				import { setTimeout } from 'node:timers/promises';
 
+				process.stdout.write('history\n'.repeat(${precedingLines}));
 				await task('${title}', () => setTimeout(100));
 				`,
-			}, { tempDir });
+				}, { tempDir });
 
-			const result = await nodePty(fixture.getPath('test.mjs'), { cols });
+				const result = await nodePty(fixture.getPath('test.mjs'), {
+					cols,
+					rows: 8,
+				});
 
-			expect(result.exitCode).toBe(0);
+				expect(result.exitCode).toBe(0);
 
-			// Save/restore cursor handles wrapped lines without counting visual lines.
-			// Verify the renderer used save/restore + erase-down to redraw.
-			expect(result.output).toContain(ansiEscapes.cursorRestorePosition);
-			expect(result.output).toContain(ansiEscapes.eraseDown);
-
-			// Final output should show the completed task (checkmark)
-			expect(result.output).toContain('✔');
-			expect(result.output).toContain(title);
-		});
+				expect(result.screen).toBe([
+					...Array.from({ length: precedingLines }, () => 'history'),
+					'✔ This is a long tas',
+					'k title for testing',
+				].join('\n'));
+			});
+		}
 
 		test('re-anchor accounts for visual line wraps from multiline status', async () => {
 			const cols = 40;
@@ -257,27 +261,16 @@ export default testSuite(({ describe }) => {
 				`,
 			}, { tempDir });
 
-			const result = await nodePty(fixture.getPath('test.mjs'), { cols });
+			const result = await nodePty(fixture.getPath('test.mjs'), {
+				cols,
+				rows: 24,
+			});
 			expect(result.exitCode).toBe(0);
-
-			// Rendered format: "{icon} {title} [{statusLine1}\n{statusLine2}]\n"
-			// icon is 1 visual column (spinner char or checkmark)
-			const firstLineWidth = `X ${title} [${statusLine1}`.length;
-			const secondLineWidth = `${statusLine2}]`.length;
-			const expectedVisualLines = Math.ceil(firstLineWidth / cols)
-				+ Math.ceil(secondLineWidth / cols);
-
-			// Sanity: first line must actually wrap for this test to be meaningful
-			expect(firstLineWidth).toBeGreaterThan(cols);
-
-			// eslint-disable-next-line no-control-regex -- matching ANSI cursorUp sequences
-			const cursorUpValues = [...result.output.matchAll(/\u001B\[(\d+)A/g)]
-				.map(match => Number(match[1]));
-
-			expect(cursorUpValues.length).toBeGreaterThan(0);
-			for (const value of cursorUpValues) {
-				expect(value).toBeGreaterThanOrEqual(expectedVisualLines);
-			}
+			expect(result.screen).toBe(
+				'✔ Installing dependencies and building p\n'
+				+ 'roject [step 1\n'
+				+ 'processing...]',
+			);
 		});
 	});
 });

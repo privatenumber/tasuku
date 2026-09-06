@@ -10,9 +10,6 @@ import { assertInOrder } from '../utils/assert-order.js';
 
 export default testSuite(({ describe }) => {
 	describe('console interleaving', ({ test, describe }) => {
-		const clearRender = `${ansiEscapes.cursorRestorePosition}${ansiEscapes.eraseDown}`;
-		const saveCursor = ansiEscapes.cursorSavePosition;
-
 		test('console.log after task completion preserves all output', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
@@ -29,18 +26,18 @@ export default testSuite(({ describe }) => {
 				`,
 			}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
-
-			// Both task and console.log should be visible
-			expect(result.stdout).toContain(`${ansis.green('✔')} Test task`);
-			expect(result.stdout).toContain('After task');
-
-			// Critical: task must be RE-RENDERED after console.log (not overwritten)
-			// The output should end with the task, proving it was restored after console.log
-			const afterTaskIndex = result.stdout.indexOf('After task');
-			const lastTaskIndex = result.stdout.lastIndexOf('Test task');
-			expect(lastTaskIndex).toBeGreaterThan(afterTaskIndex);
+			const [result, pipedResult] = await Promise.all([
+				nodePty(fixture.getPath('test.mjs')),
+				node(fixture.getPath('test.mjs')),
+			]);
+			expect(result.exitCode).toBe(0);
+			expect(result.screen).toBe('After task\n✔ Test task');
+			expect(pipedResult.stderr).toBe('');
+			expect(pipedResult.stdout).toContain(`${ansis.green('✔')} Test task`);
+			expect(pipedResult.stdout).toContain('After task');
+			expect(pipedResult.stdout.lastIndexOf('Test task')).toBeGreaterThan(
+				pipedResult.stdout.indexOf('After task'),
+			);
 		});
 
 		test('console.logs between tasks appear in order', async () => {
@@ -64,21 +61,16 @@ export default testSuite(({ describe }) => {
 			`,
 			}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
-
-			expect(result.stdout).toBe(
+			const result = await nodePty(fixture.getPath('test.mjs'));
+			expect(result.exitCode).toBe(0);
+			expect(result.screen).toBe(
 				'Before any tasks\n'
 				+ 'Inside first task\n'
-				+ `${saveCursor}`
-				+ `${clearRender}Between tasks\n`
-				+ `${saveCursor}`
-				+ `${clearRender}Inside second task\n`
-				+ `${saveCursor}`
-				+ `${clearRender}After all tasks\n`
-				+ `${saveCursor}`
-				+ `${clearRender}${ansis.green('✔')} First task\n`
-				+ `${ansis.green('✔')} Second task`,
+				+ 'Between tasks\n'
+				+ 'Inside second task\n'
+				+ 'After all tasks\n'
+				+ '✔ First task\n'
+				+ '✔ Second task',
 			);
 		});
 
@@ -140,26 +132,19 @@ export default testSuite(({ describe }) => {
 			`,
 			}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
-
-			expect(result.stdout).toBe(
+			const result = await nodePty(fixture.getPath('test.mjs'));
+			expect(result.exitCode).toBe(0);
+			expect(result.screen).toBe(
 				'1: Start\n'
 				+ '2: Inside parent\n'
-				+ `${saveCursor}`
-				+ `${clearRender}3: Inside child 1\n`
-				+ `${saveCursor}`
-				+ `${clearRender}4: Between children\n`
-				+ `${saveCursor}`
-				+ `${clearRender}5: Inside child 2\n`
-				+ `${saveCursor}`
-				+ `${clearRender}6: After children\n`
-				+ `${saveCursor}`
-				+ `${clearRender}7: End\n`
-				+ `${saveCursor}`
-				+ `${clearRender}${ansis.yellow('❯')} Parent task\n`
-				+ `  ${ansis.green('✔')} Child task 1\n`
-				+ `  ${ansis.green('✔')} Child task 2`,
+				+ '3: Inside child 1\n'
+				+ '4: Between children\n'
+				+ '5: Inside child 2\n'
+				+ '6: After children\n'
+				+ '7: End\n'
+				+ '❯ Parent task\n'
+				+ '  ✔ Child task 1\n'
+				+ '  ✔ Child task 2',
 			);
 		});
 
@@ -189,28 +174,20 @@ export default testSuite(({ describe }) => {
 			`,
 			}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
-
-			expect(result.stdout).toBe(
+			const result = await nodePty(fixture.getPath('test.mjs'));
+			expect(result.exitCode).toBe(0);
+			expect(result.screen).toBe(
 				'Before group\n'
 				+ 'A: Start\n'
-				+ `${saveCursor}`
-				+ `${clearRender}A: End\n`
-				+ `${saveCursor}`
-				+ `${clearRender}B: Start\n`
-				+ `${saveCursor}`
-				+ `${clearRender}B: End\n`
-				+ `${saveCursor}`
-				+ `${clearRender}C: Start\n`
-				+ `${saveCursor}`
-				+ `${clearRender}C: End\n`
-				+ `${saveCursor}`
-				+ `${clearRender}After group\n`
-				+ `${saveCursor}`
-				+ `${clearRender}${ansis.green('✔')} Task A\n`
-				+ `${ansis.green('✔')} Task B\n`
-				+ `${ansis.green('✔')} Task C`,
+				+ 'A: End\n'
+				+ 'B: Start\n'
+				+ 'B: End\n'
+				+ 'C: Start\n'
+				+ 'C: End\n'
+				+ 'After group\n'
+				+ '✔ Task A\n'
+				+ '✔ Task B\n'
+				+ '✔ Task C',
 			);
 		});
 
@@ -248,31 +225,29 @@ export default testSuite(({ describe }) => {
 			`,
 			}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
-
-			expect(result.stdout).toBe(
-				'1: Starting tests\n'
-				+ '2: Will succeed\n'
-				+ `${saveCursor}`
-				+ `${clearRender}3: First task done\n`
-				+ `${saveCursor}`
-				+ `${clearRender}4: Will warn\n`
-				+ `${saveCursor}`
-				+ `${clearRender}5: Warning task done\n`
-				+ `${saveCursor}`
-				+ `${clearRender}6: Will error\n`
-				+ `${saveCursor}`
-				+ `${clearRender}7: Error caught\n`
-				+ `${saveCursor}`
-				+ `${clearRender}8: All done\n`
-				+ `${saveCursor}`
-				+ `${clearRender}${ansis.green('✔')} Success task\n`
-				+ `${ansis.yellow('⚠')} Warning task\n`
-				+ `  ${ansis.gray('→ This is a warning')}\n`
-				+ `${ansis.red('✖')} Error task\n`
-				+ `  ${ansis.gray('→ Task failed')}`,
-			);
+			const result = await nodePty(fixture.getPath('test.mjs'));
+			expect(result.exitCode).toBe(0);
+			expect(result.screen).toBe([
+				'1: Starting tests',
+				'2: Will succeed',
+				'3: First task done',
+				'4: Will warn',
+				'5: Warning task done',
+				'6: Will error',
+				'7: Error caught',
+				'8: All done',
+				'✔ Success task',
+				'⚠ Warning task',
+				'  → This is a warning',
+				'✖ Error task',
+				'  → Task failed',
+			].join('\n'));
+			const finalRender = result.rawOutput.slice(result.rawOutput.lastIndexOf('8: All done'));
+			expect(finalRender).toContain(`${ansis.green('✔')} Success task`);
+			expect(finalRender).toContain(`${ansis.yellow('⚠')} Warning task`);
+			expect(finalRender).toContain(`  ${ansis.gray('→ This is a warning')}`);
+			expect(finalRender).toContain(`${ansis.red('✖')} Error task`);
+			expect(finalRender).toContain(`  ${ansis.gray('→ Task failed')}`);
 		});
 
 		test('rapid console.logs during task execution', async () => {
@@ -289,22 +264,13 @@ export default testSuite(({ describe }) => {
 			`,
 			}, { tempDir });
 
-			const result = await node(fixture.getPath('test.mjs'));
-			expect(result.stderr).toBe('');
-
-			expect(result.stdout).toBe(
-				'Log 1\n'
-				+ `${saveCursor}`
-				+ `${clearRender}Log 2\n`
-				+ `${saveCursor}`
-				+ `${clearRender}Log 3\n`
-				+ `${saveCursor}`
-				+ `${clearRender}Log 4\n`
-				+ `${saveCursor}`
-				+ `${clearRender}Log 5\n`
-				+ `${saveCursor}`
-				+ `${clearRender}${ansis.green('✔')} Task with many logs ${ansis.dim('[Step 5/5]')}`,
+			const result = await nodePty(fixture.getPath('test.mjs'));
+			expect(result.exitCode).toBe(0);
+			expect(result.screen).toBe(
+				'Log 1\nLog 2\nLog 3\nLog 4\nLog 5\n✔ Task with many logs [Step 5/5]',
 			);
+			const finalRender = result.rawOutput.slice(result.rawOutput.lastIndexOf('Log 5'));
+			expect(finalRender).toContain(`${ansis.green('✔')} Task with many logs ${ansis.dim('[Step 5/5]')}`);
 		});
 
 		test('console output interspersed with task clearing', async () => {
@@ -358,20 +324,15 @@ export default testSuite(({ describe }) => {
 				`,
 			}, { tempDir });
 
-			// Small terminal forces scrolling — 20 log lines + task UI won't fit in 8 rows.
-			// Before the scroll fix, the saved cursor position (absolute screen coordinate)
-			// became stale after scroll, causing render corruption.
-			const result = await nodePty(fixture.getPath('test.mjs'), { rows: 8 });
+			const result = await nodePty(fixture.getPath('test.mjs'), {
+				cols: 80,
+				rows: 8,
+			});
 			expect(result.exitCode).toBe(0);
-
-			// Re-anchor sequences must be present: after each render, the renderer
-			// uses relative cursorUp to re-save the position. Without this,
-			// scroll invalidates the absolute saved position.
-			expect(result.output).toContain(ansiEscapes.cursorUp(1));
-
-			// Task completes successfully
-			expect(result.output).toContain('✔');
-			expect(result.output).toContain('Scroll test task');
+			expect(result.screen).toBe([
+				...Array.from({ length: 20 }, (_, index) => `log-${String(index).padStart(2, '0')}`),
+				'✔ Scroll test task',
+			].join('\n'));
 		});
 
 		describe('console routing', ({ test }) => {
