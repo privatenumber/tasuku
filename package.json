@@ -69,7 +69,6 @@
 		"@types/node": "^26.0.0",
 		"@xterm/headless": "^6.0.0",
 		"ansi-escapes": "^7.3.0",
-		"ansi-regex": "^6.2.2",
 		"ansis": "^4.3.1",
 		"clean-pkg-json": "^2.0.0",
 		"concurrently": "^10.0.3",
@@ -78,10 +77,10 @@
 		"lintroll": "^1.30.2",
 		"manten": "2.0.0",
 		"nano-spawn": "^2.1.0",
-		"p-map": "^7.0.4",
+		"p-map": "^7.0.7",
 		"pkgroll": "^2.27.1",
 		"pty-spawn": "^1.1.0",
-		"string-width": "^8.2.1",
+		"string-width": "^8.2.2",
 		"strip-ansi": "^7.2.0",
 		"typescript": "^5.9.3"
 	}
