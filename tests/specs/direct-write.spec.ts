@@ -4,7 +4,6 @@ import {
 import { createFixture } from 'fs-fixture';
 import { nodePty } from '../utils/pty.ts';
 import { tempDir } from '../utils/temp-dir.ts';
-import { getTerminalGrid } from '../utils/ansi-terminal.ts';
 
 // Output written directly to the terminal during a task via a raw
 // process.std{out,err}.write (bypassing console.*) must be preserved, not erased
@@ -28,12 +27,12 @@ describe('direct terminal writes during a task', () => {
 		await using fixture = await createFixture(directWriteFixture('#tasuku'), { tempDir });
 
 		const result = await nodePty(fixture.getPath('test.mjs'), { cols: 80 });
-		const grid = getTerminalGrid(result.output);
+		const grid = result.screen.split('\n');
 
 		onTestFail(() => {
 			console.log({
 				grid,
-				output: result.output,
+				rawOutput: result.rawOutput,
 			});
 		});
 
@@ -44,12 +43,12 @@ describe('direct terminal writes during a task', () => {
 		await using fixture = await createFixture(directWriteFixture('#tasuku/inline'), { tempDir });
 
 		const result = await nodePty(fixture.getPath('test.mjs'), { cols: 80 });
-		const grid = getTerminalGrid(result.output);
+		const grid = result.screen.split('\n');
 
 		onTestFail(() => {
 			console.log({
 				grid,
-				output: result.output,
+				rawOutput: result.rawOutput,
 			});
 		});
 
@@ -62,12 +61,12 @@ describe('direct terminal writes during a task', () => {
 		await using fixture = await createFixture(directWriteFixture('#tasuku', 'stdout'), { tempDir });
 
 		const result = await nodePty(fixture.getPath('test.mjs'), { cols: 80 });
-		const grid = getTerminalGrid(result.output);
+		const grid = result.screen.split('\n');
 
 		onTestFail(() => {
 			console.log({
 				grid,
-				output: result.output,
+				rawOutput: result.rawOutput,
 			});
 		});
 
@@ -92,12 +91,12 @@ describe('direct terminal writes during a task', () => {
 		}, { tempDir });
 
 		const result = await nodePty(fixture.getPath('test.mjs'), { cols: 80 });
-		const grid = getTerminalGrid(result.output);
+		const grid = result.screen.split('\n');
 
 		onTestFail(() => {
 			console.log({
 				grid,
-				output: result.output,
+				rawOutput: result.rawOutput,
 			});
 		});
 
@@ -124,12 +123,12 @@ describe('direct terminal writes during a task', () => {
 		}, { tempDir });
 
 		const result = await nodePty(fixture.getPath('test.mjs'), { cols: 80 });
-		const grid = getTerminalGrid(result.output);
+		const grid = result.screen.split('\n');
 
 		onTestFail(() => {
 			console.log({
 				grid,
-				output: result.output,
+				rawOutput: result.rawOutput,
 			});
 		});
 

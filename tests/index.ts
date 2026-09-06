@@ -39,7 +39,6 @@ describe('tasuku', () => {
 	import('./specs/get-icon.spec.ts');
 	import('./specs/format-task-line.spec.ts');
 	import('./specs/format-task-output.spec.ts');
-	import('./specs/ansi-terminal.spec.ts');
 	import('./specs/terminal.spec.ts');
 	import('./specs/pty.spec.ts');
 

@@ -276,8 +276,7 @@ describe('rendering', () => {
 		const result = await nodePty(fixture.getPath('test.mjs'));
 		expect(result.exitCode).toBe(0);
 
-		const { getTerminalGrid } = await import('../utils/ansi-terminal.ts');
-		const grid = getTerminalGrid(result.output);
+		const grid = result.screen.split('\n');
 		// Final grid should show parent with both children
 		const parentRow = grid.find(row => row.includes('Parent'));
 		const childARow = grid.find(row => row.includes('Child A'));

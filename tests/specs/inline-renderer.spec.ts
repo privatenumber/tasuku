@@ -6,6 +6,16 @@ import { node } from '../utils/node.ts';
 import { nodePty, waitFor } from '../utils/pty.ts';
 import { tempDir } from '../utils/temp-dir.ts';
 
+const expectSeparateTaskRows = (screen: string, taskTitles: string[]) => {
+	const rows = screen.split('\n');
+	for (const taskTitle of taskTitles) {
+		expect(rows.filter(row => row.includes(taskTitle))).toHaveLength(1);
+	}
+	for (const row of rows) {
+		expect(taskTitles.filter(taskTitle => row.includes(taskTitle)).length).toBeLessThanOrEqual(1);
+	}
+};
+
 describe('inline renderer', () => {
 	test('cleared children do not displace later children', async () => {
 		await using fixture = await createFixture({
@@ -357,6 +367,47 @@ describe('inline renderer', () => {
 	});
 
 	describe('nested tasks', () => {
+		for (const precedingLines of [0, 20]) {
+			for (const concurrentSibling of [false, true]) {
+				test(`preserves nested publish results after ${precedingLines} preceding lines (concurrent sibling: ${concurrentSibling})`, async () => {
+					await using fixture = await createFixture({
+						'test.mjs': String.raw`
+					import { createTasuku, inline } from '#tasuku/create';
+					import { setTimeout } from 'node:timers/promises';
+					const task = createTasuku({ renderer: inline, outputStream: process.stdout });
+					process.stdout.write('history\n'.repeat(${precedingLines}));
+					const publication = task('Publishing package', async ({ setTitle }) => {
+						await setTimeout(50);
+						await task('package', async ({ setStatus }) => {
+							setStatus('Unchanged; reusing existing commit');
+						});
+						await task('Pushing 1 package', async () => {});
+						setTitle('Published package');
+					});
+					const sibling = ${concurrentSibling} && task('Other task', async () => setTimeout(100));
+					await Promise.all([publication, sibling]);
+					console.log('Install command\npnpm add example/repository#commit');
+					`,
+					}, { tempDir });
+
+					const result = await nodePty(fixture.getPath('test.mjs'), {
+						cols: 80,
+						rows: 10,
+					});
+					expect(result.exitCode).toBe(0);
+					expect(result.screen.split('\n')).toStrictEqual([
+						...Array.from({ length: precedingLines }, () => 'history'),
+						'❯ Published package',
+						'  ✔ package [Unchanged; reusing existing commit]',
+						'  ✔ Pushing 1 package',
+						...(concurrentSibling ? ['✔ Other task'] : []),
+						'Install command',
+						'pnpm add example/repository#commit',
+					]);
+				});
+			}
+		}
+
 		test('nested tasks render with indentation', async () => {
 			await using fixture = await createFixture({
 				'test.mjs': `
@@ -1007,11 +1058,7 @@ describe('inline renderer', () => {
 			const result = await nodePty(fixture.getPath('test.mjs'));
 			expect(result.exitCode).toBe(0);
 
-			// Parse the raw ANSI output through a virtual terminal to check
-			// that no task title ends up on a row belonging to another task
-			const { checkRowOwnership } = await import('../utils/ansi-terminal.ts');
-			const check = checkRowOwnership(result.output, ['Task A', 'Task B', 'Task C']);
-			expect(check.violation).toBeUndefined();
+			expectSeparateTaskRows(result.screen, ['Task A', 'Task B', 'Task C']);
 
 			// Verify all tasks completed with their unique success icons
 			const plain = stripAnsi(result.output);
@@ -1043,9 +1090,7 @@ describe('inline renderer', () => {
 			const result = await nodePty(fixture.getPath('test.mjs'));
 			expect(result.exitCode).toBe(0);
 
-			const { checkRowOwnership } = await import('../utils/ansi-terminal.ts');
-			const check = checkRowOwnership(result.output, ['Task A', 'Task B']);
-			expect(check.violation).toBeUndefined();
+			expectSeparateTaskRows(result.screen, ['Task A', 'Task B']);
 		}, { retry: 3 });
 
 		test('concurrent task.group() across multiple instances', async () => {
@@ -1074,12 +1119,7 @@ describe('inline renderer', () => {
 			const result = await nodePty(fixture.getPath('test.mjs'));
 			expect(result.exitCode).toBe(0);
 
-			const { checkRowOwnership } = await import('../utils/ansi-terminal.ts');
-			const check = checkRowOwnership(
-				result.output,
-				['Group1 A', 'Group1 B', 'Group2 X', 'Group2 Y'],
-			);
-			expect(check.violation).toBeUndefined();
+			expectSeparateTaskRows(result.screen, ['Group1 A', 'Group1 B', 'Group2 X', 'Group2 Y']);
 
 			const plain = stripAnsi(result.output);
 			expect(plain).toContain('Group1 A');
@@ -1111,9 +1151,7 @@ describe('inline renderer', () => {
 			const result = await nodePty(fixture.getPath('test.mjs'));
 			expect(result.exitCode).toBe(0);
 
-			const { checkRowOwnership } = await import('../utils/ansi-terminal.ts');
-			const check = checkRowOwnership(result.output, ['Task A', 'Task B']);
-			expect(check.violation).toBeUndefined();
+			expectSeparateTaskRows(result.screen, ['Task A', 'Task B']);
 		}, { retry: 3 });
 	});
 
