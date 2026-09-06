@@ -40,6 +40,8 @@ describe('tasuku', () => {
 	import('./specs/format-task-line.spec.ts');
 	import('./specs/format-task-output.spec.ts');
 	import('./specs/ansi-terminal.spec.ts');
+	import('./specs/terminal.spec.ts');
+	import('./specs/pty.spec.ts');
 
 	// Inline renderer
 	import('./specs/inline-renderer.spec.ts');
@@ -50,4 +52,5 @@ describe('tasuku', () => {
 
 	import('./specs/patch-console.spec.ts');
 	import('./specs/intercept-stream.spec.ts');
-});
+	// Bound top-level suites to reduce contention between PTY-heavy suites.
+}, { parallel: 'auto' });
