@@ -113,15 +113,22 @@ describe('inline clear', () => {
 	test('does not delete terminal rows after a width change', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
-				import { setTimeout } from 'node:timers/promises';
+				import { once } from 'node:events';
 				import { createTasuku, inline } from '#tasuku/create';
 				const task = createTasuku({ renderer: inline, outputStream: process.stdout });
 
 				const temporary = task('Temporary', async () => {});
 				await temporary;
 				console.log('x'.repeat(100));
+				const timeout = new AbortController();
+				const timer = setTimeout(() => timeout.abort(), 5000);
+				const resized = once(process.stdout, 'resize', { signal: timeout.signal });
 				console.log('READY');
-				await setTimeout(200);
+				try {
+					await resized;
+				} finally {
+					clearTimeout(timer);
+				}
 				temporary.clear();
 			`,
 		}, { tempDir });
@@ -142,13 +149,20 @@ describe('inline clear', () => {
 	test('renders subsequent task state after a width change', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
-				import { setTimeout } from 'node:timers/promises';
+				import { once } from 'node:events';
 				import { createTasuku, inline } from '#tasuku/create';
 				const task = createTasuku({ renderer: inline, outputStream: process.stdout });
 
 				await task('Working', async ({ setTitle }) => {
+					const timeout = new AbortController();
+					const timer = setTimeout(() => timeout.abort(), 5000);
+					const resized = once(process.stdout, 'resize', { signal: timeout.signal });
 					console.log('READY');
-					await setTimeout(200);
+					try {
+						await resized;
+					} finally {
+						clearTimeout(timer);
+					}
 					setTitle('Finished');
 				});
 			`,
