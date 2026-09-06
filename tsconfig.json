@@ -4,6 +4,9 @@
 		"module": "preserve",
 		"rewriteRelativeImportExtensions": true,
 		"erasableSyntaxOnly": true,
+		"types": [
+			"node",
+		],
 		"strict": true,
 		"noEmit": true,
 		"isolatedModules": true,
