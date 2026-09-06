@@ -17,6 +17,7 @@ type TrackedLine = {
 	offset: number; // 1-based: lines from cursor rest position
 	depth: number;
 	outputWritten: boolean;
+	subtreeBottom?: TrackedLine;
 };
 
 export const inline: RendererFactory = (
@@ -151,20 +152,16 @@ export const inline: RendererFactory = (
 	// Walk the task list, write initial lines for new loading tasks,
 	// and commit completed tasks.
 	//
-	// insertAfterOffset: when provided, new tasks are inserted after this offset
-	// using CSI L instead of appending at cursor rest. Used for child tasks.
-	// Returns the lowest offset in this subtree (for chaining child inserts).
+	// Keep the last displayed descendant even when clear() removes a child from
+	// the live list. References follow offset updates as other lines are inserted.
 	const processTaskList = (
 		tasks: TaskList | TaskObject[],
 		depth: number,
-		insertAfterOffset?: number,
-	): number | undefined => {
+		parent?: TrackedLine,
+	) => {
 		const columns = outputStream.columns || 80;
 
-		// Insert mode: when insertAfterOffset is provided, we're processing
-		// children and new tasks use CSI L to insert after their parent/sibling.
-		const isInsertMode = insertAfterOffset !== undefined;
-		let lastSubtreeBottom = insertAfterOffset;
+		let lastSubtreeBottom = parent?.subtreeBottom ?? parent;
 
 		for (const task of tasks) {
 			if (task.state === 'pending') {
@@ -179,9 +176,9 @@ export const inline: RendererFactory = (
 					continue;
 				}
 
-				if (isInsertMode) {
+				if (lastSubtreeBottom) {
 					// Child task: insert after parent/previous sibling
-					insertLineAfterOffset(task, depth, lastSubtreeBottom!);
+					insertLineAfterOffset(task, depth, lastSubtreeBottom.offset);
 				} else {
 					// Root task: append at cursor rest
 					appendLineAtRest(task, depth);
@@ -189,18 +186,13 @@ export const inline: RendererFactory = (
 				tracked = trackedLines.get(task)!;
 			}
 
-			// Track subtree bottom for sequential child insertion
-			let currentBottom = tracked.offset;
-
 			// Process children — they insert after this task's line
 			if (task.children.length > 0) {
-				const childBottom = processTaskList(task.children, depth + 1, tracked.offset);
-				if (childBottom !== undefined) {
-					currentBottom = childBottom;
-				}
+				processTaskList(task.children, depth + 1, tracked);
 			}
 
-			if (isInsertMode) {
+			const currentBottom = tracked.subtreeBottom ?? tracked;
+			if (lastSubtreeBottom && currentBottom.offset < lastSubtreeBottom.offset) {
 				lastSubtreeBottom = currentBottom;
 			}
 
@@ -222,7 +214,9 @@ export const inline: RendererFactory = (
 			}
 		}
 
-		return isInsertMode ? lastSubtreeBottom : undefined;
+		if (parent) {
+			parent.subtreeBottom = lastSubtreeBottom;
+		}
 	};
 
 	// Batched spinner frame update for all tracked loading tasks

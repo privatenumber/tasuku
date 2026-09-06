@@ -7,6 +7,59 @@ import { nodePty, waitFor } from '../utils/pty.ts';
 import { tempDir } from '../utils/temp-dir.ts';
 
 describe('inline renderer', () => {
+	test('cleared children retain their display order', async () => {
+		await using fixture = await createFixture({
+			'test.mjs': `
+			import { createTasuku, inline } from '#tasuku/create';
+			const task = createTasuku({ renderer: inline, outputStream: process.stdout });
+
+			await task('Publishing source', async () => {
+				await task('Creating temporary repositories', async () => {}).clear();
+				await task('Loading publish branch', async () => {}).clear();
+				await task('Packing package', async ({ setTitle }) => {
+					setTitle('Packed package');
+				});
+			});
+			`,
+		}, { tempDir });
+
+		const result = await nodePty(fixture.getPath('test.mjs'));
+		expect(result.exitCode).toBe(0);
+		expect(result.screen).toBe([
+			'❯ Publishing source',
+			'  ✔ Creating temporary repositories',
+			'  ✔ Loading publish branch',
+			'  ✔ Packed package',
+		].join('\n'));
+	});
+
+	test('cleared subtrees stay before new siblings when earlier children remain', async () => {
+		await using fixture = await createFixture({
+			'test.mjs': `
+			import { createTasuku, inline } from '#tasuku/create';
+			const task = createTasuku({ renderer: inline });
+
+			await task('Parent', async () => {
+				await task('Retained child', async () => {});
+				await task('Cleared child', async () => {
+					await task('Cleared grandchild', async () => {}).clear();
+				}).clear();
+				await task('Last child', async () => {});
+			});
+			`,
+		}, { tempDir });
+
+		const result = await nodePty(fixture.getPath('test.mjs'));
+		expect(result.exitCode).toBe(0);
+		expect(result.screen).toBe([
+			'❯ Parent',
+			'  ✔ Retained child',
+			'  ✔ Cleared child',
+			'    ✔ Cleared grandchild',
+			'  ✔ Last child',
+		].join('\n'));
+	});
+
 	describe('task states', () => {
 		test('success state shows green checkmark', async () => {
 			await using fixture = await createFixture({
