@@ -17,6 +17,99 @@ const expectSeparateTaskRows = (screen: string, taskTitles: string[]) => {
 };
 
 describe('inline renderer', () => {
+	test('wraps task titles without losing content', async () => {
+		await using fixture = await createFixture({
+			'test.mjs': `
+			import { createTasuku, inline } from '#tasuku/create';
+			const task = createTasuku({ renderer: inline, outputStream: process.stdout });
+
+			await task('Successfully published branch: npm/beta (e60ab035941122db707f40c0ba3b3710b67086ff)', async () => {});
+			`,
+		}, { tempDir });
+
+		const result = await nodePty(fixture.getPath('test.mjs'), {
+			cols: 30,
+		});
+		expect(result.exitCode).toBe(0);
+		expect(result.screen).toBe([
+			'✔ Successfully published branc',
+			'h: npm/beta (e60ab035941122db7',
+			'07f40c0ba3b3710b67086ff)',
+		].join('\n'));
+	});
+
+	test('resizes a task when its title grows', async () => {
+		await using fixture = await createFixture({
+			'test.mjs': `
+			import { createTasuku, inline } from '#tasuku/create';
+			const task = createTasuku({ renderer: inline, outputStream: process.stdout });
+
+			await task('Short', async ({ setTitle }) => {
+				setTitle('A title that grows across multiple terminal rows without being truncated');
+			});
+			`,
+		}, { tempDir });
+
+		const result = await nodePty(fixture.getPath('test.mjs'), { cols: 24 });
+		expect(result.exitCode).toBe(0);
+		expect(result.screen).toBe([
+			'✔ A title that grows acr',
+			'oss multiple terminal ro',
+			'ws without being truncat',
+			'ed',
+		].join('\n'));
+	});
+
+	test('inserts a wrapped child below its parent', async () => {
+		await using fixture = await createFixture({
+			'test.mjs': `
+			import { createTasuku, inline } from '#tasuku/create';
+			const task = createTasuku({ renderer: inline, outputStream: process.stdout });
+
+			await task('Parent title that wraps', async () => {
+				await task('Child title that also wraps completely', async () => {});
+			});
+			`,
+		}, { tempDir });
+
+		const result = await nodePty(fixture.getPath('test.mjs'), { cols: 20 });
+		expect(result.exitCode).toBe(0);
+		expect(result.screen).toBe([
+			'❯ Parent title that ',
+			'wraps',
+			'  ✔ Child title that',
+			' also wraps complete',
+			'ly',
+		].join('\n'));
+	});
+
+	test('inserts a wrapped child before an existing root sibling', async () => {
+		await using fixture = await createFixture({
+			'test.mjs': `
+			import { setTimeout } from 'node:timers/promises';
+			import { createTasuku, inline } from '#tasuku/create';
+			const task = createTasuku({ renderer: inline, outputStream: process.stdout });
+
+			await Promise.all([
+				task('Parent', async () => {
+					await setTimeout(50);
+					await task('Child title that wraps completely', async () => {});
+				}),
+				task('Root sibling', async () => setTimeout(100)),
+			]);
+			`,
+		}, { tempDir });
+
+		const result = await nodePty(fixture.getPath('test.mjs'), { cols: 20 });
+		expect(result.exitCode).toBe(0);
+		expect(result.screen).toBe([
+			'❯ Parent',
+			'  ✔ Child title that',
+			' wraps completely',
+			'✔ Root sibling',
+		].join('\n'));
+	});
+
 	test('cleared children do not displace later children', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
@@ -455,43 +548,11 @@ describe('inline renderer', () => {
 			await waitFor(subprocess, output => stripAnsi(output).includes('Child'));
 
 			const result = await subprocess;
-			const plain = stripAnsi(result.output);
-
-			expect(plain).toContain('Parent');
-			expect(plain).toContain('Child');
-			expect(plain).toContain('Sibling');
-
-			// Child was inserted via CSI L (Insert Line), not appended at cursor rest
-			// eslint-disable-next-line no-control-regex
-			expect(result.output).toMatch(/\u001B\[1?L[^\n]*Child/);
-
-			// Verify visual ordering via in-place update offsets.
-			// Each update: CSI {n}A \r CSI 2K {content} CSI {n}B \r
-			// Higher offset = further from cursor rest = higher on screen.
-			// eslint-disable-next-line no-control-regex
-			const updatePattern = /\u001B\[(\d+)A\r\u001B\[2K(.*?)\u001B\[\d+B\r/g;
-			const updates = [...result.output.matchAll(updatePattern)];
-
-			const findLastOffset = (taskName: string) => {
-				for (let i = updates.length - 1; i >= 0; i -= 1) {
-					if (stripAnsi(updates[i][2]).includes(taskName)) {
-						return Number(updates[i][1]);
-					}
-				}
-				return -1;
-			};
-
-			const parentOffset = findLastOffset('Parent');
-			const childOffset = findLastOffset('Child');
-			const siblingOffset = findLastOffset('Sibling');
-
-			expect(parentOffset).toBeGreaterThan(0);
-			expect(childOffset).toBeGreaterThan(0);
-			expect(siblingOffset).toBeGreaterThan(0);
-
-			// Correct visual order: Parent (top), Child (middle), Sibling (bottom)
-			expect(parentOffset).toBeGreaterThan(childOffset);
-			expect(childOffset).toBeGreaterThan(siblingOffset);
+			expect(result.screen).toBe([
+				'❯ Parent',
+				'  ✔ Child',
+				'✔ Sibling',
+			].join('\n'));
 		}, { retry: 3 });
 	});
 

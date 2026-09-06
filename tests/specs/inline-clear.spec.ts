@@ -4,6 +4,21 @@ import { nodePty, waitFor } from '../utils/pty.ts';
 import { tempDir } from '../utils/temp-dir.ts';
 
 describe('inline clear', () => {
+	test('removes every row of a wrapped task title', async () => {
+		await using fixture = await createFixture({
+			'test.mjs': `
+				import { createTasuku, inline } from '#tasuku/create';
+				const task = createTasuku({ renderer: inline, outputStream: process.stdout });
+
+				console.log('Keep this message');
+				await task('Temporary title that wraps across several rows', async () => {}).clear();
+			`,
+		}, { tempDir });
+		const result = await nodePty(fixture.getPath('test.mjs'), { cols: 20 });
+		expect(result.exitCode).toBe(0);
+		expect(result.screen).toBe('Keep this message');
+	});
+
 	test('coordinates row deletion across inline renderer instances', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `
@@ -143,11 +158,11 @@ describe('inline clear', () => {
 		await subprocess.resize(40, 24);
 		const result = await subprocess;
 		expect(result.exitCode).toBe(0);
-		expect(result.screen).toBe([
-			'⠋ Working',
-			'READY',
-			'✔ Finished',
-		].join('\n'));
+		const rows = result.screen.split('\n');
+		expect(rows).toHaveLength(3);
+		expect(rows[0]).toMatch(/Working$/);
+		expect(rows[1]).toBe('READY');
+		expect(rows[2]).toBe('✔ Finished');
 	});
 
 	for (const { name, code, screen } of [

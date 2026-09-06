@@ -12,13 +12,13 @@ import { patchConsole } from '../utils/patch-console.ts';
 import { interceptStream, type StreamController } from '../utils/intercept-stream.ts';
 import { getSiblingStream } from '../utils/sibling-stream.ts';
 import { areAllTasksDone, isTerminalState } from '../utils/task-list.ts';
-import { truncateLine } from '../utils/truncate-line.ts';
 import { countNewlines } from '../utils/count-newlines.ts';
 
 const segmenter = new Intl.Segmenter();
 
 type TrackedLine = {
-	offset: number; // 1-based: lines from cursor rest position
+	offset: number; // 1-based: bottom row from cursor rest position
+	rowCount: number;
 	depth: number;
 	outputWritten: boolean;
 	outputRows?: number[];
@@ -118,6 +118,34 @@ export const inline: RendererFactory = (
 		return formatTaskLine(task, icon, depth);
 	};
 
+	const countTextRows = (text: string) => {
+		const columns = outputStream.columns || 80;
+		let column = 0;
+		let rows = 1;
+		for (const { segment } of segmenter.segment(stripVTControlCharacters(text))) {
+			if (segment === '\n' || segment === '\r\n') {
+				rows += 1;
+				column = 0;
+				continue;
+			}
+			if (segment === '\r') {
+				column = 0;
+				continue;
+			}
+			const width = cachedStringWidth(segment);
+			if (width > 0 && column + width > columns) {
+				rows += 1;
+				column = 0;
+			}
+			column += width;
+			if (column === columns) {
+				column = 0;
+				rows += 1;
+			}
+		}
+		return column === 0 && rows > 1 ? rows - 1 : rows;
+	};
+
 	// Increment tracked offsets by count. Only offsets >= minOffset are affected.
 	const incrementOffsets = (count: number, minOffset = 1) => {
 		const viewportRows = (outputStream.rows || 24) - 1;
@@ -168,7 +196,9 @@ export const inline: RendererFactory = (
 				}
 			}
 			if (tracked.layoutVersion === layoutVersion) {
-				deleteRow(tracked.offset);
+				for (let index = tracked.rowCount - 1; index >= 0; index -= 1) {
+					deleteRow(tracked.offset + index);
+				}
 			}
 			trackedLines.delete(task);
 		}
@@ -184,11 +214,13 @@ export const inline: RendererFactory = (
 
 	// Append a new task line at cursor rest (bottom of all tracked content)
 	const appendLineAtRest = (task: TaskObject, depth: number) => {
-		const columns = outputStream.columns || 80;
-		incrementOffsets(1);
-		writeOutput(`${truncateLine(getLine(task, depth), columns - 1)}\n`);
+		const line = getLine(task, depth);
+		const rowCount = countTextRows(line);
+		incrementOffsets(rowCount);
+		writeOutput(`${line}\n`);
 		trackedLines.set(task, {
 			offset: 1,
+			rowCount,
 			depth,
 			outputWritten: false,
 			layoutVersion,
@@ -198,13 +230,14 @@ export const inline: RendererFactory = (
 	// Insert a new task line after a reference offset using CSI L (Insert Line).
 	// Used for child tasks that need to appear below their parent, not at cursor rest.
 	//
-	// Given afterOffset N (the parent/last sibling's offset from rest):
-	//   - Lines at offset >= N shift +1 (they're now further from rest)
-	//   - New line gets offset N (directly below the reference)
-	//   - Cursor rest moves down 1 physical row
+	// Given afterOffset N (the parent/last sibling's bottom row from rest):
+	//   - Lines at offset >= N shift by the new title's row count
+	//   - New title bottom is offset N (directly below the reference)
+	//   - Cursor rest moves down by the new title's row count
 	const insertLineAfterOffset = (task: TaskObject, depth: number, afterOffset: number) => {
-		const columns = outputStream.columns || 80;
 		const maxOffset = Math.min(reachableRows, (outputStream.rows || 24) - 1);
+		const line = getLine(task, depth);
+		const rowCount = countTextRows(line);
 
 		// Appending emits a newline, which scrolls when rest is at the bottom.
 		if (afterOffset === 1 || afterOffset > maxOffset) {
@@ -212,18 +245,19 @@ export const inline: RendererFactory = (
 			return;
 		}
 
-		const truncated = truncateLine(getLine(task, depth), columns - 1);
-		incrementOffsets(1, afterOffset);
+		incrementOffsets(rowCount, afterOffset);
 
-		// CSI L inserts a blank line at cursor, pushing everything below down.
+		// CSI L inserts blank lines at cursor, pushing everything below down.
 		// Move up to the row below the reference (where the next sibling is),
 		// insert, write content, then return to the new rest position.
-		// Reserve a physical row before inserting so cursor-down cannot clamp.
-		const buffer = `\n\u001B[${afterOffset}A\r\u001B[L${truncated}\u001B[${afterOffset}B\r`;
+		// Reserve physical rows before inserting so cursor-down cannot clamp.
+		const moveUp = afterOffset + rowCount - 1;
+		const buffer = `${'\n'.repeat(rowCount)}\u001B[${moveUp}A\r\u001B[${rowCount}L${line}\u001B[${afterOffset}B\r`;
 
-		writeOutput(buffer, 1, afterOffset);
+		writeOutput(buffer, rowCount, afterOffset);
 		trackedLines.set(task, {
 			offset: afterOffset,
+			rowCount,
 			depth,
 			outputWritten: false,
 			layoutVersion,
@@ -231,9 +265,11 @@ export const inline: RendererFactory = (
 	};
 
 	const appendTrackedLineAtRest = (tracked: TrackedLine, content: string) => {
-		incrementOffsets(1);
+		const rowCount = countTextRows(content);
+		incrementOffsets(rowCount);
 		writeOutput(`${content}\n`);
 		tracked.offset = 1;
+		tracked.rowCount = rowCount;
 		tracked.layoutVersion = layoutVersion;
 		tracked.outputRows = undefined;
 		tracked.subtreeBottom = undefined;
@@ -246,11 +282,27 @@ export const inline: RendererFactory = (
 			appendTrackedLineAtRest(tracked, content);
 			return;
 		}
-		if (tracked.offset > maxOffset) {
+		const topOffset = tracked.offset + tracked.rowCount - 1;
+		if (topOffset > maxOffset) {
 			// Task scrolled off screen — can't reach it
 			return;
 		}
-		writeOutput(`\u001B[${tracked.offset}A\r\u001B[2K${content}\u001B[${tracked.offset}B\r`);
+		const rowCount = countTextRows(content);
+		if (rowCount !== tracked.rowCount) {
+			if (tracked.offset === 1) {
+				for (let index = 0; index < tracked.rowCount; index += 1) {
+					deleteRow(1);
+				}
+			}
+			appendTrackedLineAtRest(tracked, content);
+			return;
+		}
+		const clearRows = Array.from(
+			{ length: rowCount },
+			(_, index) => `\r\u001B[2K${index < rowCount - 1 ? '\u001B[1B' : ''}`,
+		).join('');
+		const returnToTop = rowCount > 1 ? `\u001B[${rowCount - 1}A` : '';
+		writeOutput(`\u001B[${topOffset}A${clearRows}\r${returnToTop}${content}\u001B[${tracked.offset}B\r`);
 	};
 
 	// Count tasks that are actively displayed (tracked but not yet completed)
@@ -273,8 +325,6 @@ export const inline: RendererFactory = (
 		depth: number,
 		parent?: TrackedLine,
 	) => {
-		const columns = outputStream.columns || 80;
-
 		let lastSubtreeBottom = parent?.subtreeBottom ?? parent;
 
 		for (const task of tasks) {
@@ -300,7 +350,7 @@ export const inline: RendererFactory = (
 				tracked = trackedLines.get(task)!;
 			}
 			if (tracked.layoutVersion !== layoutVersion) {
-				updateLineInPlace(tracked, truncateLine(getLine(task, tracked.depth), columns - 1));
+				updateLineInPlace(tracked, getLine(task, tracked.depth));
 			}
 
 			// Process children — they insert after this task's line
@@ -317,7 +367,7 @@ export const inline: RendererFactory = (
 
 			if (isDone && !tracked.outputWritten) {
 				// Task just completed — update line with final icon
-				updateLineInPlace(tracked, truncateLine(getLine(task, tracked.depth), columns - 1));
+				updateLineInPlace(tracked, getLine(task, tracked.depth));
 
 				// Write output at cursor rest position
 				const linesWritten = writeTaskOutput(task, tracked.depth);
@@ -343,26 +393,19 @@ export const inline: RendererFactory = (
 	// Batched spinner frame update for all tracked loading tasks
 	const renderSpinnerFrames = () => {
 		finishExternalLine();
-		const columns = outputStream.columns || 80;
 		const maxOffset = Math.min(reachableRows, (outputStream.rows || 24) - 1);
-		let buffer = '';
 
 		for (const [task, tracked] of trackedLines) {
 			if (
 				tracked.layoutVersion !== layoutVersion
 				|| tracked.outputWritten
 				|| task.state !== 'loading'
-				|| tracked.offset > maxOffset
+				|| tracked.offset + tracked.rowCount - 1 > maxOffset
 			) {
 				continue;
 			}
 
-			const truncated = truncateLine(getLine(task, tracked.depth), columns - 1);
-			buffer += `\u001B[${tracked.offset}A\r\u001B[2K${truncated}\u001B[${tracked.offset}B\r`;
-		}
-
-		if (buffer) {
-			writeOutput(buffer);
+			updateLineInPlace(tracked, getLine(task, tracked.depth));
 		}
 	};
 
