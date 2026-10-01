@@ -2,11 +2,335 @@ import { describe, test, expect } from 'manten';
 import { createFixture } from 'fs-fixture';
 import ansiEscapes from 'ansi-escapes';
 import ansis from 'ansis';
+import stripAnsi from 'strip-ansi';
+import unicodeGraphemes from '@xterm/addon-unicode-graphemes';
 import { node } from '../utils/node.ts';
 import { nodePty, waitFor } from '../utils/pty.ts';
 import { tempDir } from '../utils/temp-dir.ts';
+import { createTerminal } from '../utils/terminal.ts';
+
+const pinnedSetup = String.raw`
+	import { Writable } from 'node:stream';
+	import { pinned } from '#tasuku/create';
+	let output = '';
+	const stream = new Writable({
+		write(chunk, encoding, callback) {
+			output += chunk;
+			callback();
+		},
+	});
+	Object.assign(stream, { isTTY: true, ...dimensions });
+	const tasks = [];
+	const renderer = pinned(tasks, stream);
+`;
+
+const completedResults = Array.from({ length: 16 }, (_, index) => `[passed] CASE-${index}`).join('\n');
 
 describe('rendering', () => {
+	test('CI terminal preserves completed task output beyond the viewport', async () => {
+		const taskOutput = `${Array.from({ length: 12 }, (_, index) => `line ${index}`).join('\n')}\nIMPORTANT FINAL DETAIL`;
+		await using fixture = await createFixture({
+			'test.mjs': String.raw`
+				import { createTasuku } from '#tasuku/create';
+				import { setTimeout } from 'node:timers/promises';
+				const dimensions = { columns: 30, rows: 8 };
+				${pinnedSetup}
+				renderer.destroy();
+				const task = createTasuku({ renderer: pinned, outputStream: stream });
+				await task('Build', ({ setOutput }) => {
+					setOutput(${JSON.stringify(taskOutput)});
+				});
+				await setTimeout(50);
+				process.stdout.write(output);
+			`,
+		}, { tempDir });
+		const result = await node(fixture.getPath('test.mjs'), { CI: 'true' });
+		expect(result.stderr).toBe('');
+		expect(stripAnsi(result.stdout)).toContain(taskOutput.split('\n').map((line, index) => `${index === 0 ? '  → ' : '    '}${line}`).join('\n'));
+		expect(result.stdout).not.toContain('\u001B]8;;');
+	});
+
+	for (const scenario of [
+		...['❤️', '👨‍👩‍👧‍👦', '👩🏽‍💻', '❤\u001B[31m️\u001B[39m', '👨\u001B[31m‍👩‍👧‍👦\u001B[39m'].map(glyph => ({
+			glyph,
+			count: 100,
+			suffix: '',
+		})),
+		{
+			glyph: '❤\u001B[31m️\u001B[39m',
+			count: 20,
+			suffix: '',
+		},
+		{
+			glyph: '❤\u001B[31m️\u001B[39m',
+			count: 29,
+			suffix: '',
+		},
+		{
+			glyph: '❤\u001B[31m️\u001B[39m',
+			count: 20,
+			suffix: `\n${'x'.repeat(100)}`,
+		},
+	]) {
+		test(`${scenario.count} ${stripAnsi(scenario.glyph)} ${scenario.glyph.includes('\u001B') ? 'styled' : 'plain'} graphemes with ${scenario.suffix ? 'multiline' : 'single-line'} output preserve preceding output`, async () => {
+			await using fixture = await createFixture({
+				'test.mjs': String.raw`
+					const dimensions = { columns: 20, rows: 5 };
+					${pinnedSetup}
+					stream.write('KEEP\n');
+					tasks.push({ title: ${JSON.stringify(scenario.glyph.repeat(scenario.count) + scenario.suffix)}, state: 'loading', children: [] });
+					renderer.flushRender(true);
+					const live = output;
+					output = '';
+					tasks.length = 0;
+					renderer.flushRender(true);
+					renderer.destroy();
+					process.stdout.write(JSON.stringify({ live, cleanup: output }));
+				`,
+			}, { tempDir });
+			const result = await node(fixture.getPath('test.mjs'));
+			expect(result.stderr).toBe('');
+			const { live, cleanup } = JSON.parse(result.stdout) as {
+				live: string;
+				cleanup: string;
+			};
+			const taskLine = stripAnsi(live).split('\n')[1];
+			expect(taskLine).toBe(`⠋ ${stripAnsi(scenario.glyph).repeat(Math.min(scenario.count, 29))}`);
+			using terminal = createTerminal({
+				cols: 20,
+				rows: 5,
+			});
+			terminal.terminal.loadAddon(new unicodeGraphemes.UnicodeGraphemesAddon());
+			await terminal.write(live.replaceAll('\n', '\r\n'));
+			expect(terminal.terminal.buffer.active.baseY).toBe(0);
+			expect(terminal.screen.split('\n')).toHaveLength(scenario.suffix ? 4 : 1 + Math.ceil((2 + 2 * Math.min(scenario.count, 29)) / 20));
+			await terminal.write(cleanup.replaceAll('\n', '\r\n'));
+			expect(terminal.screen).toBe('KEEP');
+		});
+	}
+
+	for (const link of [
+		{
+			name: 'BEL wrapped title',
+			terminator: '\u0007',
+			text: 'x'.repeat(100),
+		},
+		{
+			name: 'ST wrapped title',
+			terminator: '\u001B\\',
+			text: 'x'.repeat(100),
+		},
+		{
+			name: 'ST multiline title',
+			terminator: '\u001B\\',
+			text: 'linked line\n'.repeat(10),
+		},
+	]) {
+		test(`clipping closes hyperlinks: ${link.name}`, async () => {
+			await using fixture = await createFixture({
+				'test.mjs': String.raw`
+					const dimensions = { columns: 20, rows: 5 };
+					${pinnedSetup}
+					const link = ${JSON.stringify(link)};
+					tasks.push({ title: '\x1b]8;;https://example.com/task' + link.terminator + '\x1b[31m' + link.text + '\x1b[39m\x1b]8;;' + link.terminator, state: 'loading', children: [] });
+					renderer.flushRender(true);
+					tasks.length = 0;
+					renderer.flushRender(true);
+					renderer.destroy();
+					stream.write('COMPLETED\n');
+					process.stdout.write(output);
+				`,
+			}, { tempDir });
+			const result = await node(fixture.getPath('test.mjs'));
+			expect(result.stderr).toBe('');
+			using terminal = createTerminal({
+				cols: 20,
+				rows: 5,
+			});
+			const links: string[] = [];
+			const handler = terminal.terminal.parser.registerOscHandler(8, (data) => {
+				links.push(data);
+				return false;
+			});
+			try {
+				await terminal.write(result.stdout.replaceAll('\n', '\r\n'));
+				expect(links).toContain(';https://example.com/task');
+				expect(links.at(-1)).toBe(';');
+				expect(terminal.screen).toBe('COMPLETED');
+				expect(terminal.terminal.buffer.active.getLine(0)!.getCell(0)!.isFgDefault()).toBe(true);
+			} finally {
+				handler.dispose();
+			}
+		});
+	}
+
+	test('wrapped concurrent tasks leave no loading rows after removal', async () => {
+		await using fixture = await createFixture({
+			'test.mjs': String.raw`
+				const dimensions = { columns: 30, rows: 24 };
+				${pinnedSetup}
+				for (let index = 0; index < 16; index += 1) {
+					tasks.push({
+						title: 'evals/pr/long-evaluation-case-' + index + '.eval.ts',
+						status: '$0.012', state: 'loading', children: [],
+					});
+					renderer.flushRender(true);
+				}
+				for (let index = 0; index < 16; index += 1) {
+					tasks.shift();
+					renderer.flushRender(true);
+					stream.write('[passed] CASE-' + index + '\n');
+				}
+				renderer.destroy();
+				process.stdout.write(output);
+			`,
+		}, { tempDir });
+		const result = await node(fixture.getPath('test.mjs'));
+		expect(result.stderr).toBe('');
+		using terminal = createTerminal({
+			cols: 30,
+			rows: 24,
+		});
+		await terminal.write(result.stdout.replaceAll('\n', '\r\n'));
+		expect(terminal.screen).toBe(completedResults);
+	});
+
+	for (const scenario of [
+		{
+			name: 'exact-width titles',
+			task: { title: 'x'.repeat(28) },
+		},
+		{
+			name: 'oversized title',
+			task: { title: 'x'.repeat(500) },
+		},
+		{
+			name: 'oversized nested output',
+			task: {
+				title: 'Parent',
+				children: [{
+					title: 'Child',
+					state: 'loading',
+					children: [],
+					output: 'output\n'.repeat(30),
+				}],
+			},
+		},
+		{
+			name: 'wrapped mixed-state summary',
+			dimensions: {
+				columns: 20,
+				rows: 6,
+			},
+			task: { title: 'Task' },
+			states: ['loading', 'pending', 'success'],
+		},
+		{
+			name: 'maxVisible beyond viewport',
+			task: { title: 'Task' },
+			maxVisible: 100,
+		},
+		{
+			name: 'fractional maxVisible',
+			dimensions: { rows: 25 },
+			task: { title: 'x'.repeat(1000) },
+			maxVisibleRatio: 0.5,
+		},
+		{
+			name: 'tiny viewport',
+			dimensions: {
+				columns: 20,
+				rows: 3,
+			},
+			task: { title: 'Task' },
+		},
+		{
+			name: 'styled wide titles',
+			dimensions: { columns: 21 },
+			task: { title: ansis.red('界'.repeat(80)) },
+		},
+	]) {
+		test(`${scenario.name} leave no loading rows after removal`, async () => {
+			const dimensions = {
+				columns: 30,
+				rows: 8,
+				...scenario.dimensions,
+			};
+			await using fixture = await createFixture({
+				'test.mjs': String.raw`
+					const dimensions = ${JSON.stringify(dimensions)};
+					${pinnedSetup}
+					const scenario = ${JSON.stringify(scenario)};
+					const states = scenario.states ?? ['loading'];
+					renderer.setMaxVisible(scenario.maxVisibleRatio === undefined
+						? scenario.maxVisible
+						: height => height * scenario.maxVisibleRatio);
+					for (let index = 0; index < 16; index += 1) {
+						tasks.push({ state: states[index % states.length], children: [], ...scenario.task });
+						renderer.flushRender(true);
+					}
+					for (let index = 0; index < 16; index += 1) {
+						tasks.shift();
+						renderer.flushRender(true);
+						stream.write('[passed] CASE-' + index + '\n');
+					}
+					renderer.destroy();
+					process.stdout.write(output);
+				`,
+			}, { tempDir });
+			const result = await node(fixture.getPath('test.mjs'));
+			expect(result.stderr).toBe('');
+			using terminal = createTerminal({
+				cols: dimensions.columns,
+				rows: dimensions.rows,
+			});
+			await terminal.write(result.stdout.replaceAll('\n', '\r\n'));
+			expect(terminal.screen).toBe(completedResults);
+		});
+	}
+
+	test('resize clips a task to the updated viewport budget', async () => {
+		await using fixture = await createFixture({
+			'test.mjs': String.raw`
+				const dimensions = { columns: 80, rows: 24 };
+				${pinnedSetup}
+				stream.write('KEEP\n');
+				tasks.push({ title: 'Before resize', state: 'loading', children: [] });
+				renderer.flushRender(true);
+				const beforeResize = output;
+				output = '';
+				Object.assign(stream, { columns: 30, rows: 8 });
+				stream.emit('resize');
+				tasks[0].title = 'x'.repeat(500);
+				renderer.flushRender(true);
+				const afterResize = output;
+				output = '';
+				tasks.length = 0;
+				renderer.flushRender(true);
+				renderer.destroy();
+				process.stdout.write(JSON.stringify({ beforeResize, afterResize, cleanup: output }));
+			`,
+		}, { tempDir });
+		const result = await node(fixture.getPath('test.mjs'));
+		expect(result.stderr).toBe('');
+		const { beforeResize, afterResize, cleanup } = JSON.parse(result.stdout) as {
+			beforeResize: string;
+			afterResize: string;
+			cleanup: string;
+		};
+		using terminal = createTerminal({
+			cols: 80,
+			rows: 24,
+		});
+		await terminal.write(beforeResize.replaceAll('\n', '\r\n'));
+		terminal.terminal.resize(30, 8);
+		await terminal.write(afterResize.replaceAll('\n', '\r\n'));
+		expect(terminal.terminal.buffer.active.baseY).toBe(0);
+		expect(terminal.screen).toBe(`KEEP\n⠋ ${'x'.repeat(28)}${`\n${'x'.repeat(30)}`.repeat(5)}`);
+		await terminal.write(cleanup.replaceAll('\n', '\r\n'));
+		expect(terminal.screen).toBe('KEEP');
+	});
+
 	test('spinner animates through multiple frames with yellow color', async () => {
 		await using fixture = await createFixture({
 			'test.mjs': `

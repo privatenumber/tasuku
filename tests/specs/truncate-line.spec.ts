@@ -2,6 +2,15 @@ import { describe, test, expect } from 'manten';
 import { truncateLine } from '../../src/utils/truncate-line.ts';
 
 describe('truncateLine', () => {
+	for (const [styled, visible] of [
+		['❤\u001B[31m️\u001B[39m', '❤️'],
+		['👨\u001B[31m‍👩‍👧‍👦\u001B[39m', '👨‍👩‍👧‍👦'],
+	]) {
+		test(`ANSI inside ${visible} does not split its grapheme`, () => {
+			expect(truncateLine(styled.repeat(100), 2)).toBe(`\u001B[31m${visible}\u001B[39m`);
+			expect(truncateLine(styled, 1)).toBe('');
+		});
+	}
 	test('plain ASCII text truncates at column limit', () => {
 		expect(truncateLine('Hello, world!', 5)).toBe('Hello');
 	});

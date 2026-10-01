@@ -551,11 +551,13 @@ await task.group(task => [
 
 Type: `number | ((terminalHeight: number) => number)`
 
-Default: Responsive to terminal height (rows - 2, minimum 5)
+Default: Responsive to terminal height (rows - 2)
 
-Maximum number of lines to display in the task list. When there are more task lines than this limit, remaining tasks are hidden with a state breakdown (e.g., "(+ 3 loading, 5 queued, 4 completed)"). Active tasks are always prioritized over pending and completed ones.
+Maximum number of terminal rows to display in the task list. Wrapped titles, nested tasks, task output, and the hidden-task summary all count toward this limit. When there are more task rows than this limit, remaining tasks are hidden with a state breakdown (e.g., "(+ 3 loading, 5 queued, 4 completed)"). Active tasks are always prioritized over pending and completed ones.
 
-Can be a fixed number or a function called on each render for responsive limits. By default, the limit is automatically lifted when all tasks complete and `.clear()` is called.
+In an interactive terminal, the live display is capped at the terminal height minus two rows, even if `maxVisible` requests more space. A task taller than the available space shows its leading lines, with its last visible line clipped to fit. Terminal resizing updates the available space. CI and piped output count newline-separated lines.
+
+Can be a fixed number or a function called on each render for responsive limits. Fractional limits are rounded down. By default, the limit is automatically lifted when all tasks complete and `.clear()` is called.
 
 <p align="center" demo>
 <img src=".github/media/max-visible.gif" width="600" alt="Terminal showing a task group with maxVisible limiting displayed tasks">

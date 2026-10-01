@@ -2,8 +2,10 @@ import {
 	cursorUp, cursorDown,
 	cursorSavePosition, cursorRestorePosition, eraseDown,
 } from 'ansi-escapes';
+import stripAnsi from 'strip-ansi';
 import { cachedStringWidth } from '../utils/cached-string-width.ts';
 import { countNewlines } from '../utils/count-newlines.ts';
+import { truncateLine } from '../utils/truncate-line.ts';
 import { colors, spinner, spinnerInterval as spinnerIntervalMs } from '../style.ts';
 import type {
 	Renderer, RendererFactory, TaskList, TaskObject,
@@ -16,6 +18,84 @@ import { patchConsole } from '../utils/patch-console.ts';
 import { interceptStream, type StreamController } from '../utils/intercept-stream.ts';
 import { getSiblingStream } from '../utils/sibling-stream.ts';
 import { areAllTasksDone } from '../utils/task-list.ts';
+
+const graphemes = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+
+// Close OSC 8 hyperlinks and reset SGR styling so clipped output cannot leak state.
+// https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda#the-escape-sequence
+const closeClippedAnsiState = '\u001B]8;;\u001B\\\u001B[0m';
+
+const countRows = (output: string, columns: number): number => {
+	let rows = 0;
+	const lines = output.split('\n');
+	for (let index = 0; index < lines.length - 1; index += 1) {
+		rows += 1;
+		if (cachedStringWidth(lines[index]) <= columns) {
+			continue;
+		}
+		let column = 0;
+		for (const { segment } of graphemes.segment(stripAnsi(lines[index]))) {
+			const width = cachedStringWidth(segment);
+			// Wide characters wrap before the margin when only one cell remains.
+			// An exact-width line wraps only when another visible character arrives.
+			if (width > 0 && column + width > columns) {
+				rows += 1;
+				column = 0;
+			}
+			column += width;
+		}
+	}
+	return rows;
+};
+
+// Keep the leading logical lines of an oversized task, clipping its last line
+// to the remaining rows. Close hyperlinks and reset styling at a clipped boundary.
+const clipRows = (output: string, rows: number, columns: number): string => {
+	let clipped = '';
+	for (const line of output.split('\n').slice(0, -1)) {
+		if (rows <= 0) {
+			break;
+		}
+		const lineRows = countRows(`${line}\n`, columns);
+		if (lineRows > rows) {
+			let column = 0;
+			let widthLimit = 0;
+			for (const { segment } of graphemes.segment(stripAnsi(line))) {
+				const width = cachedStringWidth(segment);
+				if (width > 0 && column + width > columns) {
+					rows -= 1;
+					if (rows === 0) {
+						break;
+					}
+					column = 0;
+				}
+				column += width;
+				widthLimit += width;
+			}
+			clipped += `${truncateLine(line, widthLimit)}\n`;
+			break;
+		}
+		clipped += `${line}\n`;
+		rows -= lineRows;
+	}
+	return clipped === output || clipped === ''
+		? clipped
+		: `${clipped.slice(0, -1)}${closeClippedAnsiState}\n`;
+};
+
+const hiddenTaskSummary = (loading: number, pending: number, completed: number): string => {
+	const parts: string[] = [];
+	if (loading > 0) {
+		parts.push(`${loading} loading`);
+	}
+	if (pending > 0) {
+		parts.push(`${pending} queued`);
+	}
+	if (completed > 0) {
+		parts.push(`${completed} completed`);
+	}
+	return parts.length > 0 ? `${colors.dim(`(+ ${parts.join(', ')})`)}\n` : '';
+};
 
 export const pinned: RendererFactory = (
 	taskList: TaskList,
@@ -77,15 +157,19 @@ export const pinned: RendererFactory = (
 	// non-TTY environments where outputStream.rows is undefined.
 	let terminalHeight = outputStream.rows || 24;
 
-	// Get the visible lines limit (user override or terminal height - 2, minimum 1)
+	// Leave two rows for the trailing newline and cursor. User limits cannot
+	// enlarge an interactive frame beyond the viewport.
 	const getVisibleLinesLimit = (): number => {
+		const viewportLimit = Math.max(0, terminalHeight - 2);
 		if (maxVisibleOverride !== undefined) {
 			const limit = typeof maxVisibleOverride === 'function'
 				? maxVisibleOverride(terminalHeight)
 				: maxVisibleOverride;
-			return Math.max(1, limit);
+			return isInteractive
+				? Math.min(viewportLimit, Math.max(1, Math.floor(limit)))
+				: Math.max(1, Math.floor(limit));
 		}
-		return Math.max(5, terminalHeight - 2);
+		return isInteractive ? viewportLimit : Math.max(5, terminalHeight - 2);
 	};
 
 	// Exit handler registered after render() is defined (see below)
@@ -96,6 +180,10 @@ export const pinned: RendererFactory = (
 
 		let line = `${formatTaskLine(task, icon, depth)}\n`;
 		line += formatTaskOutput(task, depth);
+		// Normalize internal escapes before measuring or emitting whole graphemes.
+		if (isInteractive) {
+			line = truncateLine(line, Infinity);
+		}
 
 		// Render children recursively
 		if (hasChildren) {
@@ -108,107 +196,98 @@ export const pinned: RendererFactory = (
 	let isFinalRender = false;
 
 	const renderTaskList = (tasks: TaskList, depth = 0): string => {
-		// Only apply visible lines limit and sorting at root level
-		if (depth === 0) {
-			// Only skip the limit on the final render (clear/destroy) when
-			// no explicit maxVisible was set. During normal renders, we must
-			// keep the limit because ANSI cursor movement can't reach lines
-			// that scrolled off screen, which would break the next redraw.
-			const skipLimit = isFinalRender && maxVisibleOverride === undefined;
+		if (depth > 0) {
+			return tasks.map(task => renderTask(task, depth)).join('');
+		}
 
-			if (skipLimit) {
-				hasHiddenTasks = false;
-			} else {
-				const maxLines = getVisibleLinesLimit();
+		// Final output can enter scrollback because it will not be redrawn.
+		if (isFinalRender && maxVisibleOverride === undefined) {
+			hasHiddenTasks = false;
+			return tasks.map(task => renderTask(task, depth)).join('');
+		}
 
-				// Render in insertion order, accumulating lines until the output
-				// either fits or exceeds the limit. On exceeding, stop early: the
-				// sorted pass below re-renders only the visible subset, so
-				// rendering (and joining) every remaining task here is wasted.
-				const renderedTasks: string[] = [];
-				let totalLines = 0;
-				for (const task of tasks) {
-					const taskOutput = renderTask(task, depth);
-					renderedTasks.push(taskOutput);
-					totalLines += countNewlines(taskOutput);
-					if (totalLines > maxLines) {
-						break;
-					}
-				}
+		const maxLines = getVisibleLinesLimit();
+		const columns = outputStream.columns || 80;
 
-				if (totalLines <= maxLines) {
-					// Everything fits — no truncation needed
-					hasHiddenTasks = false;
-					return renderedTasks.join('');
-				}
-
-				// Truncation needed — bring active tasks to the front so they
-				// stay visible and completed tasks are hidden first. Only three
-				// priority levels exist, so a single linear partition into buckets
-				// does this in O(n) instead of an O(n log n) sort; pushing in
-				// iteration order keeps each level stable, matching the previous
-				// stable sort's output exactly.
-				const loadingTasks: TaskObject[] = [];
-				const pendingTasks: TaskObject[] = [];
-				const completedTasks: TaskObject[] = [];
-				for (const task of tasks) {
-					if (task.state === 'loading') {
-						loadingTasks.push(task);
-					} else if (task.state === 'pending') {
-						pendingTasks.push(task);
-					} else {
-						completedTasks.push(task);
-					}
-				}
-				const sortedTasks = [...loadingTasks, ...pendingTasks, ...completedTasks];
-
-				let output = '';
-				let lineCount = 0;
-				let renderedTaskCount = 0;
-
-				for (let i = 0; i < sortedTasks.length; i += 1) {
-					const taskOutput = renderTask(sortedTasks[i], depth);
-					const taskLines = countNewlines(taskOutput);
-					const hasMoreTasks = i < sortedTasks.length - 1;
-					const reservedLines = hasMoreTasks ? 1 : 0;
-
-					if (lineCount + taskLines + reservedLines > maxLines && renderedTaskCount > 0) {
-						break;
-					}
-
-					output += taskOutput;
-					lineCount += taskLines;
-					renderedTaskCount += 1;
-				}
-
-				const hiddenTasks = sortedTasks.slice(renderedTaskCount);
-				hasHiddenTasks = hiddenTasks.length > 0;
-
-				if (hasHiddenTasks) {
-					const parts: string[] = [];
-					let loading = 0;
-					let pending = 0;
-					let completed = 0;
-					for (const task of hiddenTasks) {
-						if (task.state === 'loading') {
-							loading += 1;
-						} else if (task.state === 'pending') {
-							pending += 1;
-						} else {
-							completed += 1;
-						}
-					}
-					if (loading > 0) { parts.push(`${loading} loading`); }
-					if (pending > 0) { parts.push(`${pending} queued`); }
-					if (completed > 0) { parts.push(`${completed} completed`); }
-					output += `${colors.dim(`(+ ${parts.join(', ')})`)}\n`;
-				}
-
-				return output;
+		// Preserve insertion order when everything fits. Stop at overflow because
+		// the prioritized pass renders only the visible subset.
+		const renderedTasks: string[] = [];
+		let totalLines = 0;
+		for (const task of tasks) {
+			const taskOutput = renderTask(task, depth);
+			renderedTasks.push(taskOutput);
+			totalLines += isInteractive ? countRows(taskOutput, columns) : countNewlines(taskOutput);
+			if (totalLines > maxLines) {
+				break;
 			}
 		}
 
-		return tasks.map(task => renderTask(task, depth)).join('');
+		if (totalLines <= maxLines) {
+			hasHiddenTasks = false;
+			return renderedTasks.join('');
+		}
+
+		// Keep active tasks visible first, preserving order within each priority.
+		const loadingTasks: TaskObject[] = [];
+		const pendingTasks: TaskObject[] = [];
+		const completedTasks: TaskObject[] = [];
+		for (const task of tasks) {
+			if (task.state === 'loading') {
+				loadingTasks.push(task);
+			} else if (task.state === 'pending') {
+				pendingTasks.push(task);
+			} else {
+				completedTasks.push(task);
+			}
+		}
+		const sortedTasks = [...loadingTasks, ...pendingTasks, ...completedTasks];
+
+		let output = '';
+		let lineCount = 0;
+		let renderedTaskCount = 0;
+		let hasClippedTask = false;
+		let loading = loadingTasks.length;
+		let pending = pendingTasks.length;
+		let completed = completedTasks.length;
+		let summary = hiddenTaskSummary(loading, pending, completed);
+
+		for (const task of sortedTasks) {
+			if (task.state === 'loading') {
+				loading -= 1;
+			} else if (task.state === 'pending') {
+				pending -= 1;
+			} else {
+				completed -= 1;
+			}
+			const nextSummary = hiddenTaskSummary(loading, pending, completed);
+			const taskOutput = renderTask(task, depth);
+			const taskLines = isInteractive ? countRows(taskOutput, columns) : countNewlines(taskOutput);
+			const reservedLines = isInteractive
+				? countRows(nextSummary, columns)
+				: countNewlines(nextSummary);
+
+			if (lineCount + taskLines + reservedLines > maxLines && renderedTaskCount > 0) {
+				break;
+			}
+
+			const availableRows = Math.max(0, maxLines - lineCount - reservedLines);
+			if (isInteractive && availableRows === 0) {
+				break;
+			}
+			hasClippedTask ||= isInteractive && taskLines > availableRows;
+			output += isInteractive && taskLines > availableRows
+				? clipRows(taskOutput, availableRows, columns)
+				: taskOutput;
+			lineCount += isInteractive ? Math.min(taskLines, availableRows) : taskLines;
+			renderedTaskCount += 1;
+			summary = nextSummary;
+		}
+
+		hasHiddenTasks = renderedTaskCount < sortedTasks.length || hasClippedTask;
+		if (hasHiddenTasks) {
+			output += isInteractive ? clipRows(summary, maxLines - lineCount, columns) : summary;
+		}
+		return output;
 	};
 
 	const outputHooks = {
@@ -295,14 +374,7 @@ export const pinned: RendererFactory = (
 		// multiple rows, and cursorUp must cover all of them.
 		if (isTTY) {
 			const columns = outputStream.columns || 80;
-			let visualLineCount = 0;
-			const lines = output.split('\n');
-			for (let i = 0; i < lines.length - 1; i += 1) {
-				const width = cachedStringWidth(lines[i]);
-				visualLineCount += width <= columns
-					? 1
-					: Math.ceil(width / columns);
-			}
+			const visualLineCount = countRows(output, columns);
 			// Batch: output + re-anchor (cursor-up + save + cursor-down) in one write
 			if (visualLineCount > 0) {
 				write(
